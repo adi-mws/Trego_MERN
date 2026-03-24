@@ -44,6 +44,17 @@ const notificationSchema = new mongoose.Schema(
       default: null,
     },
 
+    scopeType: {
+      type: String,
+      enum: ["WORKSPACE", "ACCOUNT"],
+      required: true,
+    },
+
+    scopeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+    },
+
     entityType: {
       type: String,
       enum: [
@@ -70,6 +81,7 @@ const notificationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+/* TTL (auto delete after 10 days) */
 notificationSchema.index(
   { createdAt: 1 },
   { expireAfterSeconds: 10 * 24 * 60 * 60 }
