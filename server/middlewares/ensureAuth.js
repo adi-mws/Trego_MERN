@@ -35,7 +35,7 @@ const authMiddleware = async (req, res, next) => {
       });
     }
 
-    // ❗ IMPORTANT: Check status
+    // Check status
     if (session.status !== "ACTIVE") {
       return res.status(401).json({
         success: false,

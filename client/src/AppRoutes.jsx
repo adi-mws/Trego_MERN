@@ -1,7 +1,7 @@
 import React, { lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import ScrollToTop from "./components/global/ScrollToTop";
-
+import HomePage from './components/features/marketing/home/HomePage'
 /*  ROUTES  */
 
 export default function AppRoutes() {
@@ -14,10 +14,12 @@ export default function AppRoutes() {
 
       <Router>
         <ScrollToTop />
-            {/*  PUBLIC ROUTES  */}
+        <Routes>
+          {/*  PUBLIC ROUTES  */}
+          <Route path="/" element={<HomePage />} />
+        </Routes>
 
-            
       </Router>
     </>
-);
+  );
 }
