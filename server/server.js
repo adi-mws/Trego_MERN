@@ -6,12 +6,11 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { initSocket } from "./socket/index.js";
 import { socketStore } from "./socket/store.js";
-
+import connectDB from "./config/db.js";
 
 connectDB();
 
-// Initialize analytics cron jobs
-analyticsService.initializeJobs();
+// CRON JOBS
 
 const app = express();
 const server = http.createServer(app);
@@ -30,15 +29,11 @@ app.use(
 app.use('/uploads', express.static('uploads'));
 
 
-// ---------------------------
 // PARSERS
-// ---------------------------
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// ---------------------------
-// Init socket.io
 // Routes
 
 
@@ -54,9 +49,6 @@ app.get("/", (req, res) => {
   res.send("Server running with socket.io + cookies enabled");
 });
 
-// ---------------------------
-// Start server
-// ---------------------------
 server.listen(PORT, () =>
   console.log(`Server running at http://localhost:${PORT}`)
 );
