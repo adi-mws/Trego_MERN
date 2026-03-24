@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import './App.css'
-
+import AppRoutes from "./AppRoutes"
 function App() {
 
   return (
-   <h1>Migrating to MERN</h1>
+   <AppRoutes />
   ) 
 }
 

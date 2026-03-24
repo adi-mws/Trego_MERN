@@ -8,7 +8,10 @@ const sessionSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-
+    accountId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Account",
+    },
     deviceId: {
       type: String,
       required: true,
