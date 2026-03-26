@@ -1,7 +1,7 @@
 import React, { lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import ScrollToTop from "./components/global/ScrollToTop";
-import HomePage from './components/features/marketing/home/HomePage'
+import HomePage from "./components/marketing/home/HomePage";
 /*  ROUTES  */
 
 export default function AppRoutes() {

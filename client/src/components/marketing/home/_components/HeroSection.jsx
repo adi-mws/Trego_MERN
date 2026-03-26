@@ -1,7 +1,6 @@
-import React from 'react'
 
 export default function HeroSection() {
   return (
-    <div>HeroSection</div>
+    <h1>Welcome to Hero Section of Trego</h1>
   )
 }
