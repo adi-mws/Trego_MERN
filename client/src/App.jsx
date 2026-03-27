@@ -1,11 +1,16 @@
-import { useState } from 'react'
-import './App.css'
-import AppRoutes from "./AppRoutes"
+import "./App.css";
+import AppRoutes from "./AppRoutes.jsx";
+import { Provider } from "react-redux";
+import store from "./redux/store";
+
 function App() {
 
   return (
-   <AppRoutes />
-  ) 
+    <Provider store={store}>
+      {/* Global Components (should be shown in all of the components) */}
+      <AppRoutes />
+    </Provider>
+  );
 }
 
-export default App
+export default App;
