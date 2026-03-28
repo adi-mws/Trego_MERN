@@ -5,6 +5,7 @@ import HomePage from "./components/marketing/home/HomePage";
 import ConfirmDialog from "./components/global/ConfirmDialog";
 import AlertContainer from "./components/global/AlertContainer"
 import MarketingLayout from "./components/marketing/MarketingLayout";
+import SignUpForm from "./components/features/auth/SignUpForm";
 /*  ROUTES  */
 
 export default function AppRoutes() {
@@ -21,6 +22,7 @@ export default function AppRoutes() {
           {/*  PUBLIC ROUTES  */}
           <Route path='/' element={<MarketingLayout />}>
             <Route index element={<HomePage />} />
+            <Route path="sign-up" element={<SignUpForm />} />
 
           </Route>
         </Routes>

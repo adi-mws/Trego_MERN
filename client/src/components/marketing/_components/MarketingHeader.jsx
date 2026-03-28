@@ -8,9 +8,9 @@ import {
     Stack,
 } from "@mui/material";
 import PricingOffer from "./PricingOffer";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 export default function MarketingHeader() {
-
+    const navigate = useNavigate();
 
     return (
         <Box>
@@ -63,7 +63,7 @@ export default function MarketingHeader() {
                                 <Button
                                     color="inherit"
                                     variant="outlined"
-                                    onClick={() => router.push("/sign-in")}
+                                    onClick={() => navigate("/sign-in")}
                                     sx={{ fontWeight: 600, bgcolor: "background.paper" }}
                                 >
                                     Sign In
@@ -73,7 +73,7 @@ export default function MarketingHeader() {
                                     variant="contained"
                                     size="small"
                                     sx={{ fontWeight: 600 }}
-                                    onClick={() => router.push("/sign-up")}
+                                    onClick={() => navigate("/sign-up")}
                                 >
                                     Sign Up
                                 </Button>
