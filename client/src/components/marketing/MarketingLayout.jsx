@@ -2,11 +2,15 @@ import React from 'react'
 import MarketingHeader from './_components/MarketingHeader'
 import { Box } from '@mui/material'
 import { Outlet } from "react-router-dom"
+import AppThemeProvider from '../../themes/AppThemeProvider'
 export default function MarketingLayout() {
   return (
-    <Box>
-      <MarketingHeader />
-      <Outlet />
-    </Box>
+    <AppThemeProvider type="marketing">
+
+      <Box>
+        <MarketingHeader />
+        <Outlet />
+      </Box>
+    </AppThemeProvider>
   )
 }

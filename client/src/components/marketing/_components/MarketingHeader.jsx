@@ -5,7 +5,7 @@ import {
     Container,
     Toolbar,
     Typography,
-    Stack,n
+    Stack,
 } from "@mui/material";
 import PricingOffer from "./PricingOffer";
 import { Link } from "react-router-dom";

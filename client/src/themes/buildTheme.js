@@ -1,4 +1,4 @@
-// theme/buildTheme.ts
+// theme/buildTheme.js
 import { createTheme } from "@mui/material";
 import { buildColorScale } from "./util";
 
