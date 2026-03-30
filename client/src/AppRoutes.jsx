@@ -6,6 +6,8 @@ import ConfirmDialog from "./components/global/ConfirmDialog";
 import AlertContainer from "./components/global/AlertContainer"
 import MarketingLayout from "./components/marketing/MarketingLayout";
 import SignUpForm from "./components/features/auth/SignUpForm";
+import SignInForm from "./components/features/auth/SignInForm";
+import WorkspacesLayout from "./components/dashboard/WorkspacesLayout";
 /*  ROUTES  */
 
 export default function AppRoutes() {
@@ -23,8 +25,11 @@ export default function AppRoutes() {
           <Route path='/' element={<MarketingLayout />}>
             <Route index element={<HomePage />} />
             <Route path="sign-up" element={<SignUpForm />} />
-
+            <Route path="sign-in" element={<SignInForm />} />
           </Route>
+
+          <Route path="/workspace" element={<WorkspacesLayout />} />
+
         </Routes>
 
       </Router>

@@ -1,4 +1,3 @@
-"use client";
 
 import { AppBar, Toolbar, Box, IconButton } from "@mui/material";
 import UserMenu from "@/components/features/account/UserMenu";

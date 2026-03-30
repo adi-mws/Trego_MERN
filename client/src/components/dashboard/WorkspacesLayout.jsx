@@ -1,7 +1,7 @@
 import React from 'react'
-import WorkspacesSidebar from '../features/shared/WorkspacesSidebar'
+import WorkspacesSidebar from './_components/WorkspacesSidebar'
 import { Box } from '@mui/material'
-import Header from '../features/shared/Header'
+import Header from './_components/Header'
 import { Outlet } from 'react-router-dom'
 
 export default function WorkspacesLayout() {

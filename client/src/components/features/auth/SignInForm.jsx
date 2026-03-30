@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -10,32 +10,54 @@ import {
   InputAdornment,
   IconButton,
   Alert,
-  Link
+  Link,
 } from "@mui/material";
-import {Link as NavLink} from "react-router-dom";
-import { Visibility, VisibilityOff, PersonAddOutlined } from "@mui/icons-material";
+import { Visibility, VisibilityOff, LockOutlined } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
+import { Link as NavLink } from "react-router-dom";
 
-export default function SignUpForm() {
+export default function SignInForm() {
+
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+
+
   const {
     register,
     handleSubmit,
-    watch,
-    setError: setFormError,
     formState: { errors },
   } = useForm();
-  const password = watch("password");
+
+  //  Credentials Sign In
+  const onSubmit = async (data) => {
+    setError(null);
+    setLoading(true);
+
+    const res = await signIn("credentials", {
+      email: data.email,
+      password: data.password,
+      callbackUrl
+    });
 
 
-  const onSubmit = (data) => {
-    console.log(data)
+    setLoading(false);
+
+    if (res?.error) {
+      setError("Invalid email or password");
+      return;
+    }
+
   };
 
+  /* ----------------------------------
+     Google Sign In
+  -----------------------------------*/
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    await signIn("google", { callbackUrl });
+  };
 
   return (
     <Box
@@ -71,15 +93,15 @@ export default function SignUpForm() {
             bgcolor="primary.main"
             color="primary.contrastText"
           >
-            <PersonAddOutlined fontSize="small" />
+            <LockOutlined fontSize="small" />
           </Box>
 
           <Typography fontWeight={600} fontSize={18}>
-            Create your account
+            Sign in to Trego
           </Typography>
 
           <Typography variant="caption" color="text.secondary">
-            Start building with Trego
+            AI-powered project execution
           </Typography>
         </Box>
 
@@ -88,11 +110,11 @@ export default function SignUpForm() {
           fullWidth
           variant="outlined"
           size="small"
-          onClick={() => setGoogleLoading(true)}
+          onClick={handleGoogleSignIn}
           disabled={googleLoading}
           sx={{ height: 40, textTransform: "none", fontWeight: 500 }}
         >
-          {googleLoading ? <CircularProgress size={18} /> : "Sign up with Google"}
+          {googleLoading ? <CircularProgress size={18} /> : "Continue with Google"}
         </Button>
 
         <Divider sx={{ my: 1.8 }}>
@@ -110,21 +132,9 @@ export default function SignUpForm() {
         {/* Form */}
         <Box component="form" onSubmit={handleSubmit(onSubmit)}>
           <TextField
-            size="small"
-            margin="dense"
-            label="Full name"
-            placeholder="John Doe"
-            fullWidth
-            {...register("name", { required: "Name required" })}
-            error={!!errors.name}
-            helperText={errors.name?.message}
-          />
-
-          <TextField
-            size="small"
-            margin="dense"
-            placeholder="example@gmail.com"
             label="Email"
+            placeholder="example@gmail.com"
+            margin="dense"
             fullWidth
             {...register("email", { required: "Email required" })}
             error={!!errors.email}
@@ -132,24 +142,12 @@ export default function SignUpForm() {
           />
 
           <TextField
-            size="small"
             margin="dense"
             placeholder="pass_key_1234"
             label="Password"
             type={showPassword ? "text" : "password"}
             fullWidth
-            {...register("password", {
-              required: "Password required",
-              minLength: {
-                value: 8,
-                message: "Password must be at least 8 characters",
-              },
-              pattern: {
-                value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/,
-                message:
-                  "Password must contain at least one uppercase letter, one lowercase letter, and one number",
-              },
-            })}
+            {...register("password", { required: "Password required" })}
             error={!!errors.password}
             helperText={errors.password?.message}
             InputProps={{
@@ -170,39 +168,18 @@ export default function SignUpForm() {
             }}
           />
 
-          <TextField
-            size="small"
-            margin="dense"
-            placeholder="pass_key_1234"
-            label="Confirm Password"
-            type={showConfirmPassword ? "text" : "password"}
-            fullWidth
-            {...register("confirmPassword", {
-              required: "Please confirm your password",
-              validate: value =>
-                value === password || "Passwords do not match",
-            })}
-            error={!!errors.confirmPassword}
-            helperText={errors.confirmPassword?.message}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    size="small"
-                    onClick={() => setShowConfirmPassword(v => !v)}
-                  >
-                    {showConfirmPassword ? (
-                      <VisibilityOff fontSize="small" />
-                    ) : (
-                      <Visibility fontSize="small" />
-                    )}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-
-
+          <Box display="flex" justifyContent="flex-end" mt={0.5} mb={1.5}>
+            <Link
+              component={NavLink}
+              href="/forgot-password"
+              variant="caption"
+              underline="none"
+              color="primary.main"
+              fontWeight={500}
+            >
+              Forgot password?
+            </Link>
+          </Box>
 
           <Button
             type="submit"
@@ -210,32 +187,32 @@ export default function SignUpForm() {
             variant="contained"
             size="small"
             disabled={loading}
-            sx={{ height: 40, mt: 1.5, textTransform: "none", fontWeight: 600 }}
+            sx={{ height: 40, textTransform: "none", fontWeight: 600 }}
           >
             {loading ? (
               <CircularProgress size={18} color="inherit" />
             ) : (
-              "Create account"
+              "Sign In"
             )}
           </Button>
         </Box>
 
         {/* Footer */}
         <Box textAlign="center" mt={2}>
-          <Box textAlign="center" mt={2}>
-            <Typography variant="caption" color="text.secondary">
-              Already have an account?{" "}
-              <Link
-                component={NavLink}
-                to="/sign-in"
-                variant="caption"
-                underline="none"
-                sx={{ fontWeight: 600 }}
-              >
-                Sign in
-              </Link>
-            </Typography>
-          </Box>
+          <Typography variant="caption" color="text.secondary">
+            New here?{" "}
+            <Link
+              component={NavLink}
+              href="/sign-up"
+              variant="caption"
+              underline="none"
+              color="primary.main"
+              fontWeight={600}
+              sx={{ "&:hover": { textDecoration: "underline" } }}
+            >
+              Get started
+            </Link>
+          </Typography>
         </Box>
       </Paper>
     </Box>
