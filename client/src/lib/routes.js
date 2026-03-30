@@ -7,17 +7,28 @@ export const MARKETING_ROUTES = {
 
 export const AUTH_ROUTES = {
     signIn: '/sign-in',
-    signUp: '/sign-up', 
+    signUp: '/sign-up',  
     forgotPassword: '/forgot-password', 
     resetPassword: '/reset-password',
 }
 
 
-export const WORKSPACE_ROUTES = {
-    workspaceMembers: "/workspaces", 
-    workspace: (workspaceSlug) => `/workspaces/${workspaceSlug}`, 
-    workspaceMembers: (workspaceSlug) => `/workspaces/${workspaceSlug}/members`, 
-    workspaceRoles: (workspaceSlug) => `/workspaces/${workspaceSlug}/roles`, 
-    workspaceSettings: (workspaceSlug) => `/workspaces/${workspaceSlug}/settings`, 
+
+export const NOTIFICATION_ROUTES = {
+    root: '/app/notifications',
 }
+
+export const APP_ROUTES = {
+    root: '/app'
+}
+
+
+export const WORKSPACE_ROUTES = {
+    workspace: (workspaceSlug) => `${APP_ROUTES.root}/${workspaceSlug}`, 
+    workspaceMembers: (workspaceSlug) => `${APP_ROUTES.root}/${workspaceSlug}/members`, 
+    workspaceRoles: (workspaceSlug) => `${APP_ROUTES.root}/${workspaceSlug}/roles`, 
+    workspaceSettings: (workspaceSlug) => `${APP_ROUTES.root}/${workspaceSlug}/settings`, 
+}
+
+
 

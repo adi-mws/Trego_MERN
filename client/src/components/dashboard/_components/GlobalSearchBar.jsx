@@ -9,10 +9,10 @@ import SearchIcon from "@mui/icons-material/Search";
 
 export default function GlobalSearchBar() {
 //   const { openSearch } = useGlobalSearch();
-
+  const theme = useTheme();
   return (
     <Button
-      onClick={openSearch}
+      onClick={() => {}}
       sx={{
         textTransform: "none",
         bgcolor: "background.default",
