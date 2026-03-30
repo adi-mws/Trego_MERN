@@ -1,6 +1,6 @@
 import { Box, Stack, Typography } from "@mui/material";
 import WorkspacesOutlinedIcon from "@mui/icons-material/WorkspacesOutlined";
-import { MARKETING_ROUTES, NOTIFICATION_ROUTES, APP_ROUTES } from "../../../lib/routes";
+import { NOTIFICATION_ROUTES, APP_ROUTES } from "../../../lib/routes";
 import { NotificationsOutlined } from "@mui/icons-material";
 import { useLocation } from "react-router-dom"
 import { Link } from "react-router-dom";
@@ -28,7 +28,7 @@ export default function WorkspacesSidebar() {
     const pathname = location.pathname;
 
     return (
-        <Box sx={{ p: 2 , display: 'flex', flexDirection: 'column', gap: 4}}>
+        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 4 }}>
             <Box component={'img'} src="/images/logo-with-text.png" width={80} />
 
             <Stack gap={1}>

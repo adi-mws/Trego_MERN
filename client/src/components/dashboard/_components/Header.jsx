@@ -2,7 +2,7 @@
 import { AppBar, Toolbar, Box, IconButton } from "@mui/material";
 import { NotificationsOutlined } from "@mui/icons-material";
 import GlobalSearchBar from "./GlobalSearchBar";
-import UserMenu from "./UserMenu";
+import UserMenu from "../../features/account/UserMenu";
 export default function Header({
   openNotificationDrawer,
   headerTitle,
