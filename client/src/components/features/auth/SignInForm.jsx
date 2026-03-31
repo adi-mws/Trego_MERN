@@ -12,9 +12,14 @@ import {
   Alert,
   Link,
 } from "@mui/material";
+import crypto from "crypto";
 import { Visibility, VisibilityOff, LockOutlined } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
-import { Link as NavLink } from "react-router-dom";
+import { Link as NavLink, useNavigate } from "react-router-dom";
+import { APP_ROUTES, AUTH_ROUTES } from "../../../lib/routes";
+import { callApi } from "../../../api/api";
+import { useAlert } from "../../../hooks/useAlert";
+import useAuth from "../../../hooks/useAuth";
 
 export default function SignInForm() {
 
@@ -23,6 +28,48 @@ export default function SignInForm() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const [deviceId, setDeviceId] = useState("");
+  const [ipAddress, setIpAddress] = useState("");
+  const [browser, setBrowser] = useState("");
+  const [os, setOs] = useState("");
+  const [userAgent, setUserAgent] = useState("");
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const { showAlert } = useAlert();
+  useEffect(() => {
+    let id = localStorage.getItem("deviceId");
+
+    if (!id) {
+      id = crypto.randomUUID(); // modern browsers
+      localStorage.setItem("deviceId", id);
+    }
+
+    setDeviceId(id);
+    // User Agent
+    const ua = navigator.userAgent;
+    setUserAgent(ua);
+
+    // Detect OS
+    if (ua.includes("Windows")) setOs("Windows");
+    else if (ua.includes("Mac")) setOs("MacOS");
+    else if (ua.includes("Linux")) setOs("Linux");
+    else if (ua.includes("Android")) setOs("Android");
+    else if (ua.includes("iPhone")) setOs("iOS");
+    else setOs("Unknown");
+
+    // Detect Browser
+    if (ua.includes("Chrome")) setBrowser("Chrome");
+    else if (ua.includes("Firefox")) setBrowser("Firefox");
+    else if (ua.includes("Safari")) setBrowser("Safari");
+    else if (ua.includes("Edge")) setBrowser("Edge");
+    else setBrowser("Unknown");
+
+    // Fetch IP
+    fetch("https://api.ipify.org?format=json")
+      .then(res => res.json())
+      .then(data => setIpAddress(data.ip))
+      .catch(() => setIpAddress("Unknown"));
+  }, []);
 
   const {
     register,
@@ -32,33 +79,38 @@ export default function SignInForm() {
 
   //  Credentials Sign In
   const onSubmit = async (data) => {
-    setError(null);
     setLoading(true);
+    const response = await callApi({
+      method: "POST",
+      url: "/auth/sign-in",
+      data: {
+        ...data,
+        deviceInfo: {
+          deviceId,
+          ip: ipAddress,
+          browser,
+          os,
+          userAgent
+        }
+      },
+    })
 
-    const res = await signIn("credentials", {
-      email: data.email,
-      password: data.password,
-      callbackUrl
-    });
-
-
-    setLoading(false);
-
-    if (res?.error) {
-      setError("Invalid email or password");
-      return;
+    if (response.success) {
+      login(response.data?.data);
+      showAlert(response.data?.message, "success");
+      navigate(APP_ROUTES.root);
     }
+    else {
 
-  };
+      setError(response?.data?.error?.message || "An error occurred. Please try again.");
+    }
+  }
 
-  /* ----------------------------------
-     Google Sign In
-  -----------------------------------*/
+
+  // todo: Google Sign IN 
+
   const handleGoogleSignIn = async () => {
-    setGoogleLoading(true);
-    await signIn("google", { callbackUrl });
-  };
-
+  }
   return (
     <Box
       minHeight="100dvh"
@@ -203,7 +255,7 @@ export default function SignInForm() {
             New here?{" "}
             <Link
               component={NavLink}
-              href="/sign-up"
+              to={AUTH_ROUTES.signUp}
               variant="caption"
               underline="none"
               color="primary.main"

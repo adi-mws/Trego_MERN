@@ -1,6 +1,8 @@
-import { signInLocally, signUpLocally } from "./auth.service.js";
-import { signInWithGoogle } from "./auth.service.js";
-
+import {
+  signInWithGoogle, signInLocally, signUpLocally, signOutSession,
+  signOutSpecificSession,
+  signOutAllSession,
+} from "./auth.service.js";
 
 // export const sendVerififcationData = async (req, res) => {
 //     try {
@@ -19,17 +21,9 @@ import { signInWithGoogle } from "./auth.service.js";
 
 export const signInController = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, deviceInfo } = req.body;
 
-    const deviceInfo = {
-      deviceId: req.headers["x-device-id"] || "unknown",
-      ip: req.ip,
-      userAgent: req.headers["user-agent"],
-      browser: "unknown", // optional parser later
-      os: "unknown",
-    };
-
-    const { token } = await signInLocally({
+    const { token, data } = await signInLocally({
       email,
       password,
       deviceInfo,
@@ -44,6 +38,7 @@ export const signInController = async (req, res) => {
 
     return res.json({
       success: true,
+      data: data,
       message: "Logged in successfully",
     });
   } catch (err) {
@@ -58,19 +53,10 @@ export const signUpController = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    const deviceInfo = {
-      deviceId: req.headers["x-device-id"] || "unknown",
-      ip: req.ip,
-      userAgent: req.headers["user-agent"],
-      browser: "unknown",
-      os: "unknown",
-    };
-
     const { token, user } = await signUpLocally({
       name,
       email,
       password,
-      deviceInfo,
     });
 
     res.cookie("accessToken", token, {
@@ -140,13 +126,7 @@ export const signInGoogleController = async (req, res) => {
 
 
 
-// controllers/auth.controller.js
 
-import {
-  signOutSession,
-  signOutSpecificSession,
-  signOutAllSession,
-} from "../services/auth.service.js";
 
 /**
  * 🔐 Sign out current session

@@ -1,11 +1,11 @@
 
 import jwt from "jsonwebtoken";
-import Session from "../models/session.model.js";
-import { User } from "../models/user.model.js";
+import { Session } from "../features/session/session.model.js";
+import { User } from "../features/user/user.model.js";
 
 const authMiddleware = async (req, res, next) => {
   try {
-    const token = req.cookies?.accessToken;
+    const token = req.cookies?.token;
 
     if (!token) {
       return res.status(401).json({

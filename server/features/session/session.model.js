@@ -69,4 +69,4 @@ sessionSchema.methods.isActive = function () {
   return this.status === "ACTIVE" && !this.isExpired()
 }
 
-export default mongoose.model("Session", sessionSchema)
+export const Session = mongoose.model("Session", sessionSchema)

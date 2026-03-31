@@ -5,9 +5,8 @@ import http from "http";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { initSocket } from "./socket/index.js";
-import { socketStore } from "./socket/store.js";
 import connectDB from "./config/db.js";
-
+import authRoutes from "./features/auth/auth.route.js";
 connectDB();
 
 // CRON JOBS
@@ -35,7 +34,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Routes
-
+app.use("/api/auth", authRoutes);
 
 
 app.use((err, req, res, next) => {
@@ -52,6 +51,8 @@ app.get("/", (req, res) => {
 server.listen(PORT, () =>
   console.log(`Server running at http://localhost:${PORT}`)
 );
+
+
 
 // DEBUGGER
 // setInterval(() => {

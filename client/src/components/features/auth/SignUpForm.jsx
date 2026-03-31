@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Box,
   Button,
@@ -12,10 +12,12 @@ import {
   Alert,
   Link
 } from "@mui/material";
-import {Link as NavLink} from "react-router-dom";
+import { Link as NavLink, useNavigate } from "react-router-dom";
+import { AUTH_ROUTES } from "../../../lib/routes"
 import { Visibility, VisibilityOff, PersonAddOutlined } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
-
+import { useAlert } from "../../../hooks/useAlert";
+import { callApi } from "../../../api/api";
 export default function SignUpForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -24,18 +26,30 @@ export default function SignUpForm() {
   const [loading, setLoading] = useState(false);
   const {
     register,
-    handleSubmit,
     watch,
-    setError: setFormError,
+    handleSubmit,
     formState: { errors },
   } = useForm();
+
   const password = watch("password");
-
-
-  const onSubmit = (data) => {
-    console.log(data)
+  const navigate = useNavigate();
+  const showAlert = useAlert();
+  const onSubmit = async (data) => {
+    setLoading(true);
+    const response = await callApi({
+      method: "POST",
+      url: "/auth/sign-up",
+      data: data,
+    })
+    console.log(response)
+    if (response.success) {
+      navigate(AUTH_ROUTES.signIn)
+      showAlert(response.data?.message, "success");
+    } else {
+      setError(response?.error?.message || "An error occurred. Please try again.");
+    }
+    setLoading(false);
   };
-
 
   return (
     <Box
@@ -227,7 +241,7 @@ export default function SignUpForm() {
               Already have an account?{" "}
               <Link
                 component={NavLink}
-                to="/sign-in"
+                to={AUTH_ROUTES.signIn}
                 variant="caption"
                 underline="none"
                 sx={{ fontWeight: 600 }}

@@ -1,13 +1,11 @@
 // auth/auth.service.js
 
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { Account } from "../models/account.model.js";
-import Session from "../models/session.model.js";
-import jwt from "jsonwebtoken";
+import { Account } from "../auth/account.model.js";
 import { OAuth2Client } from "google-auth-library";
-import { User } from "../models/user.model.js";
-import Session from "../models/session.model.js";
+import { User } from "../user/user.model.js";
+import { Session } from "../session/session.model.js";
 
 export const signInLocally = async ({
   email,
@@ -56,7 +54,16 @@ export const signInLocally = async ({
     { expiresIn: "7d" }
   );
 
-  return { token, userId: account.userId };
+  return {
+    token,
+    data: {
+      name: account.userId.name,
+      email: account.userId.email,
+      avatar: account.userId.avatar,
+      about: account.userId.about,
+      lastOnline: account.userId.lastOnline
+    }
+  };
 };
 
 
@@ -65,7 +72,6 @@ export const signUpLocally = async ({
   name,
   email,
   password,
-  deviceInfo,
 }) => {
   // Check if LOCAL account already exists
   const existingAccount = await Account.findOne({
@@ -99,32 +105,7 @@ export const signUpLocally = async ({
     password: hashedPassword,
   });
 
-  // Create session
-  const session = await Session.create({
-    userId: user._id,
-    accountId: account._id,
-    deviceId: deviceInfo.deviceId,
-
-    ipAddress: deviceInfo.ip,
-    browser: deviceInfo.browser,
-    os: deviceInfo.os,
-    userAgent: deviceInfo.userAgent,
-
-    status: "ACTIVE",
-    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-  });
-
-  // Generate JWT
-  const token = jwt.sign(
-    {
-      userId: user._id,
-      sessionId: session._id,
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: "7d" }
-  );
-
-  return { token, user };
+  return { user };
 };
 
 
@@ -204,7 +185,7 @@ export const signInWithGoogle = async ({
     { expiresIn: "7d" }
   );
 
-  return { token, user };
+  return { token, data: { name: user.name, email: user.email, avatar: user.avatar, lastOnline: user.lastOnline } };
 };
 
 
