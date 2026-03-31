@@ -13,14 +13,15 @@ import {
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import { AUTH_ROUTES } from "../../../lib/routes";
 import { useNavigate } from "react-router-dom";
+import useAuth from "../../../hooks/useAuth";
+import { callApi } from "../../../api/api";
+import { useAlert } from "../../../hooks/useAlert";
 export default function UserMenu() {
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
-const navigate = useNavigate();
-
-    const data = {}
-    // TODO: importing the redux auth hook
-    // console.log(data)
+    const navigate = useNavigate();
+    const { user } = useAuth();
+    console.log(user)
     const handleOpen = (event) => {
         setAnchorEl(event.currentTarget);
     };
@@ -28,6 +29,18 @@ const navigate = useNavigate();
     const handleClose = () => {
         setAnchorEl(null);
     };
+    const { logout } = useAuth();
+    const showAlert = useAlert();
+    const handleSignOut = async () => {
+        const response = await callApi({ method: "POST", url: "/auth/sign-out" });
+        if (response.success) {
+            logout();
+            navigate(AUTH_ROUTES.signIn);
+            showAlert(response.data?.message || "Signed out successfully", "success");
+        } else {
+            showAlert(response?.error?.message || "An error occurred. Please try again.", "error");
+        }
+    }
 
     return (
         <Stack direction="row" spacing={1} alignItems="center">
@@ -52,13 +65,13 @@ const navigate = useNavigate();
                         fontSize: 13,
                         fontWeight: 600,
                     }}
-                    src={data?.user?.image || undefined}
+                    src={user?.avatar || undefined}
                 >
-                    {data?.user?.name ? data?.user?.name.charAt(0).toUpperCase() : "U"}
+                    {user?.name ? user?.name.charAt(0).toUpperCase() : "U"}
                 </Avatar>
 
                 <Typography variant="body2" fontWeight={500}>
-                    {data?.user?.name || "User"}
+                    {user?.name || "User"}
                 </Typography>
 
                 <KeyboardArrowDownIcon
@@ -91,9 +104,9 @@ const navigate = useNavigate();
             >
                 {/* User info */}
                 <Box sx={{ px: 2, py: 2 }}>
-                    <Typography fontSize={14} fontWeight={600}>{data?.user?.name || "User"}</Typography>
+                    <Typography fontSize={14} fontWeight={600}>{user?.name || "User"}</Typography>
                     <Typography variant="caption" color="text.secondary">
-                        {data?.user?.email || "No email"}
+                        {user?.email || "No email"}
                     </Typography>
                 </Box>
 
@@ -121,7 +134,7 @@ const navigate = useNavigate();
 
                 <MenuItem
                     onClick={() => {
-                        // todo: sign up and sign in simulatenously
+                        handleSignOut();
                         handleClose();
                     }}
                     sx={{ color: "error.main", fontWeight: 500, fontSize: 'inherit' }}

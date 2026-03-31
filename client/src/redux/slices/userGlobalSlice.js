@@ -2,16 +2,8 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-  profile: null, // { id, name, email, avatar }
-
-  preferences: {
-    theme: {
-      mode: "light",
-      accentColor: "#1976d2",
-    },
-  },
-
-  status: "idle", // idle | loading | succeeded | failed
+  user: null,
+  loading: false,
   error: null,
 };
 
@@ -20,64 +12,64 @@ const userGlobalSlice = createSlice({
   initialState,
 
   reducers: {
-    // 🔹 Set full user data (API response)
+    // Set full user (from API)
     setUserGlobal: (state, action) => {
-      const { profile, preferences } = action.payload;
-
-      state.profile = profile || null;
-
-      if (preferences) {
-        state.preferences = {
-          ...state.preferences,
-          ...preferences,
-        };
-      }
+      state.user = action.payload;
+      state.loading = false;
+      state.error = null;
     },
 
-    // 🔹 Update only profile
-    updateProfile: (state, action) => {
-      state.profile = {
-        ...state.profile,
+    // Update user fields (partial merge)
+    updateUserGlobal: (state, action) => {
+      if (!state.user) return;
+
+      state.user = {
+        ...state.user,
         ...action.payload,
       };
     },
 
-    // 🔹 Update preferences (generic)
+    // Update preferences safely
     updatePreferences: (state, action) => {
-      state.preferences = {
-        ...state.preferences,
+      if (!state.user) return;
+
+      state.user.prefrences = {
+        ...state.user.prefrences,
         ...action.payload,
       };
     },
 
-    // 🔹 Update theme specifically (nested safe update)
-    updateThemePreference: (state, action) => {
-      state.preferences.theme = {
-        ...state.preferences.theme,
+    // Update theme specifically
+    updateTheme: (state, action) => {
+      if (!state.user) return;
+
+      state.user.prefrences = {
+        ...state.user.prefrences,
         ...action.payload,
       };
     },
 
-    // 🔹 Loading states (for API calls)
-    setUserStatus: (state, action) => {
-      state.status = action.payload;
+    // Loading + Error
+    setUserLoading: (state, action) => {
+      state.loading = action.payload;
     },
 
     setUserError: (state, action) => {
       state.error = action.payload;
+      state.loading = false;
     },
 
-    // 🔹 Reset on logout
+    // Reset (logout)
     resetUserGlobal: () => initialState,
   },
 });
 
 export const {
   setUserGlobal,
-  updateProfile,
+  updateUserGlobal,
   updatePreferences,
-  updateThemePreference,
-  setUserStatus,
+  updateTheme,
+  setUserLoading,
   setUserError,
   resetUserGlobal,
 } = userGlobalSlice.actions;

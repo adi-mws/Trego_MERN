@@ -1,7 +1,9 @@
+import { nextTick } from "process";
 import {
   signInWithGoogle, signInLocally, signUpLocally, signOutSession,
   signOutSpecificSession,
   signOutAllSession,
+  verifyAuthData,
 } from "./auth.service.js";
 
 // export const sendVerififcationData = async (req, res) => {
@@ -22,7 +24,7 @@ import {
 export const signInController = async (req, res) => {
   try {
     const { email, password, deviceInfo } = req.body;
-
+    console.log(email, password, deviceInfo)
     const { token, data } = await signInLocally({
       email,
       password,
@@ -30,7 +32,7 @@ export const signInController = async (req, res) => {
     });
 
     // Set cookie
-    res.cookie("accessToken", token, {
+    res.cookie("token", token, {
       httpOnly: true,
       secure: true,
       sameSite: "strict",
@@ -39,7 +41,7 @@ export const signInController = async (req, res) => {
     return res.json({
       success: true,
       data: data,
-      message: "Logged in successfully",
+      message: "Signed in successfully",
     });
   } catch (err) {
     return res.status(401).json({
@@ -53,18 +55,13 @@ export const signUpController = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    const { token, user } = await signUpLocally({
+    const { user } = await signUpLocally({
       name,
       email,
       password,
     });
 
-    res.cookie("accessToken", token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
-    });
-
+  
     return res.json({
       success: true,
       user,
@@ -129,7 +126,7 @@ export const signInGoogleController = async (req, res) => {
 
 
 /**
- * 🔐 Sign out current session
+ *  Sign out current session
  */
 export const signOut = async (req, res) => {
   try {
@@ -175,9 +172,9 @@ export const signOutDevice = async (req, res) => {
 };
 
 /**
- * 🔥 Sign out from all sessions
+ * Sign out from all sessions
  */
-export const signOutAll = async (req, res) => {
+export const signOutAll = async (req, res, next) => {
   try {
     const { userId } = req.user;
 
@@ -191,9 +188,20 @@ export const signOutAll = async (req, res) => {
       message: "Signed out from all devices",
     });
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    next(err);
   }
 };
+
+ // auth Verify controller
+export const authVerifyController = async (req, res, next) => {
+  try {
+    if (!req.user || !req.user?.userId) {
+      return res.status(401).json({ sucess: false, message: "Unauthorized, User not found" });
+    }
+    const data = verifyAuthData(req.user?.userId);
+    return res.status(200).json({ success: true, message: "Verified successfully", data: data });
+  }
+  catch (error) {
+    next(error);
+  }
+}

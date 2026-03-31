@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser";
 import { initSocket } from "./socket/index.js";
 import connectDB from "./config/db.js";
 import authRoutes from "./features/auth/auth.route.js";
+import userRoutes from "./features/user/user.routes.js";
 connectDB();
 
 // CRON JOBS
@@ -35,12 +36,13 @@ app.use(cookieParser());
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/user", userRoutes);
 
 
 app.use((err, req, res, next) => {
   res.status(err.status || 500).json({
     success: false,
-    message: err.message || "Something went wrong"
+    message: err.message || "Internal Server Error"
   });
 });
 

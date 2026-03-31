@@ -51,7 +51,7 @@ export const signInLocally = async ({
       sessionId: session._id,
     },
     process.env.JWT_SECRET,
-    { expiresIn: "7d" }
+    { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
   );
 
   return {
@@ -230,3 +230,21 @@ export const signOutAllSession = async (userId) => {
     { status: "REVOKED" }
   );
 };
+
+
+
+export const verifyAuthData = async (userId) => {
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  return {
+    name: user.name,
+    email: user.email,
+    avatar: user.avatar,
+    about: user.about,
+    lastOnline: user.lastOnline
+  }
+}

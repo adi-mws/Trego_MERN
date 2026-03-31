@@ -8,6 +8,7 @@ import {
   signOut,
   signOutDevice,
   signOutAll,
+  authVerifyController
 } from "../auth/auth.controller.js";
 
 import ensureAuth from "../../middlewares/ensureAuth.js";
@@ -28,12 +29,15 @@ router.post("/google", signInGoogleController);
 // AUTH (PROTECTED)
 
 // Sign out current session
-router.post("/sign-out",  signOut); // todo: add auth middleware
+router.post("/sign-out", ensureAuth, signOut); 
 
 // Sign out specific device/session
-router.delete("/sessions/:sessionId", signOutDevice); // todo: add auth middleware
+router.delete("/sessions/:sessionId", ensureAuth, signOutDevice); 
 
 // Sign out from all sessions
-router.post("/sign-out-all", signOutAll); // todo: add auth middleware
+router.post("/sign-out-all", ensureAuth, signOutAll); 
+
+
+router.get("/verify", ensureAuth, authVerifyController);
 
 export default router;

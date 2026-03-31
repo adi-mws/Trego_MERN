@@ -7,10 +7,13 @@ import AlertContainer from "./components/global/AlertContainer"
 import MarketingLayout from "./components/marketing/MarketingLayout";
 import SignUpForm from "./components/features/auth/SignUpForm";
 import SignInForm from "./components/features/auth/SignInForm";
-import WorkspacesLayout from "./components/dashboard/WorkspacesLayout";
+import WorkspacesLayout from "./layouts/WorkspacesLayout";
 import WorkspaceListPage from "./components/features/workspaces/WorkspaceListPage";
 import NotificationsPage from "./components/features/notifications/NotificationsPage";
+import useVerifyAuth from "./hooks/useVerifyAuth";
 export default function AppRoutes() {
+  // * Global hooks 
+  useVerifyAuth();
 
   return (
     <>

@@ -35,7 +35,7 @@ export default function SignInForm() {
   const [userAgent, setUserAgent] = useState("");
   const { login } = useAuth();
   const navigate = useNavigate();
-  const { showAlert } = useAlert();
+  const showAlert = useAlert();
   useEffect(() => {
     let id = localStorage.getItem("deviceId");
 
@@ -96,14 +96,16 @@ export default function SignInForm() {
     })
 
     if (response.success) {
-      login(response.data?.data);
+      login(response?.data);
       showAlert(response.data?.message, "success");
       navigate(APP_ROUTES.root);
     }
     else {
-
-      setError(response?.data?.error?.message || "An error occurred. Please try again.");
+console.log(response.error)
+      setError(response?.error?.message || "An error occurred. Please try again.");
     }
+
+    setLoading(false);
   }
 
 
