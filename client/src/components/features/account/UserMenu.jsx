@@ -16,11 +16,14 @@ import { useNavigate } from "react-router-dom";
 import useAuth from "../../../hooks/useAuth";
 import { callApi } from "../../../api/api";
 import { useAlert } from "../../../hooks/useAlert";
+import { useUserGlobal } from "../../../hooks/useUserGlobal";
+import { useAccountDialog } from "../../../contexts/AccountDialogContext";
 export default function UserMenu() {
     const [anchorEl, setAnchorEl] = useState(null);
+    const { openDialog } = useAccountDialog();
     const open = Boolean(anchorEl);
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user } = useUserGlobal();
     console.log(user)
     const handleOpen = (event) => {
         setAnchorEl(event.currentTarget);
@@ -116,7 +119,7 @@ export default function UserMenu() {
                     sx={{ fontSize: 14 }}
                     onClick={() => {
                         handleClose();
-                        navigate(AUTH_ROUTES.root);
+                        openDialog("profile");
                     }}
                 >
                     Account
@@ -124,6 +127,7 @@ export default function UserMenu() {
 
                 <MenuItem onClick={() => {
                     handleClose();
+                    openDialog("preferences");
                     // router.push(AUTH_ROUTES.preference);
                 }} sx={{ fontSize: 'inherit' }}
                 >

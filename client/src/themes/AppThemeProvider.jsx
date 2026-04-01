@@ -5,16 +5,23 @@ import { useMemo } from "react";
 import { buildTheme } from "./buildTheme";
 
 const AppThemeProvider = ({ children, type = "dashboard" }) => {
-  const { preferences } = useSelector((state) => state.userGlobal);
+  const { user } = useSelector((state) => state.userGlobal);
 
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+  const mode =
+    user?.preferences?.theme === "system"
+      ? (prefersDark ? "dark" : "light")
+      : user?.preferences?.theme || "light";
+
+  const accentColor = user?.preferences?.accentColor || "#1976d2";
   const theme = useMemo(() => {
-    
     if (type === "marketing") {
       return buildTheme("light", "#1976d2");
     }
 
-    return buildTheme(preferences?.theme?.mode, preferences?.theme?.accentColor);
-  }, [type, preferences?.theme]);
+    return buildTheme(mode, accentColor);
+  }, [type, mode, accentColor]);
 
   return (
     <ThemeProvider theme={theme}>

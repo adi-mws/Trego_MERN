@@ -1,65 +1,66 @@
 // hooks/useUserGlobal.js
 import { useDispatch, useSelector } from "react-redux";
 import {
-  setUserGlobal,
-  updateUserGlobal,
-  updatePreferences,
-  updateTheme,
-  setUserLoading,
-  setUserError,
-  resetUserGlobal,
-} from "../store/userGlobalSlice";
+    setUserGlobal,
+    updateUserGlobal,
+    updatePreferences,
+    updateProfile,
+    setUserLoading,
+    setUserError,
+    resetUserGlobal,
+} from "../redux/slices/userGlobalSlice";
 
 export const useUserGlobal = () => {
-  const dispatch = useDispatch();
+    const dispatch = useDispatch();
 
-  const { user, loading, error } = useSelector(
-    (state) => state.userGlobal
-  );
+    const { user, loading, error } = useSelector(
+        (state) => state.userGlobal
+    );
 
-  // Set full user
-  const setUser = (data) => {
-    dispatch(setUserGlobal(data));
-  };
+    // Set full user
+    const setUser = (data) => {
+        dispatch(setUserGlobal(data));
+    };
 
-  // Update user (generic)
-  const updateUser = (data) => {
-    dispatch(updateUserGlobal(data));
-  };
 
-  // Preferences
-  const updatePrefs = (data) => {
-    dispatch(updatePreferences(data));
-  };
+    // Update user (generic)
+    const updateUser = (data) => {
+        dispatch(updateUserGlobal(data));
+    };
 
-  const updateThemePref = (data) => {
-    dispatch(updateTheme(data));
-  };
+    // Preferences
+    const updatePrefs = (data) => {
+        dispatch(updatePreferences(data));
+    };
 
-  // Status
-  const setLoading = (val) => {
-    dispatch(setUserLoading(val));
-  };
+    const updateUserProfile = (data) => {   
+        dispatch(updateProfile(data));
+    };
 
-  const setError = (err) => {
-    dispatch(setUserError(err));
-  };
+    // Status
+    const setLoading = (val) => {
+        dispatch(setUserLoading(val));
+    };
 
-  // Reset
-  const reset = () => {
-    dispatch(resetUserGlobal());
-  };
+    const setError = (err) => {
+        dispatch(setUserError(err));
+    };
 
-  return {
-    user,
-    loading,
-    error,
-    setUser,
-    updateUser,
-    updatePrefs,
-    updateThemePref,
-    setLoading,
-    setError,
-    reset,
-  };
+    // Reset
+    const reset = () => {
+        dispatch(resetUserGlobal());
+    };
+
+    return {
+        user,
+        loading,
+        error,
+        setUser,
+        updateUser,
+        updatePrefs,
+        updateUserProfile,
+        setLoading,
+        setError,
+        reset,
+    };
 };

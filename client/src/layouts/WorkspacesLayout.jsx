@@ -3,11 +3,9 @@ import WorkspacesSidebar from '../components/dashboard/_components/WorkspacesSid
 import { Box } from '@mui/material'
 import Header from '../components/dashboard/_components/Header'
 import { Outlet } from 'react-router-dom'
-import AppThemeProvider from '../themes/AppThemeProvider'
 
 export default function WorkspacesLayout() {
   return (
-    <AppThemeProvider type='dashboard'>
       <Box sx={{ display: "grid", gridTemplateColumns: "1fr 5fr" }}>
 
         <WorkspacesSidebar />
@@ -18,6 +16,5 @@ export default function WorkspacesLayout() {
           </Box>
         </Box>
       </Box>
-    </AppThemeProvider>
   )
 }

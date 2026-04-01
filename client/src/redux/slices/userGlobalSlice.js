@@ -21,10 +21,16 @@ const userGlobalSlice = createSlice({
 
     // Update user fields (partial merge)
     updateUserGlobal: (state, action) => {
+      state.user = {
+        ...(state.user || {}),
+        ...action.payload,
+      };
+    },
+    updateProfile: (state, action) => {
       if (!state.user) return;
 
-      state.user = {
-        ...state.user,
+      state.user.profile = {
+        ...state.user.profile,
         ...action.payload,
       };
     },
@@ -33,21 +39,13 @@ const userGlobalSlice = createSlice({
     updatePreferences: (state, action) => {
       if (!state.user) return;
 
-      state.user.prefrences = {
+      state.user.preferences = {
         ...state.user.prefrences,
         ...action.payload,
       };
     },
 
-    // Update theme specifically
-    updateTheme: (state, action) => {
-      if (!state.user) return;
 
-      state.user.prefrences = {
-        ...state.user.prefrences,
-        ...action.payload,
-      };
-    },
 
     // Loading + Error
     setUserLoading: (state, action) => {
@@ -67,8 +65,8 @@ const userGlobalSlice = createSlice({
 export const {
   setUserGlobal,
   updateUserGlobal,
+  updateProfile,
   updatePreferences,
-  updateTheme,
   setUserLoading,
   setUserError,
   resetUserGlobal,

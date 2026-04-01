@@ -1,14 +1,14 @@
 import mongoose from "mongoose";
 
-const userPrefrencesSchema = new mongoose.Schema({
+const userPreferencesSchema = new mongoose.Schema({
   theme: {
     type: String,
-    enum: ["light", "dark"],
-    default: "light",
+    enum: ["light", "dark", "system"],
+    default: "system",
   },
   accentColor: {
     type: String,
-    default: "#000000",
+    default: "#1976d2",
   },
 })
 
@@ -53,11 +53,15 @@ const userSchema = new mongoose.Schema(
     },
     profile: {
       type: userProfileSchema,
-      default: () => ({}),
+      default: () => ({
+        githubUrl: "",
+        linkedinUrl: "",
+        facebookUrl: "",  
+      }),
     },
-    prefrences: {
-      type: userPrefrencesSchema,
-      default: () => ({}),
+    preferences: {
+      type: userPreferencesSchema,
+      default: () => ({ theme: "light", accentColor: "#1976d2" }),
     },
     lastOnline: {
       type: Date,

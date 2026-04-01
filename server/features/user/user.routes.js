@@ -1,9 +1,9 @@
 import { Router } from "express"
-import { getUserGlobalData } from "./user.controller.js";
-
+import { getUserGlobalData, updatePreferences, updateProfile } from "./user.controller.js";
+import ensureAuth from "../../middlewares/ensureAuth.js"
 const router = Router();
 
-router.get("/user-global-state", getUserGlobalData);
-
-
+router.get("/global", ensureAuth, getUserGlobalData);
+router.put("/preferences", ensureAuth, updatePreferences); 
+router.put("/profile", ensureAuth, updateProfile);
 export default router;
