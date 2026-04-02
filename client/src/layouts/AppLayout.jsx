@@ -11,7 +11,6 @@ import NotificationsDrawer from "../components/features/notifications/Notificati
 
 export default function AppLayout() {
     const { setUser, setLoading, loading, setError } = useUserGlobal();
-    const { open, closeDrawer, content, setContent } = useNotificationsDrawer();
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -41,7 +40,7 @@ export default function AppLayout() {
 
                     <AccountDialogProvider>
                         <AccountDialog />
-                        <NotificationsDrawer open={open} onClose={closeDrawer} content={content} setContent={setContent}/>
+                        <NotificationsDrawer />
 
                         <Outlet />;
                     </AccountDialogProvider>

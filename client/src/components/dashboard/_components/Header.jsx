@@ -3,11 +3,12 @@ import { AppBar, Toolbar, Box, IconButton } from "@mui/material";
 import { NotificationsOutlined } from "@mui/icons-material";
 import GlobalSearchBar from "./GlobalSearchBar";
 import UserMenu from "../../features/account/UserMenu";
+import { useNotificationsDrawer } from "../../../contexts/NotificationDrawerContext";
 export default function Header({
-  openNotificationDrawer,
   headerTitle,
   headerRightActions,
 }) {
+  const { openDrawer } = useNotificationsDrawer();
   return (
     <AppBar
       position="sticky"
@@ -41,7 +42,7 @@ export default function Header({
           {headerRightActions}
           {/* Notifications */}
           <IconButton
-            onClick={() => openNotificationDrawer(true)}
+            onClick={() => openDrawer()}
             size="large"
             sx={{
               color: "text.secondary",

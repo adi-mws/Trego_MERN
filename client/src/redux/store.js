@@ -5,6 +5,7 @@ import authReducer from "./slices/authSlice";
 import userGlobalReducer from "./slices/userGlobalSlice";
 import confirmReducer from "./slices/confirmSlice";
 import alertReducer from './slices/alertSlice';
+import notificationReducer from "./slices/notificationSlice";
 export const store = configureStore({
   reducer: {
     auth: authReducer,           // handles role, isAuthenticated, data
@@ -12,7 +13,8 @@ export const store = configureStore({
     userGlobal: userGlobalReducer,    // user personalDetails, settings, themes
     // socket: socketReducer,       // socket connection status, last heartbeat, etc.
     confirm: confirmReducer,      // confirm dialog box for confirm before triggering an action 
-    alerts: alertReducer           // alert box to inform through the tost of the event
+    alerts: alertReducer,           // alert box to inform through the tost of the event
+    notifications: notificationReducer, // notifications data and status
   }
 });
 

@@ -6,45 +6,41 @@ import {
   IconButton,
   Divider,
   Avatar,
-  Menu,
-  MenuItem,
   Button,
 } from "@mui/material";
 
 import CloseIcon from "@mui/icons-material/Close";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 
-import { useState } from "react";
-import { useNotifications } from "../../../../hooks/useNotifications";
+import { useNotification } from "../../../hooks/useNotification";
+import { useNotificationsDrawer } from "../../../contexts/NotificationDrawerContext";
+import { useNavigate } from "react-router-dom";
 
-export default function NotificationsDrawer({ open, onClose }) {
+export default function NotificationsDrawer() {
+  const { open, closeDrawer } = useNotificationsDrawer();
+  const navigate = useNavigate();
+
   const {
     notifications,
     unreadCount,
-    markAsRead,
     clearNotification,
     clearAllNotifications,
-  } = useNotifications();
+  } = useNotification();
 
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [selectedId, setSelectedId] = useState(null);
+  const handleClick = (notif) => {
+    // Navigate if link exists
+    if (notif.link) {
+      navigate(notif.link);
+    }
 
-  const openMenu = (e, id) => {
-    e.stopPropagation();
-    setAnchorEl(e.currentTarget);
-    setSelectedId(id);
-  };
-
-  const closeMenu = () => {
-    setAnchorEl(null);
-    setSelectedId(null);
+    // Remove notification
+    clearNotification(notif._id);
   };
 
   return (
     <Drawer
       anchor="right"
       open={open}
-      onClose={onClose}
+      onClose={closeDrawer}
       ModalProps={{ BackdropProps: { invisible: true } }}
       slotProps={{
         paper: {
@@ -75,7 +71,7 @@ export default function NotificationsDrawer({ open, onClose }) {
               Clear all
             </Button>
 
-            <IconButton size="small" onClick={onClose}>
+            <IconButton size="small" onClick={closeDrawer}>
               <CloseIcon fontSize="small" />
             </IconButton>
           </Stack>
@@ -98,7 +94,7 @@ export default function NotificationsDrawer({ open, onClose }) {
               key={notif._id}
               px={2}
               py={1.5}
-              onClick={() => markAsRead(notif._id)}
+              onClick={() => handleClick(notif)}
               sx={{
                 borderBottom: "1px solid",
                 borderColor: "divider",
@@ -107,7 +103,8 @@ export default function NotificationsDrawer({ open, onClose }) {
                 "&:hover": { backgroundColor: "action.selected" },
               }}
             >
-              <Stack direction="row" spacing={1.5}>
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                {/* Avatar */}
                 <Avatar
                   src={notif.image || notif.triggeredBy?.avatar}
                   sx={{ width: 36, height: 36 }}
@@ -115,6 +112,7 @@ export default function NotificationsDrawer({ open, onClose }) {
                   {notif.title?.[0]}
                 </Avatar>
 
+                {/* Content */}
                 <Box flex={1}>
                   <Typography fontSize={13} fontWeight={600}>
                     {notif.title}
@@ -129,39 +127,21 @@ export default function NotificationsDrawer({ open, onClose }) {
                   </Typography>
                 </Box>
 
-                {/* Menu */}
+                {/* Replace menu with close icon */}
                 <IconButton
                   size="small"
-                  onClick={(e) => openMenu(e, notif._id)}
+                  onClick={(e) => {
+                    e.stopPropagation(); // prevent triggering navigation
+                    clearNotification(notif._id);
+                  }}
                 >
-                  <MoreVertIcon fontSize="small" />
+                  <CloseIcon fontSize="small" />
                 </IconButton>
               </Stack>
             </Box>
           ))
         )}
       </Box>
-
-      {/* Menu */}
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={closeMenu}>
-        <MenuItem
-          onClick={() => {
-            markAsRead(selectedId);
-            closeMenu();
-          }}
-        >
-          Mark as read
-        </MenuItem>
-
-        <MenuItem
-          onClick={() => {
-            clearNotification(selectedId);
-            closeMenu();
-          }}
-        >
-          Clear
-        </MenuItem>
-      </Menu>
     </Drawer>
   );
 }

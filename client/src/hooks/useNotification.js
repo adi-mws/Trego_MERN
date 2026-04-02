@@ -1,8 +1,8 @@
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setNotifications, addNotification, markAsRead, 
     clearAllNotifications, clearNotification, setLoading, setError
  } from "../redux/slices/notificationSlice";
-export const useNotifications = () => {
+export const useNotification = () => {
   const dispatch = useDispatch();
 
   const { items, unreadCount, loading, error } = useSelector(
