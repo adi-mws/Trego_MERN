@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import { useUserGlobal } from "../hooks/useUserGlobal";
 import { callApi } from "../api/api";
@@ -6,9 +6,12 @@ import LoadingPage from "../components/global/LoadingPage";
 import { AccountDialogProvider } from "../contexts/AccountDialogContext";
 import AccountDialog from "../components/features/account/AccountDialog";
 import AppThemeProvider from "../themes/AppThemeProvider";
+import { NotificationsDrawerProvider, useNotificationsDrawer } from "../contexts/NotificationDrawerContext";
+import NotificationsDrawer from "../components/features/notifications/NotificationsDrawer";
 
 export default function AppLayout() {
     const { setUser, setLoading, loading, setError } = useUserGlobal();
+    const { open, closeDrawer, content, setContent } = useNotificationsDrawer();
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -28,18 +31,24 @@ export default function AppLayout() {
 
         fetchUser();
     }, []);
+
+
     if (loading) return <LoadingPage message="Loading Data" />
     return (
         <>
             <AppThemeProvider type='dashboard'>
+                <NotificationsDrawerProvider>
 
-                <AccountDialogProvider>
-                    <AccountDialog />
+                    <AccountDialogProvider>
+                        <AccountDialog />
+                        <NotificationsDrawer open={open} onClose={closeDrawer} content={content} setContent={setContent}/>
 
-                    <Outlet />;
-                </AccountDialogProvider>
-                </AppThemeProvider>
+                        <Outlet />;
+                    </AccountDialogProvider>
+                </NotificationsDrawerProvider>
 
-                </>
-                )
+            </AppThemeProvider>
+
+        </>
+    )
 }
