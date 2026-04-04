@@ -19,7 +19,6 @@ import { useState, useEffect } from "react";
 import SectionHeader from "./SectionHeader";
 import { useUserGlobal } from "../../../../hooks/useUserGlobal";
 import { callApi } from "../../../../api/api";
-
 function ProfileSection() {
   const { user, updateUser } = useUserGlobal();
 

@@ -1,12 +1,16 @@
-// AlertContainer.jsx
+
 import { useSelector, useDispatch } from "react-redux";
-import { Alert, Slide, Box, useTheme } from "@mui/material";
+import { Snackbar, Alert, Slide, Box } from "@mui/material";
 import { removeAlert } from "../../redux/slices/alertSlice";
 
+function SlideTransition(props) {
+  return <Slide {...props} direction="left" />;
+}
+
 export default function AlertContainer() {
-  const alerts = useSelector(state => state.alerts.list);
+  const alerts = useSelector((state) => state.alerts.list);
   const dispatch = useDispatch();
-  const theme = useTheme();
+
   return (
     <Box
       sx={{
@@ -17,24 +21,26 @@ export default function AlertContainer() {
         display: "flex",
         flexDirection: "column",
         gap: 1,
-        width: "350px",
-        background: theme.palette.background.paper,
-        maxWidth: "90%"
       }}
     >
-      {alerts.map(alert => (
-        <Slide key={alert.id} direction="left" in mountOnEnter unmountOnExit>
+      {alerts.map((alert) => (
+        <Snackbar
+          key={alert.id}
+          open
+          autoHideDuration={4000}
+          onClose={() => dispatch(removeAlert(alert.id))}
+          TransitionComponent={SlideTransition}
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        >
           <Alert
-            severity={alert.severity}
             onClose={() => dispatch(removeAlert(alert.id))}
-            sx={{
-              boxShadow: 3,
-              borderRadius: 2
-            }}
+            severity={alert.severity || "info"}
+            variant="filled"
+            sx={{ width: "100%" }}
           >
             {alert.message}
           </Alert>
-        </Slide>
+        </Snackbar>
       ))}
     </Box>
   );
