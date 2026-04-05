@@ -22,12 +22,12 @@ import GoogleIcon from "@mui/icons-material/Google";
 import EmailIcon from "@mui/icons-material/Email";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import { useConfirm } from "../../../../hooks/useConfirm";
 
 function LoggedInDevicesSection() {
     const { user, updateUser } = useUserGlobal();
     const [loadingId, setLoadingId] = useState(null);
-
+    const showConfirm = useConfirm();
     const sessions = user?.sessions || [];
     const navigate = useNavigate();
 
@@ -64,6 +64,11 @@ function LoggedInDevicesSection() {
     };
 
     const handleLogoutSession = async (sessionId) => {
+
+        const ok = await showConfirm({title: "Logout Session", message: "Are you sure you want to log out this device?"}, {
+        
+        });
+        if (!ok) return;
         try {
             setLoadingId(sessionId);
 

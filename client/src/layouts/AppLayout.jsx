@@ -9,6 +9,7 @@ import AppThemeProvider from "../themes/AppThemeProvider";
 import { NotificationsDrawerProvider, useNotificationsDrawer } from "../contexts/NotificationDrawerContext";
 import NotificationsDrawer from "../components/features/notifications/NotificationsDrawer";
 import { HeaderProvider } from "../contexts/HeaderContext";
+import ConfirmDialog from "../components/global/ConfirmDialog";
 
 export default function AppLayout() {
     const { setUser, setLoading, loading, setError } = useUserGlobal();
@@ -42,6 +43,7 @@ export default function AppLayout() {
 
                         <AccountDialogProvider>
                             <AccountDialog />
+                            <ConfirmDialog />
                             <NotificationsDrawer />
 
                             <Outlet />;

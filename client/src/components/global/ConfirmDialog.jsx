@@ -33,6 +33,7 @@ export default function ConfirmDialog() {
           m: 0,
           borderRadius: 3,
           px: 1,
+          zIndex: 1000000,
           boxShadow: 3,
         },
       }}

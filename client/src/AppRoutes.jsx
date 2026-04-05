@@ -1,4 +1,3 @@
-import React from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -7,7 +6,6 @@ import {
 
 import ScrollToTop from "./components/global/ScrollToTop";
 import HomePage from "./components/marketing/home/HomePage";
-import ConfirmDialog from "./components/global/ConfirmDialog";
 import AlertContainer from "./components/global/AlertContainer";
 
 import MarketingLayout from "./layouts/MarketingLayout";
@@ -21,20 +19,15 @@ import NotificationsPage from "./components/features/notifications/Notifications
 import useVerifyAuth from "./hooks/useVerifyAuth";
 import AppLayout from "./layouts/AppLayout";
 
-
 export default function AppRoutes() {
   useVerifyAuth();
 
   return (
     <>
       {/* GLOBAL UI */}
-
       <AlertContainer />
-      <ConfirmDialog />
-
       <Router>
         <ScrollToTop />
-
         <Routes>
           {/* PUBLIC */}
           <Route path="/" element={<MarketingLayout />}>
@@ -42,7 +35,6 @@ export default function AppRoutes() {
             <Route path="sign-up" element={<SignUpForm />} />
             <Route path="sign-in" element={<SignInForm />} />
           </Route>
-
           {/* PROTECTED */}
           <Route path="/app" element={<AppLayout />}>
             <Route element={<WorkspacesLayout />}>

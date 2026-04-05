@@ -1,7 +1,6 @@
 import {
   Dialog,
   Box,
-  List,
   Typography,
   Stack,
   Divider,
@@ -13,7 +12,6 @@ import PaletteIcon from "@mui/icons-material/Palette";
 import DevicesIcon from "@mui/icons-material/Devices";
 import SecurityIcon from "@mui/icons-material/Security";
 
-import { useState } from "react";
 import { useAccountDialog } from "../../../contexts/AccountDialogContext";
 
 // Sections
@@ -47,8 +45,8 @@ const SECTIONS = [
 
 export default function AccountDialog() {
   const { open, closeDialog, setActive, active } = useAccountDialog();
-
   const profile = {};
+
   const avatarUrl = "";
   const onFileChange = () => {};
 
