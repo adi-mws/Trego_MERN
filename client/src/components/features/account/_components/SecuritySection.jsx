@@ -1,16 +1,11 @@
-import { useState } from "react";
-import {
-    Card, Box, Typography, Stack, TextField, Button, Divider, Switch, FormControlLabel,
-    Grid,
-    Chip
-} from "@mui/material";
+import { Box, Typography, Stack, TextField, Button, Divider, Grid, Chip } from "@mui/material";
 import SectionHeader from "./SectionHeader";
 import { WarningAmber } from "@mui/icons-material";
 
 function SecuritySection() {
 
     return (
-        <Card variant="outlined" id="security">
+        <Box>
             <Box p={3}>
                 <SectionHeader
                     title="Account"
@@ -84,7 +79,7 @@ function SecuritySection() {
                     </Grid>
                 </Grid>
             </Box>
-        </Card>
+        </Box>
     );
 }
 

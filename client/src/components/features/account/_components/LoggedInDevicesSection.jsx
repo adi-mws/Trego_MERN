@@ -20,7 +20,7 @@ function LoggedInDevicesSection() {
     ]
 
     return (
-        <Card variant="outlined" id="loggedInDevices">
+        <Box variant="outlined" id="loggedInDevices">
             <Box p={3}>
                 <Stack spacing={1} direction="row" alignItems="center" mb={1}>
                     <DeviceHubIcon />
@@ -38,7 +38,7 @@ function LoggedInDevicesSection() {
                     ))}
                 </List>
             </Box>
-        </Card>
+        </Box>
     )
 
 }

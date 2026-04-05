@@ -126,7 +126,7 @@ function ProfileSection() {
   };
 
   return (
-    <Card variant="outlined" sx={{ borderRadius: 3 }}>
+    <Box variant="outlined" sx={{ borderRadius: 3 }}>
       <Box p={4}>
         <SectionHeader
           title="Profile"
@@ -282,7 +282,7 @@ function ProfileSection() {
           )}
         </Stack>
       </Box>
-    </Card>
+    </Box>
   );
 }
 
