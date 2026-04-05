@@ -1,10 +1,11 @@
 import { User } from "./user.model.js";
 import { profileCompleteVerification } from "../../utils/user.utils.js"
+import { getUserSessionsSafe } from "../session/session.service.js";
+
 export const getUserGlobalData = async (req, res, next) => {
   try {
     const userId = req.user?.userId;
-
-    // auth check
+    const currentDeviceId = req.deviceId; 
 
     if (!userId) {
       return res.status(401).json({
@@ -15,9 +16,6 @@ export const getUserGlobalData = async (req, res, next) => {
 
     const user = await User.findById(userId).lean();
 
-
-
-
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -25,11 +23,22 @@ export const getUserGlobalData = async (req, res, next) => {
       });
     }
 
+    let sessions = await getUserSessionsSafe(userId);
+
+    // Mark current session
+    if (currentDeviceId) {
+      sessions = sessions.map((s) => ({
+        ...s,
+        isCurrent: s.deviceId === currentDeviceId,
+      }));
+    }
+
     return res.status(200).json({
       success: true,
       data: {
         ...user,
         isProfileCompleted: profileCompleteVerification(user),
+        sessions,
       },
     });
 
@@ -37,7 +46,6 @@ export const getUserGlobalData = async (req, res, next) => {
     next(error);
   }
 };
-
 // update user profile
 export const updateProfile = async (req, res, next) => {
   try {
@@ -64,10 +72,9 @@ export const updateProfile = async (req, res, next) => {
     if (about !== undefined) updateData.about = about;
 
     if (req.file) {
-      // delete the old avatar file if exists
 
       updateData.avatar = `/uploads/avatars/${req.file.filename}`;
-    } 
+    }
 
     if (githubUrl !== undefined)
       updateData["profile.githubUrl"] = githubUrl;

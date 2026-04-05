@@ -1,46 +1,180 @@
-"use client"
 import {
-    Card, 
-    Box, 
-    List, 
-    ListItem, 
-    ListItemAvatar, 
-    Avatar, 
-    Typography, 
+    Box,
+    List,
+    ListItem,
+    ListItemAvatar,
+    Avatar,
+    Typography,
     Stack,
-    ListItemText
+    ListItemText,
+    Chip,
+    Divider,
+    IconButton,
+    Tooltip,
 } from "@mui/material";
+import DeviceHubIcon from "@mui/icons-material/DeviceHub";
+import LaptopMacIcon from "@mui/icons-material/LaptopMac";
+import SmartphoneIcon from "@mui/icons-material/Smartphone";
+import LogoutIcon from "@mui/icons-material/Logout";
+import { useUserGlobal } from "../../../../hooks/useUserGlobal";
+import { callApi } from "../../../../api/api";
+import GoogleIcon from "@mui/icons-material/Google";
+import EmailIcon from "@mui/icons-material/Email";
+import { useState } from "react";
+import { getProviderIcon } from "../../../../utils/user.utils";
 
-import DeviceHubIcon from '@mui/icons-material/DeviceHub';
- 
+
 function LoggedInDevicesSection() {
-    const devices = [
-        { id: 'd1', name: 'MacBook Pro', location: 'Home', lastSeen: '2 hours ago' },
-        { id: 'd2', name: 'iPhone 14', location: 'Office', lastSeen: '1 day ago' },
-    ]
+    const { user, updateUser } = useUserGlobal();
+    const [loadingId, setLoadingId] = useState(null);
+
+    const sessions = user?.sessions || [];
+
+    const getDeviceIcon = (os = "") => {
+        if (os.toLowerCase().includes("android") || os.toLowerCase().includes("ios")) {
+            return <SmartphoneIcon fontSize="small" />;
+        }
+        return <LaptopMacIcon fontSize="small" />;
+    };
+
+    const getProviderIcon = (provider) => {
+        switch (provider) {
+            case "GOOGLE":
+                return <GoogleIcon fontSize="small" />;
+            case "LOCAL":
+                return <EmailIcon fontSize="small" />;
+            default:
+                return null;
+        }
+    };
+
+    const formatLastSeen = (date) => {
+        if (!date) return "Unknown";
+
+        const diff = Date.now() - new Date(date).getTime();
+        const mins = Math.floor(diff / (1000 * 60));
+        const hours = Math.floor(mins / 60);
+        const days = Math.floor(hours / 24);
+
+        if (mins < 60) return `${mins} min ago`;
+        if (hours < 24) return `${hours} hr ago`;
+        return `${days} day ago`;
+    };
+
+    const handleLogoutSession = async (sessionId) => {
+        try {
+            setLoadingId(sessionId);
+
+            const res = await callApi({
+                method: "DELETE",
+                url: `/auth/sessions/${sessionId}`,
+            });
+
+            if (res?.success) {
+
+                const updatedSessions = sessions.filter((s) => s.id !== sessionId);
+
+                updateUser({
+                    ...user,
+                    sessions: updatedSessions,
+                });
+            }
+        } catch (err) {
+            console.error("Failed to revoke session", err);
+        } finally {
+            setLoadingId(null);
+        }
+    };
 
     return (
-        <Box variant="outlined" id="loggedInDevices">
+        <Box id="loggedInDevices">
             <Box p={3}>
-                <Stack spacing={1} direction="row" alignItems="center" mb={1}>
+                {/* Header */}
+                <Stack direction="row" spacing={1} alignItems="center" mb={2}>
                     <DeviceHubIcon />
                     <Typography fontWeight={600}>Logged-in Devices</Typography>
                 </Stack>
 
+                {/* List */}
                 <List disablePadding>
-                    {devices.map((d) => (
-                        <ListItem key={d.id} secondaryAction={<Typography variant="caption">{d.lastSeen}</Typography>}>
-                            <ListItemAvatar>
-                                <Avatar>{d.name.split(' ').map(s => s[0]).join('').slice(0, 2)}</Avatar>
-                            </ListItemAvatar>
-                            <ListItemText primary={d.name} secondary={d.location} />
-                        </ListItem>
+                    {sessions.length === 0 && (
+                        <Typography variant="body2" color="text.secondary">
+                            No active sessions
+                        </Typography>
+                    )}
+
+                    {sessions.map((s, index) => (
+                        <Box key={s.id}>
+                            <ListItem
+                                secondaryAction={
+
+                                    <Stack direction="row" spacing={1} alignItems="center">
+
+                                        {/* Last seen */}
+                                        <Stack direction="row" spacing={0.75} alignItems="center">
+                                            {/* Time */}
+                                            <Typography variant="caption" color="text.secondary">
+                                                {formatLastSeen(s.lastActiveAt)}
+                                            </Typography>
+
+                                            {/* Provider Icon with Tooltip */}
+                                            <Tooltip
+                                                title={
+                                                    s.provider === "GOOGLE"
+                                                        ? "Google Provider"
+                                                        : "Credential Provider"
+                                                }
+                                                arrow
+                                            >
+                                                <Box
+                                                    sx={{
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        color: "primary.main", // theme primary color
+                                                    }}
+                                                >
+                                                    {getProviderIcon(s.provider)}
+                                                </Box>
+                                            </Tooltip>
+                                        </Stack>
+
+                                        {/* Current badge */}
+                                        {s.isCurrent && (
+                                            <Chip label="Current" size="small" color="success" />
+                                        )}
+
+                                        {/* Logout Button */}
+                                        <Tooltip title="Logout device">
+                                            <span>
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() => handleLogoutSession(s.id)}
+                                                    disabled={loadingId === s.id}
+                                                >
+                                                    <LogoutIcon fontSize="small" />
+                                                </IconButton>
+                                            </span>
+                                        </Tooltip>
+                                    </Stack>
+                                }
+                            >
+                                <ListItemAvatar>
+                                    <Avatar>{getDeviceIcon(s.os)}</Avatar>
+                                </ListItemAvatar>
+
+                                <ListItemText
+                                    primary={`${s.browser || "Unknown"} • ${s.os || "Device"}`}
+                                    secondary={s.ipAddress || "Unknown location"}
+                                />
+                            </ListItem>
+
+                            {index !== sessions.length - 1 && <Divider />}
+                        </Box>
                     ))}
                 </List>
             </Box>
         </Box>
-    )
-
+    );
 }
 
 export default LoggedInDevicesSection;
