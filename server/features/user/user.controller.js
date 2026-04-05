@@ -53,7 +53,6 @@ export const updateProfile = async (req, res, next) => {
     const {
       name,
       about,
-      avatar,
       githubUrl,
       linkedinUrl,
       facebookUrl,
@@ -61,12 +60,15 @@ export const updateProfile = async (req, res, next) => {
 
     const updateData = {};
 
-    // Basic fields
     if (name !== undefined) updateData.name = name;
     if (about !== undefined) updateData.about = about;
-    if (avatar !== undefined) updateData.avatar = avatar;
 
-    // Social links (nested)
+    if (req.file) {
+      // delete the old avatar file if exists
+
+      updateData.avatar = `/uploads/avatars/${req.file.filename}`;
+    } 
+
     if (githubUrl !== undefined)
       updateData["profile.githubUrl"] = githubUrl;
 

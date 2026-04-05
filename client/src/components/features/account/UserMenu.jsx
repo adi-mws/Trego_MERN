@@ -18,6 +18,7 @@ import { callApi } from "../../../api/api";
 import { useAlert } from "../../../hooks/useAlert";
 import { useUserGlobal } from "../../../hooks/useUserGlobal";
 import { useAccountDialog } from "../../../contexts/AccountDialogContext";
+import { getImageUrl } from "../../../utils/image.utils";
 export default function UserMenu() {
     const [anchorEl, setAnchorEl] = useState(null);
     const { openDialog } = useAccountDialog();
@@ -68,7 +69,7 @@ export default function UserMenu() {
                         fontSize: 13,
                         fontWeight: 600,
                     }}
-                    src={user?.avatar || undefined}
+                    src={getImageUrl(user?.avatar) || undefined}
                 >
                     {user?.name ? user?.name.charAt(0).toUpperCase() : "U"}
                 </Avatar>

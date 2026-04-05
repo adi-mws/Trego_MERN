@@ -11,7 +11,7 @@ import {
   Typography,
   Divider,
 } from "@mui/material";
-
+import { getImageUrl } from "../../../../utils/image.utils";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import VerifiedIcon from "@mui/icons-material/Verified";
 
@@ -25,8 +25,8 @@ function ProfileSection() {
   const [form, setForm] = useState({
     name: "",
     about: "",
-    avatar: "",        // preview URL
-    avatarFile: null,  // actual file (important)
+    avatar: "",      
+    avatarFile: null, 
     githubUrl: "",
     linkedinUrl: "",
     facebookUrl: "",
@@ -138,7 +138,7 @@ function ProfileSection() {
           <Stack direction="row" spacing={3} alignItems="center">
             <Box textAlign="center">
               <Avatar
-                src={form.avatar || undefined}
+                src={getImageUrl(form.avatar) || undefined}
                 sx={{ width: 96, height: 96 }}
               >
                 {form.name?.[0]}
