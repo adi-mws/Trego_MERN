@@ -2,7 +2,7 @@ import { Session } from "./session.model.js";
 
 export const getUserSessionsSafe = async (
   userId,
-  { type = "ALL", currentDeviceId = null } = {}
+  { type = "ACTIVE", currentDeviceId = null } = {}
 ) => {
   if (!userId) throw new Error("User ID is required");
 

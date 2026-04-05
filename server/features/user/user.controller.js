@@ -37,6 +37,7 @@ export const getUserGlobalData = async (req, res, next) => {
       success: true,
       data: {
         ...user,
+        currentSessionId: req.user?.sessionId,
         isProfileCompleted: profileCompleteVerification(user),
         sessions,
       },

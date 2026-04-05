@@ -21,7 +21,7 @@ import { callApi } from "../../../../api/api";
 import GoogleIcon from "@mui/icons-material/Google";
 import EmailIcon from "@mui/icons-material/Email";
 import { useState } from "react";
-import { getProviderIcon } from "../../../../utils/user.utils";
+import { useNavigate } from "react-router-dom";
 
 
 function LoggedInDevicesSection() {
@@ -29,11 +29,13 @@ function LoggedInDevicesSection() {
     const [loadingId, setLoadingId] = useState(null);
 
     const sessions = user?.sessions || [];
+    const navigate = useNavigate();
 
     const getDeviceIcon = (os = "") => {
         if (os.toLowerCase().includes("android") || os.toLowerCase().includes("ios")) {
             return <SmartphoneIcon fontSize="small" />;
         }
+
         return <LaptopMacIcon fontSize="small" />;
     };
 
@@ -70,14 +72,22 @@ function LoggedInDevicesSection() {
                 url: `/auth/sessions/${sessionId}`,
             });
 
+
             if (res?.success) {
-
                 const updatedSessions = sessions.filter((s) => s.id !== sessionId);
+                if (user?.currentSessionId === sessionId) {
+                    // If the user is logging out of the current session, we should also update
+                    //  the global user state to reflect that there is no active session.
+                    updateUser({});
+                    navigate("/sign-in");
+                } else {
+                    updateUser({
+                        ...user,
+                        sessions: updatedSessions,
+                    });
+                }
 
-                updateUser({
-                    ...user,
-                    sessions: updatedSessions,
-                });
+
             }
         } catch (err) {
             console.error("Failed to revoke session", err);
