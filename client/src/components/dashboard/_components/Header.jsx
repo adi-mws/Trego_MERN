@@ -4,10 +4,9 @@ import { NotificationsOutlined } from "@mui/icons-material";
 import GlobalSearchBar from "./GlobalSearchBar";
 import UserMenu from "../../features/account/UserMenu";
 import { useNotificationsDrawer } from "../../../contexts/NotificationDrawerContext";
-export default function Header({
-  headerTitle,
-  headerRightActions,
-}) {
+import { useHeader } from "../../../contexts/HeaderContext";
+export default function Header() {
+  const {headerTitle, headerRightActions} = useHeader();
   const { openDrawer } = useNotificationsDrawer();
   return (
     <AppBar

@@ -25,7 +25,8 @@ function ProfileSection() {
   const [form, setForm] = useState({
     name: "",
     about: "",
-    avatar: "",
+    avatar: "",        // preview URL
+    avatarFile: null,  // actual file (important)
     githubUrl: "",
     linkedinUrl: "",
     facebookUrl: "",
@@ -70,40 +71,35 @@ function ProfileSection() {
       setLoading(true);
       setError(null);
 
-      const payload = {};
+      const formData = new FormData();
 
-      if (form.name !== user.name) payload.name = form.name;
-      if (form.about !== user.about) payload.about = form.about;
-      if (form.avatar !== user.avatar) payload.avatar = form.avatar;
+      if (form.name !== user.name) formData.append("name", form.name);
+      if (form.about !== user.about) formData.append("about", form.about);
+
+      if (form.avatarFile) {
+        formData.append("avatar", form.avatarFile); // must match multer field name
+      }
 
       if (form.githubUrl !== user.profile?.githubUrl)
-        payload.githubUrl = form.githubUrl;
+        formData.append("githubUrl", form.githubUrl);
 
       if (form.linkedinUrl !== user.profile?.linkedinUrl)
-        payload.linkedinUrl = form.linkedinUrl;
+        formData.append("linkedinUrl", form.linkedinUrl);
 
       if (form.facebookUrl !== user.profile?.facebookUrl)
-        payload.facebookUrl = form.facebookUrl;
+        formData.append("facebookUrl", form.facebookUrl);
 
-      if (Object.keys(payload).length === 0) return;
+      if ([...formData.keys()].length === 0) return;
 
       const res = await callApi({
         method: "PUT",
         url: "/user/profile",
-        data: payload,
+        data: formData,
+        isFormData: true, // important
       });
 
       if (res?.success) {
         updateUser(res.data.data);
-        setForm({
-          name: res.data.name || "",
-          about: res.data.about || "",
-          avatar: res.data.avatar || "",
-          githubUrl: res.data.profile?.githubUrl || "",
-          linkedinUrl: res.data.profile?.linkedinUrl || "",
-          facebookUrl: res.data.profile?.facebookUrl || "",
-        });
-
         setIsDirty(false);
       }
     } catch (err) {
@@ -153,6 +149,16 @@ function ProfileSection() {
                 style={{ display: "none" }}
                 id="avatar-upload"
                 type="file"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (!file) return;
+
+                  setForm((prev) => ({
+                    ...prev,
+                    avatarFile: file,
+                    avatar: URL.createObjectURL(file), // preview
+                  }));
+                }}
               />
 
               <label htmlFor="avatar-upload">

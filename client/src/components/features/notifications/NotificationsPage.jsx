@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   MenuItem,
@@ -10,6 +10,7 @@ import {
 } from "@mui/material";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { Link } from "react-router-dom";
+import { useHeader } from "../../../contexts/HeaderContext";
 
 const STATIC_NOTIFICATIONS = [
   {
@@ -39,8 +40,12 @@ const STATIC_NOTIFICATIONS = [
 
 
 export default function NotificationPage() {
-  const [notifications, setNotifications] =
-    React.useState(STATIC_NOTIFICATIONS);
+  const { setHeaderTitle } = useHeader();
+  useEffect(() => {
+    setHeaderTitle("Notifications");
+    return () => setHeaderTitle(""); 
+  }, [])
+  const [notifications, setNotifications] = useState(STATIC_NOTIFICATIONS);
 
   const dismiss = (id) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));

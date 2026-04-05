@@ -8,6 +8,7 @@ import AccountDialog from "../components/features/account/AccountDialog";
 import AppThemeProvider from "../themes/AppThemeProvider";
 import { NotificationsDrawerProvider, useNotificationsDrawer } from "../contexts/NotificationDrawerContext";
 import NotificationsDrawer from "../components/features/notifications/NotificationsDrawer";
+import { HeaderProvider } from "../contexts/HeaderContext";
 
 export default function AppLayout() {
     const { setUser, setLoading, loading, setError } = useUserGlobal();
@@ -36,16 +37,17 @@ export default function AppLayout() {
     return (
         <>
             <AppThemeProvider type='dashboard'>
-                <NotificationsDrawerProvider>
+                <HeaderProvider>
+                    <NotificationsDrawerProvider>
 
-                    <AccountDialogProvider>
-                        <AccountDialog />
-                        <NotificationsDrawer />
+                        <AccountDialogProvider>
+                            <AccountDialog />
+                            <NotificationsDrawer />
 
-                        <Outlet />;
-                    </AccountDialogProvider>
-                </NotificationsDrawerProvider>
-
+                            <Outlet />;
+                        </AccountDialogProvider>
+                    </NotificationsDrawerProvider>
+                </HeaderProvider>
             </AppThemeProvider>
 
         </>

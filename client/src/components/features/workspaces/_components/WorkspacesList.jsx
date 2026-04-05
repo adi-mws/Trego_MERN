@@ -16,6 +16,7 @@ import { WORKSPACE_ROUTES } from "../../.././../lib/routes";
 import { formatDate } from "../../../../lib/date";
 import EmptyStateComponent from "../../../global/EmptyStateComponent";
 import { useNavigate } from "react-router-dom";
+import { useHeader } from "../../../../contexts/HeaderContext";
 const getHealthColor = (value) => {
   if (value >= 75) return "success";
   if (value >= 40) return "warning";
@@ -37,12 +38,18 @@ const AVATAR_COLORS = [
 
 export default function WorkspacesList({
   // workspaces, // todo: dummy comment (remove it when workspaces are fetched)
-  fetchNextPage, 
+  fetchNextPage,
   hasNextPage,
   isFetchingNextPage,
 }) {
+  const { headerTitle, setHeaderTitle } = useHeader();
   const navigate = useNavigate();
   const loadMoreRef = useRef(null);
+
+  useEffect(() => {
+    setHeaderTitle("Your Workspaces");
+  }, [])
+
   const workspaces = [] // todo: dummy for the ui 
   useEffect(() => {
     if (!loadMoreRef.current) return;
@@ -103,7 +110,7 @@ export default function WorkspacesList({
               hover
               sx={{ cursor: "pointer" }}
               onClick={() =>
-              navigate(WORKSPACE_ROUTES.workspace(ws.slug))
+                navigate(WORKSPACE_ROUTES.workspace(ws.slug))
               }
             >
               {/* Workspace */}
