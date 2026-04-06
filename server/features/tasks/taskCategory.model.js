@@ -1,30 +1,23 @@
-import mongoose from "mongoose";
-
 const taskCategorySchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
-      required: true,
-    },
+    name: { type: String, required: true },
 
-    key: {
-      type: String,
-      required: true, // BUG, FEATURE, HOTFIX
-    },
+    key: { type: String, required: true },
 
-    workspaceId: {
+    projectId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Workspace",
+      ref: "Project",
       required: true,
       index: true,
     },
 
-    description: String,
-
-    isUrgent: {
-      type: Boolean,
-      default: false,
+    workflowTemplateId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "WorkflowTemplate",
+      required: true,
     },
+
+    description: String,
 
     defaultPriority: {
       type: String,
@@ -38,9 +31,4 @@ const taskCategorySchema = new mongoose.Schema(
     },
   },
   { timestamps: true }
-);
-
-export const TaskCategory = mongoose.model(
-  "TaskCategory",
-  taskCategorySchema
 );

@@ -1,11 +1,6 @@
-import mongoose from "mongoose";
-
 const projectSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
-      required: true,
-    },
+    name: { type: String, required: true },
 
     description: String,
     avatar: String,
@@ -23,14 +18,6 @@ const projectSchema = new mongoose.Schema(
       required: true,
     },
 
-    /* -------- Workflow Binding -------- */
-    workflowId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "WorkflowTemplate",
-      required: true,
-    },
-
-    /* -------- Members -------- */
     members: [
       {
         userId: {
@@ -55,5 +42,3 @@ const projectSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
-export const Project = mongoose.model("Project", projectSchema);

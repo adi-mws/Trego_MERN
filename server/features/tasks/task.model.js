@@ -7,14 +7,12 @@ const taskSchema = new mongoose.Schema(
       index: true,
     },
 
-    /* -------- Workflow -------- */
     currentStageId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "WorkflowStage",
       required: true,
     },
 
-    /* -------- Basic Info -------- */
     title: {
       type: String,
       required: true,
@@ -28,14 +26,12 @@ const taskSchema = new mongoose.Schema(
       required: true,
     },
 
-    /* -------- Category -------- */
     categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "TaskCategory",
       required: true,
     },
 
-    /* -------- Priority -------- */
     priority: {
       type: String,
       enum: ["LOW", "MEDIUM", "HIGH"],
@@ -44,7 +40,6 @@ const taskSchema = new mongoose.Schema(
 
     deadline: Date,
 
-    /* -------- Blocking -------- */
     isBlocked: {
       type: Boolean,
       default: false,
@@ -52,7 +47,6 @@ const taskSchema = new mongoose.Schema(
 
     blockedReason: String,
 
-    /* -------- Role Eligibility -------- */
     eligibleRoles: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -60,7 +54,6 @@ const taskSchema = new mongoose.Schema(
       },
     ],
 
-    /* -------- Assignees -------- */
     assignees: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -68,7 +61,6 @@ const taskSchema = new mongoose.Schema(
       },
     ],
 
-    /* -------- Dependencies -------- */
     dependencies: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -76,7 +68,6 @@ const taskSchema = new mongoose.Schema(
       },
     ],
 
-    /* -------- Gantt -------- */
     startDate: Date,
     endDate: Date,
   },
