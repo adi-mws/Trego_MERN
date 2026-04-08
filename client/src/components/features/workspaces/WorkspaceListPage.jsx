@@ -9,24 +9,32 @@ import { callApi } from "../../../api/api";
 export default function WorkspaceListPage() {
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [filters, setFilters] = useState({});
+
   const [workspaces, setWorkspaces] = useState([]);
-  const [loading, setLoading] = useState(false);
+
+  const [isLoading, setIsLoading] = useState(false); // initial load
+  const [isFetchingNextPage, setIsFetchingNextPage] = useState(false); // pagination
   const [isError, setIsError] = useState(false);
+
   const [cursor, setCursor] = useState(null);
-  const [hasMore, setHasMore] = useState(true);
+  const [hasNextPage, setHasNextPage] = useState(true);
 
   const observerRef = useRef(null);
 
-  /*  FETCH WORKSPACES  */
+  /* ================= FETCH FUNCTION ================= */
 
-  const fetchWorkspaces = async (
+  const fetchWorkspaces = async ({
     cursorValue = null,
-    appliedFilters = filters
-  ) => {
-    if (loading) return;
-
+    appliedFilters = filters,
+    isNextPage = false,
+  }) => {
     try {
-      setLoading(true);
+      if (isNextPage) {
+        setIsFetchingNextPage(true);
+      } else {
+        setIsLoading(true);
+      }
+
       setIsError(false);
 
       const response = await callApi({
@@ -39,89 +47,78 @@ export default function WorkspaceListPage() {
         },
       });
 
-      console.log(response.data)
+      if (!response.success) throw new Error(response.error);
 
-      if (!response.success) {
-        throw new Error(response.error);
-      }
-
-      const data = response.data;
-
+      const data = response.data.data;
+console.log(data);
       setWorkspaces((prev) =>
-        cursorValue ? [...prev, ...data.data] : data.data
+        isNextPage ? [...prev, ...data.workspaces] : data.workspaces
       );
 
       setCursor(data.nextCursor);
-      setHasMore(data.hasMore);
+      setHasNextPage(data.hasMore);
     } catch (err) {
       console.error("fetchWorkspaces error:", err);
       setIsError(true);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
+      setIsFetchingNextPage(false);
     }
   };
 
-  /*  INITIAL LOAD  */
 
   useEffect(() => {
-    fetchWorkspaces(null, filters);
+    fetchWorkspaces({});
   }, []);
 
-  /*  FILTER CHANGE  */
+  /* ================= FILTER CHANGE ================= */
 
   useEffect(() => {
-    // reset state when filters change
     setWorkspaces([]);
     setCursor(null);
-    setHasMore(true);
+    setHasNextPage(true);
 
-    fetchWorkspaces(null, filters);
+    fetchWorkspaces({ appliedFilters: filters });
   }, [filters]);
 
-  /*  INFINITE SCROLL  */
+  /* ================= FETCH NEXT PAGE ================= */
+
+  const fetchNextPage = async () => {
+    if (!hasNextPage || isFetchingNextPage) return;
+
+    await fetchWorkspaces({
+      cursorValue: cursor,
+      appliedFilters: filters,
+      isNextPage: true,
+    });
+  };
+
+  /* ================= INFINITE SCROLL ================= */
 
   const lastElementRef = useCallback(
     (node) => {
-      if (loading) return;
+      if (isFetchingNextPage || isLoading) return;
 
       if (observerRef.current) observerRef.current.disconnect();
 
       observerRef.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && hasMore) {
-          fetchWorkspaces(cursor, filters);
+        if (entries[0].isIntersecting && hasNextPage) {
+          fetchNextPage();
         }
       });
 
       if (node) observerRef.current.observe(node);
     },
-    [loading, hasMore, cursor, filters]
+    [isFetchingNextPage, isLoading, hasNextPage, cursor]
   );
 
-  /*  CREATE WORKSPACE  */
+  /* ================= CREATE WORKSPACE ================= */
 
-  const handleCreateWorkspace = async (data, file) => {
-    try {
-      const response = await callApi({
-        method: "post",
-        url: "/workspaces",
-        data,
-      });
-
-      if (!response.success) throw new Error(response.error);
-
-      const newWorkspace = response.data.workspace;
-
-      // prepend new workspace
-      setWorkspaces((prev) => [newWorkspace, ...prev]);
-
-      return newWorkspace;
-    } catch (err) {
-      console.error("createWorkspace error:", err);
-      throw err;
-    }
+  const handleCreateWorkspace = async (workspace) => {
+    setWorkspaces((prev) => [workspace, ...prev]);
   };
 
-  /*  RENDER  */
+  /* ================= RENDER ================= */
 
   return (
     <Container
@@ -146,15 +143,24 @@ export default function WorkspaceListPage() {
       <WorkspacesList
         workspaces={workspaces}
         lastElementRef={lastElementRef}
+        fetchNextPage={fetchNextPage}
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
       />
 
-      {loading && (
+      {isLoading && (
         <Box display="flex" justifyContent="center">
           <CircularProgress />
         </Box>
       )}
 
-      {!hasMore && !loading && (
+      {isFetchingNextPage && (
+        <Box display="flex" justifyContent="center">
+          <CircularProgress size={24} />
+        </Box>
+      )}
+
+      {!hasNextPage && !isLoading && (
         <Box textAlign="center" color="text.secondary">
           No more workspaces
         </Box>

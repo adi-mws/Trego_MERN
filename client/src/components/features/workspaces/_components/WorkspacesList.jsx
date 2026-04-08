@@ -17,6 +17,8 @@ import { formatDate } from "../../../../lib/date";
 import EmptyStateComponent from "../../../global/EmptyStateComponent";
 import { useNavigate } from "react-router-dom";
 import { useHeader } from "../../../../contexts/HeaderContext";
+import { getImageUrl } from "../../../../utils/image.utils";
+
 const getHealthColor = (value) => {
   if (value >= 75) return "success";
   if (value >= 40) return "warning";
@@ -37,7 +39,7 @@ const AVATAR_COLORS = [
 ];
 
 export default function WorkspacesList({
-  // workspaces, // todo: dummy comment (remove it when workspaces are fetched)
+  workspaces,
   fetchNextPage,
   hasNextPage,
   isFetchingNextPage,
@@ -50,7 +52,6 @@ export default function WorkspacesList({
     setHeaderTitle("Your Workspaces");
   }, [])
 
-  const workspaces = [] // todo: dummy for the ui 
   useEffect(() => {
     if (!loadMoreRef.current) return;
 
@@ -131,12 +132,12 @@ export default function WorkspacesList({
                 <Stack spacing={0.5}>
                   <LinearProgress
                     variant="determinate"
-                    value={ws.health ?? 0}
-                    color={getHealthColor(ws.health ?? 0)}
+                    value={ws.healthScore ?? 0}
+                    color={getHealthColor(ws.healthScore ?? 0)}
                   />
 
                   <Typography variant="body2" color="text.secondary">
-                    {ws.health ?? 0}%
+                    {ws.healthScore ?? 0}%
                   </Typography>
                 </Stack>
               </TableCell>
@@ -156,10 +157,10 @@ export default function WorkspacesList({
                   alignItems="center"
                   justifyContent="center"
                 >
-                  {(ws.membersPreview ?? []).slice(0, 4).map((member, index) => (
+                  {(ws.members ?? []).slice(0, 4).map((member, index) => (
                     <Avatar
                       key={member.id}
-                      src={member.avatar ?? undefined}
+                      src={getImageUrl(member.avatar ?? undefined)}
                       sx={{
                         width: 24,
                         height: 24,
@@ -187,7 +188,7 @@ export default function WorkspacesList({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {formatMemberCount(ws.memberCount ?? 0)}
+                    {formatMemberCount(ws.totalMembers ?? 0)}
                   </Box>
                 </Stack>
               </TableCell>

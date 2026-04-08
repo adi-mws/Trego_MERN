@@ -176,19 +176,17 @@ export const getWorkspaceListController = async (req, res) => {
     }
 
     const result = await workspaceService.getWorkspacesInfinite({
-      userId: req.user._id,
+      userId: req.user.userId,
       cursor,
       limit,
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: "Workspaces fetched successfully",
-      ...result,
+      data: result,
     });
   } catch (err) {
     console.error("getWorkspaceListController error:", err);
-
     res.status(500).json({
       success: false,
       message: "Failed to fetch workspaces",

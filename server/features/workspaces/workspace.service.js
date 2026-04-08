@@ -101,13 +101,6 @@ export const deleteWorkspace = async (workspaceId) => {
     await WorkspaceInvite.deleteMany({ workspaceId }, { session });
     await WorkspaceHealth.deleteMany({ workspaceId }, { session });
 
-    // NOTE:
-    // also delete:
-    // - projects
-    // - tasks
-    // - notifications
-    // if implemented
-
     await session.commitTransaction();
     session.endSession();
 
@@ -125,82 +118,142 @@ export const getWorkspacesInfinite = async ({
   cursor,
   limit = 10,
 }) => {
-  const query = {};
+  try {
+    /* VALIDATION */
 
-  // cursor-based pagination
-  if (cursor) {
-    query._id = { $lt: new mongoose.Types.ObjectId(cursor) };
-  }
+    if (!userId) {
+      throw new Error("UserId is required");
+    }
 
-  // get workspaceIds where user is member
-  const memberships = await WorkspaceMember.find({ userId }).select(
-    "workspaceId"
-  );
+    const userObjectId = new mongoose.Types.ObjectId(userId);
 
-  const workspaceIds = memberships.map((m) => m.workspaceId);
+    /* GET WORKSPACE IDS */
 
-  query._id = {
-    ...(query._id || {}),
-    $in: workspaceIds,
-  };
+    const workspaceIds = await WorkspaceMember.distinct("workspaceId", {
+      userId: userObjectId,
+    });
 
-  const workspaces = await Workspace.find(query)
-    .sort({ _id: -1 }) // latest first
-    .limit(limit)
-    .lean();
+    if (!workspaceIds.length) {
+      return {
+        workspaces: [],
+        nextCursor: null,
+        hasMore: false,
+      };
+    }
 
-  // enrich data
-  const enriched = await Promise.all(
-    workspaces.map(async (ws) => {
-      // latest health
-      const health = await WorkspaceHealth.findOne({
-        workspaceId: ws._id,
-      })
-        .sort({ snapshotDate: -1 })
-        .select("overallHealthScore")
-        .lean();
+    /* BUILD QUERY */
 
-      // members preview (limit 5)
-      const members = await WorkspaceMember.find({
-        workspaceId: ws._id,
-      })
-        .limit(5)
-        .populate("userId", "name pfp")
-        .lean();
+    const query = {
+      _id: { $in: workspaceIds },
+    };
 
-      const formattedMembers = members.map((m) => ({
-        _id: m.userId?._id,
-        name: m.userId?.name,
-        avatar: m.userId?.pfp,
-      }));
+    if (cursor) {
+      query._id.$lt = new mongoose.Types.ObjectId(cursor);
+    }
+
+    /* FETCH WORKSPACES */
+
+    const workspaces = await Workspace.find(query)
+      .sort({ _id: -1 })
+      .limit(limit)
+      .lean();
+
+    if (!workspaces.length) {
+      return {
+        workspaces: [],
+        nextCursor: null,
+        hasMore: false,
+      };
+    }
+
+    const workspaceIdList = workspaces.map((ws) => ws._id);
+
+    /* FETCH RELATED DATA */
+
+    const [healths, memberCounts, members] = await Promise.all([
+      // latest health per workspace
+      WorkspaceHealth.aggregate([
+        { $match: { workspaceId: { $in: workspaceIdList } } },
+        { $sort: { snapshotDate: -1 } },
+        {
+          $group: {
+            _id: "$workspaceId",
+            overallHealthScore: { $first: "$overallHealthScore" },
+          },
+        },
+      ]),
 
       // total members count
-      const totalMembers = await WorkspaceMember.countDocuments({
-        workspaceId: ws._id,
-      });
+      WorkspaceMember.aggregate([
+        { $match: { workspaceId: { $in: workspaceIdList } } },
+        {
+          $group: {
+            _id: "$workspaceId",
+            count: { $sum: 1 },
+          },
+        },
+      ]),
 
-      return {
-        _id: ws._id,
-        name: ws.name,
-        createdAt: ws.createdAt,
-        healthScore: health?.overallHealthScore || 0,
-        totalMembers,
-        members: formattedMembers,
-      };
-    })
-  );
+      // member preview
+      WorkspaceMember.find({
+        workspaceId: { $in: workspaceIdList },
+      })
+        .populate("userId", "name avatar")
+        .lean(),
+    ]);
 
-  // next cursor
-  const nextCursor =
-    workspaces.length > 0
-      ? workspaces[workspaces.length - 1]._id
-      : null;
+    /* MAP DATA */
 
-  return {
-    data: enriched,
-    nextCursor,
-    hasMore: workspaces.length === limit,
-  };
+    const healthMap = {};
+    healths.forEach((h) => {
+      healthMap[h._id.toString()] = h.overallHealthScore;
+    });
+
+    const memberCountMap = {};
+    memberCounts.forEach((m) => {
+      memberCountMap[m._id.toString()] = m.count;
+    });
+
+    const memberMap = {};
+    members.forEach((m) => {
+      const key = m.workspaceId.toString();
+
+      if (!memberMap[key]) memberMap[key] = [];
+
+      if (memberMap[key].length < 5) {
+        memberMap[key].push({
+          _id: m.userId?._id,
+          name: m.userId?.name,
+          avatar: m.userId?.avatar,
+        });
+      }
+    });
+
+    /* FINAL RESPONSE */
+
+    const data = workspaces.map((ws) => ({
+      _id: ws._id,
+      name: ws.name,
+      createdAt: ws.createdAt,
+      healthScore: healthMap[ws._id.toString()] || 0,
+      totalMembers: memberCountMap[ws._id.toString()] || 0,
+      members: memberMap[ws._id.toString()] || [],
+    }));
+
+    const nextCursor =
+      workspaces.length === limit
+        ? workspaces[workspaces.length - 1]._id
+        : null;
+
+    return {
+      workspaces: data,
+      nextCursor,
+      hasMore: workspaces.length === limit,
+    };
+  } catch (err) {
+    console.error("getWorkspacesInfinite error:", err);
+    throw err;
+  }
 };
 
 
