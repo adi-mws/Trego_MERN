@@ -3,8 +3,7 @@
 import { Server } from "socket.io";
 import authenticateSocket from "../middlewares/socketAuth.js";
 import { socketStore } from "./store.js";
-import { checkWorkspaceMembership } from "../features/workspaces/workspace.controller.js";
-
+import { checkWorkspaceMembership } from "../features/workspaces/workspace.service.js";
 let io = null;
 
 export function initSocket(server) {

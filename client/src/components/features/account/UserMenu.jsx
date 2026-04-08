@@ -19,6 +19,8 @@ import { useAlert } from "../../../hooks/useAlert";
 import { useUserGlobal } from "../../../hooks/useUserGlobal";
 import { useAccountDialog } from "../../../contexts/AccountDialogContext";
 import { getImageUrl } from "../../../utils/image.utils";
+
+
 export default function UserMenu() {
     const [anchorEl, setAnchorEl] = useState(null);
     const { openDialog } = useAccountDialog();

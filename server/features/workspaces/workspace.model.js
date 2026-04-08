@@ -24,7 +24,6 @@ const workspaceSchema = new mongoose.Schema(
       index: true,
     },
 
-    // optional denormalized refs (not required but useful)
     members: [
       {
         type: mongoose.Schema.Types.ObjectId,

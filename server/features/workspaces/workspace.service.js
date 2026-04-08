@@ -4,74 +4,48 @@ import { WorkspaceMember } from "./workspaceMember.model.js";
 import { WorkspaceInvite } from "./workspaceInvite.model.js";
 import { WorkspaceHealth } from "./workspaceHealth.model.js";
 
-/* ================= CREATE ================= */
-
 export const createWorkspace = async (data) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  let workspace;
 
   try {
-    const workspace = await Workspace.create([data], { session });
+    workspace = await Workspace.create(data);
 
-    const workspaceId = workspace[0]._id;
+    const ownerMember = await WorkspaceMember.create({
+      workspaceId: workspace._id,
+      userId: data.ownerId,
+      role: "OWNER",
+    });
 
-    // create owner as member
-    const ownerMember = await WorkspaceMember.create(
-      [
-        {
-          workspaceId,
-          userId: data.ownerId,
-          role: "OWNER",
-        },
-      ],
-      { session }
-    );
+    await Workspace.findByIdAndUpdate(workspace._id, {
+      $push: { members: ownerMember._id },
+    });
 
-    // push into workspace.members
-    await Workspace.findByIdAndUpdate(
-      workspaceId,
-      {
-        $push: {
-          members: ownerMember[0]._id,
-        },
-      },
-      { session }
-    );
+    await WorkspaceHealth.create({
+      workspaceId: workspace._id,
+      snapshotDate: new Date(),
+      overallHealthScore: 100,
+      healthStatus: "HEALTHY",
+      totalProjects: 0,
+      activeProjects: 0,
+      totalTasks: 0,
+      completedTasks: 0,
+      taskCompletionRate: 0,
+      overdueTaskCount: 0,
+      blockedTaskCount: 0,
+      totalMembers: 1,
+      activeMembers: 1,
+    });
 
-    // initial health snapshot
-    await WorkspaceHealth.create(
-      [
-        {
-          workspaceId,
-          snapshotDate: new Date(),
-          overallHealthScore: 100,
-          healthStatus: "HEALTHY",
-          totalProjects: 0,
-          activeProjects: 0,
-          totalTasks: 0,
-          completedTasks: 0,
-          taskCompletionRate: 0,
-          overdueTaskCount: 0,
-          blockedTaskCount: 0,
-          totalMembers: 1,
-          activeMembers: 1,
-        },
-      ],
-      { session }
-    );
-
-    await session.commitTransaction();
-    session.endSession();
-
-    return workspace[0];
+    return workspace;
   } catch (err) {
-    await session.abortTransaction();
-    session.endSession();
+    if (workspace?._id) {
+      await Workspace.findByIdAndDelete(workspace._id);
+    }
     throw err;
   }
 };
 
-/* ================= GET ================= */
+
 
 export const getWorkspaceById = async (workspaceId) => {
   return await Workspace.findById(workspaceId)
@@ -101,10 +75,10 @@ export const getUserWorkspaces = async (userId) => {
 
   return await Workspace.find({
     _id: { $in: workspaceIds },
-  });
+  }).lean();
 };
 
-/* ================= UPDATE ================= */
+/*  UPDATE  */
 
 export const updateWorkspace = async (workspaceId, data) => {
   return await Workspace.findByIdAndUpdate(workspaceId, data, {
@@ -112,7 +86,7 @@ export const updateWorkspace = async (workspaceId, data) => {
   });
 };
 
-/* ================= DELETE (CRITICAL) ================= */
+/*  DELETE (CRITICAL)  */
 
 export const deleteWorkspace = async (workspaceId) => {
   const session = await mongoose.startSession();
@@ -227,4 +201,19 @@ export const getWorkspacesInfinite = async ({
     nextCursor,
     hasMore: workspaces.length === limit,
   };
+};
+
+
+export const checkWorkspaceMembership = async ({
+  workspaceId,
+  userId,
+}) => {
+  if (!workspaceId || !userId) return false;
+
+  const membership = await WorkspaceMember.exists({
+    workspaceId,
+    userId,
+  });
+
+  return !!membership; 
 };

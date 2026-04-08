@@ -13,7 +13,6 @@ import {
 import ViewModuleOutlinedIcon from "@mui/icons-material/ViewModuleOutlined";
 import ViewListOutlinedIcon from "@mui/icons-material/ViewListOutlined";
 
-import { WorkspaceHomeFilters } from "@/features/workspace/workspace.query";
 
 
 export default function WorkspacesListHeader({

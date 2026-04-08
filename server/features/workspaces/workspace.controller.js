@@ -17,7 +17,7 @@ export const createWorkspace = async (req, res) => {
       slug,
       avatar,
       about,
-      ownerId: req.user._id,
+      ownerId: req.user.userId,
     });
 
     res.status(201).json({
@@ -32,12 +32,10 @@ export const createWorkspace = async (req, res) => {
         success: false,
         message: "Workspace slug already exists",
       });
-    }
+    } else {
 
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+      next(err);
+    }
   }
 };
 
@@ -162,8 +160,38 @@ export const deleteWorkspace = async (req, res) => {
   }
 };
 
+export const getWorkspaceListController = async (req, res) => {
+  try {
+    let { cursor, limit } = req.query;
 
+    // sanitize limit
+    limit = Math.min(Number(limit) || 10, 20);
 
-export const getWOrkspaceList = async (req, res) => {   
+    // validate cursor if provided
+    if (cursor && !mongoose.Types.ObjectId.isValid(cursor)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid cursor",
+      });
+    }
 
-}
+    const result = await workspaceService.getWorkspacesInfinite({
+      userId: req.user._id,
+      cursor,
+      limit,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Workspaces fetched successfully",
+      ...result,
+    });
+  } catch (err) {
+    console.error("getWorkspaceListController error:", err);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch workspaces",
+    });
+  }
+};

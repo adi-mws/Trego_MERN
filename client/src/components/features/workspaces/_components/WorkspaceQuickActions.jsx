@@ -1,5 +1,3 @@
-"use client";
-
 import RectangularButton from "../../../../components/ui/RectangularButton";
 import Add from "@mui/icons-material/Add";
 import InsertLinkOutlinedIcon from "@mui/icons-material/InsertLinkOutlined";
