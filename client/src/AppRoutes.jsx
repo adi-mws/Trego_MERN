@@ -18,6 +18,9 @@ import NotificationsPage from "./components/features/notifications/Notifications
 
 import useVerifyAuth from "./hooks/useVerifyAuth";
 import AppLayout from "./layouts/AppLayout";
+import WorkspaceDetailLayout from "./layouts/WorkspaceDetailLayout";
+import WorkspaceOverviewPage from "./components/features/workspaces/WorkspaceOverviewPage";
+import WorkspaceSettingsPage from "./components/features/workspaces/WorkspaceSettingsPage";
 
 export default function AppRoutes() {
   useVerifyAuth();
@@ -41,10 +44,15 @@ export default function AppRoutes() {
               <Route index element={<WorkspaceListPage />} />
             </Route>
 
+            <Route path=":workspaceSlug" element={<WorkspaceDetailLayout />}>
+              <Route index element={<WorkspaceOverviewPage />} />
+              <Route path="settings" element={<WorkspaceSettingsPage />} />
+            </Route>
             <Route path="notifications" element={<WorkspacesLayout />}>
               <Route index element={<NotificationsPage />} />
             </Route>
           </Route>
+
         </Routes>
       </Router>
     </>

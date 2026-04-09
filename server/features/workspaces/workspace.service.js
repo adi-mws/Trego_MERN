@@ -78,16 +78,17 @@ export const getUserWorkspaces = async (userId) => {
   }).lean();
 };
 
-/*  UPDATE  */
 
+
+/*  UPDATE  */
 export const updateWorkspace = async (workspaceId, data) => {
   return await Workspace.findByIdAndUpdate(workspaceId, data, {
     new: true,
   });
 };
 
-/*  DELETE (CRITICAL)  */
 
+/*  DELETE (CRITICAL)  */
 export const deleteWorkspace = async (workspaceId) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -113,6 +114,7 @@ export const deleteWorkspace = async (workspaceId) => {
 };
 
 
+// Workspace Infinite Scroll with Cursor Pagination
 export const getWorkspacesInfinite = async ({
   userId,
   cursor,
@@ -233,6 +235,7 @@ export const getWorkspacesInfinite = async ({
 
     const data = workspaces.map((ws) => ({
       _id: ws._id,
+      slug: ws.slug,
       name: ws.name,
       createdAt: ws.createdAt,
       healthScore: healthMap[ws._id.toString()] || 0,
