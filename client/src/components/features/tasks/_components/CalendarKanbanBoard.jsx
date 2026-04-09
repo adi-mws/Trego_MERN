@@ -24,7 +24,7 @@ export default function CalendarKanban() {
   return (
     <Box sx={{ p: 2 }}>
 
-      {/* ✅ DATE HEADER (IMPORTANT) */}
+      {/*  DATE HEADER (IMPORTANT) */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
         <IconButton onClick={() => setWeekOffset((p) => p - 1)}>
           <ChevronLeft />

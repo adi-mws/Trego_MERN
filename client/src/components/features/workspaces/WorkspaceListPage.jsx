@@ -21,7 +21,7 @@ export default function WorkspaceListPage() {
 
   const observerRef = useRef(null);
 
-  /* ================= FETCH FUNCTION ================= */
+  /*  FETCH FUNCTION  */
 
   const fetchWorkspaces = async ({
     cursorValue = null,
@@ -71,7 +71,7 @@ console.log(data);
     fetchWorkspaces({});
   }, []);
 
-  /* ================= FILTER CHANGE ================= */
+  /*  FILTER CHANGE  */
 
   useEffect(() => {
     setWorkspaces([]);
@@ -81,7 +81,7 @@ console.log(data);
     fetchWorkspaces({ appliedFilters: filters });
   }, [filters]);
 
-  /* ================= FETCH NEXT PAGE ================= */
+  /*  FETCH NEXT PAGE  */
 
   const fetchNextPage = async () => {
     if (!hasNextPage || isFetchingNextPage) return;
@@ -93,7 +93,7 @@ console.log(data);
     });
   };
 
-  /* ================= INFINITE SCROLL ================= */
+  /*  INFINITE SCROLL  */
 
   const lastElementRef = useCallback(
     (node) => {
@@ -112,13 +112,13 @@ console.log(data);
     [isFetchingNextPage, isLoading, hasNextPage, cursor]
   );
 
-  /* ================= CREATE WORKSPACE ================= */
+  /*  CREATE WORKSPACE  */
 
   const handleCreateWorkspace = async (workspace) => {
     setWorkspaces((prev) => [workspace, ...prev]);
   };
 
-  /* ================= RENDER ================= */
+  /*  RENDER  */
 
   return (
     <Container

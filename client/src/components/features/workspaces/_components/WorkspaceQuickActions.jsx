@@ -14,15 +14,7 @@ export default function WorkspaceQuickActions({ setOpenCreateDialog, setOpenJoin
           onClick={() => setOpenCreateDialog(true)}
         />
 
-        <RectangularButton
-          icon={
-            <InsertLinkOutlinedIcon
-              sx={{ fontSize: 35, opacity: 0.8, rotate: "-36deg" }}
-            />
-          }
-          text="Join Workspace"
-          onClick={() => { }}
-        />
+
       </Stack>
 
 

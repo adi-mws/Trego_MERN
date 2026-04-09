@@ -44,13 +44,6 @@ const workspaceSchema = new mongoose.Schema(
         ref: "WorkspaceInvite",
       },
     ],
-
-    notifications: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Notification",
-      },
-    ],
   },
   {
     timestamps: true,

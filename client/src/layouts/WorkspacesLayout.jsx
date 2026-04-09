@@ -7,7 +7,7 @@ import { Outlet } from 'react-router-dom'
 export default function WorkspacesLayout() {
   return (
       <Box sx={{ display: "grid", gridTemplateColumns: "1fr 5fr" }}>
-
+        
         <WorkspacesSidebar />
         <Box>
           <Header />

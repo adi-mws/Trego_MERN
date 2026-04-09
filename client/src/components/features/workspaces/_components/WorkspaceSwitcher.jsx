@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import{ useState } from 'react'
 import {
   Box,
-  Popover,
+  Popover, 
   List,
   ListItemButton,
   ListItemText,
@@ -55,7 +55,7 @@ export default function WorkspaceSwitcher({
   const currentName =
     workspaces.find((w) => w.slug === currentSlug)?.name ||
     currentWorkspace?.name ||
-    "Select Workspace"
+    "Switch Workspace"
 
   const open = Boolean(anchorEl)
 

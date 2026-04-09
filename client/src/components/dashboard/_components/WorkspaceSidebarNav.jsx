@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import {
     Box,
     List,
@@ -22,28 +22,33 @@ import {
 import WorkspaceSwitcher from '../../features/workspaces/_components/WorkspaceSwitcher';
 import { useNavigate } from 'react-router-dom';
 import { callApi } from '../../../api/api';
+import { useSelector } from 'react-redux';
 
-const menuGroups = [
-    {
-        id: 'workspace',
-        label: 'WORKSPACE',
-        items: [
-            { id: 'members', label: 'Members', icon: <PeopleIcon />, path: '/members' },
-            { id: 'settings', label: 'Settings', icon: <SettingsIcon />, path: '/settings' },
-            { id: 'roles', label: 'Roles', icon: <RolesIcon />, path: '/roles' },
-        ],
-    },
-    {
-        id: 'ai-agent',
-        label: 'AI AGENT',
-        items: [
-            { id: 'ai-settings', label: 'AI Settings', icon: <AIIcon />, path: '/ai/settings' },
-            { id: 'integrations', label: 'Integrations', icon: <SettingsIcon />, path: '/ai/integrations' },
-        ],
-    },
-]
 
 export default function WorkspaceSidebarNav() {
+
+    const currentWorkspace = useSelector((state) => state.currentWorkspace)
+    const menuGroups = [
+        {
+            id: 'workspace',
+            label: 'WORKSPACE',
+            items: [
+                { id: 'members', label: 'Overview', icon: <PeopleIcon />, path: '/members' },
+                { id: 'members', label: 'Members', icon: <PeopleIcon />, path: '/members' },
+                { id: 'billings', label: 'Billings', icon: <PeopleIcon />, path: '/billings' },
+                { id: 'settings', label: 'Settings', icon: <SettingsIcon />, path: '/settings' },
+                { id: 'roles', label: 'Roles', icon: <RolesIcon />, path: '/roles' },
+            ],
+        },
+        {
+            id: 'ai-agent',
+            label: 'AI AGENT',
+            items: [
+                { id: 'ai-settings', label: 'AI Settings', icon: <AIIcon />, path: '/ai/settings' },
+                { id: 'integrations', label: 'Integrations', icon: <SettingsIcon />, path: '/ai/integrations' },
+            ],
+        },
+    ]
     const navigate = useNavigate()
 
     const [expandedGroups, setExpandedGroups] = useState({
@@ -62,7 +67,6 @@ export default function WorkspaceSidebarNav() {
     //  WORKSPACE STATE 
     const [workspaces, setWorkspaces] = useState([])
     const [workspaceSearch, setWorkspaceSearch] = useState("")
-    const [currentWorkspace, setCurrentWorkspace] = useState(null)
 
     const fetchWorkspaces = async () => {
         try {

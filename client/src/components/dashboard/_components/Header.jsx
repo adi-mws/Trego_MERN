@@ -1,12 +1,12 @@
 
 import { AppBar, Toolbar, Box, IconButton } from "@mui/material";
-import { NotificationsOutlined } from "@mui/icons-material";
+import { Inbox, InboxOutlined, NotificationsOutlined } from "@mui/icons-material";
 import GlobalSearchBar from "./GlobalSearchBar";
 import UserMenu from "../../features/account/UserMenu";
 import { useNotificationsDrawer } from "../../../contexts/NotificationDrawerContext";
 import { useHeader } from "../../../contexts/HeaderContext";
 export default function Header() {
-  const {headerTitle, headerRightActions} = useHeader();
+  const { headerTitle, headerRightActions, headerLeftContent } = useHeader();
   const { openDrawer } = useNotificationsDrawer();
   return (
     <AppBar
@@ -14,7 +14,6 @@ export default function Header() {
       elevation={0}
       color="transparent"
       sx={{
-        // borderBottom: "1px solid",
         borderColor: "divider",
         backdropFilter: "blur(6px)",
       }}
@@ -28,8 +27,10 @@ export default function Header() {
         }}
       >
         {/* Left: route-specific header content */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           {headerTitle}
+          {headerLeftContent && <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>{headerLeftContent}</Box>}
+
         </Box>
 
         {/* Spacer */}
@@ -42,14 +43,25 @@ export default function Header() {
           {/* Notifications */}
           <IconButton
             onClick={() => openDrawer()}
-            size="large"
+            size="medium"
             sx={{
               color: "text.secondary",
               "&:hover": { color: "text.primary" },
             }}
           >
-            <NotificationsOutlined sx={{ fontSize: 22 }} />
+            <InboxOutlined sx={{ fontSize: 18 }} />
           </IconButton>
+          <IconButton
+            onClick={() => openDrawer()}
+            size="medium"
+            sx={{
+              color: "text.secondary",
+              "&:hover": { color: "text.primary" },
+            }}
+          >
+            <NotificationsOutlined sx={{ fontSize: 20 }} />
+          </IconButton>
+
 
           <UserMenu />
         </Box>

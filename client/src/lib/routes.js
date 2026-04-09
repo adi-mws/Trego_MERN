@@ -31,4 +31,8 @@ export const WORKSPACE_ROUTES = {
 }
 
 
-
+export const PROJECT_ROUTES = {
+    project: (workspaceSlug, projectSlug) => `${WORKSPACE_ROUTES.workspace(workspaceSlug)}/projects/${projectSlug}`,
+    projectSettings: (workspaceSlug, projectSlug) => `${WORKSPACE_ROUTES.workspace(workspaceSlug)}/projects/${projectSlug}/settings`,
+    projectMembers: (workspaceSlug, projectSlug) => `${WORKSPACE_ROUTES.workspace(workspaceSlug)}/projects/${projectSlug}/members`,
+}

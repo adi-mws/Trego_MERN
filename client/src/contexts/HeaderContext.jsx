@@ -5,7 +5,7 @@ const HeaderContext = createContext();
 export const HeaderProvider = ({ children }) => {
   const [headerTitle, setHeaderTitle] = useState(null);
   const [headerRightActions, setHeaderRightActions] = useState(null);
-
+  const [headerLeftContent, setHeaderLeftContent] = useState(null);
   return (
     <HeaderContext.Provider
       value={{
@@ -13,6 +13,8 @@ export const HeaderProvider = ({ children }) => {
         setHeaderTitle,
         headerRightActions,
         setHeaderRightActions,
+        setHeaderLeftContent,
+        headerLeftContent
       }}
     >
       {children}
