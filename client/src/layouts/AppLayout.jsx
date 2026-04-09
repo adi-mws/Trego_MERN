@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { useUserGlobal } from "../hooks/useUserGlobal";
 import { callApi } from "../api/api";
@@ -6,7 +6,7 @@ import LoadingPage from "../components/global/LoadingPage";
 import { AccountDialogProvider } from "../contexts/AccountDialogContext";
 import AccountDialog from "../components/features/account/AccountDialog";
 import AppThemeProvider from "../themes/AppThemeProvider";
-import { NotificationsDrawerProvider, useNotificationsDrawer } from "../contexts/NotificationDrawerContext";
+import { NotificationsDrawerProvider } from "../contexts/NotificationDrawerContext";
 import NotificationsDrawer from "../components/features/notifications/NotificationsDrawer";
 import { HeaderProvider } from "../contexts/HeaderContext";
 import ConfirmDialog from "../components/global/ConfirmDialog";
@@ -45,7 +45,6 @@ export default function AppLayout() {
                             <AccountDialog />
                             <ConfirmDialog />
                             <NotificationsDrawer />
-
                             <Outlet />;
                         </AccountDialogProvider>
                     </NotificationsDrawerProvider>
