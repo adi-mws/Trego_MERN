@@ -23,21 +23,22 @@ import WorkspaceSwitcher from '../../features/workspaces/_components/WorkspaceSw
 import { useNavigate } from 'react-router-dom';
 import { callApi } from '../../../api/api';
 import { useSelector } from 'react-redux';
+import { WORKSPACE_ROUTES } from '../../../lib/routes';
 
 
 export default function WorkspaceSidebarNav() {
 
-    const currentWorkspace = useSelector((state) => state.currentWorkspace)
+    const workspace = useSelector((state) => state.workspace);
     const menuGroups = [
         {
             id: 'workspace',
             label: 'WORKSPACE',
             items: [
-                { id: 'members', label: 'Overview', icon: <PeopleIcon />, path: '/members' },
-                { id: 'members', label: 'Members', icon: <PeopleIcon />, path: '/members' },
-                { id: 'billings', label: 'Billings', icon: <PeopleIcon />, path: '/billings' },
-                { id: 'settings', label: 'Settings', icon: <SettingsIcon />, path: '/settings' },
-                { id: 'roles', label: 'Roles', icon: <RolesIcon />, path: '/roles' },
+                { id: 'members', label: 'Overview', icon: <PeopleIcon />, path: WORKSPACE_ROUTES.workspace(workspace?.slug) },
+                { id: 'members', label: 'Members', icon: <PeopleIcon />, path: WORKSPACE_ROUTES.workspaceMembers(workspace?.slug) },
+                // { id: 'billings', label: 'Billings', icon: <PeopleIcon />, path: '/billings' },
+                { id: 'settings', label: 'Settings', icon: <SettingsIcon />, path: WORKSPACE_ROUTES.workspaceSettings(workspace?.slug) },
+                { id: 'roles', label: 'Roles', icon: <RolesIcon />, path: WORKSPACE_ROUTES.workspaceRoles(workspace?.slug) },
             ],
         },
         {
@@ -87,7 +88,7 @@ export default function WorkspaceSidebarNav() {
     }, [workspaceSearch])
 
     const handleWorkspaceChange = (workspace) => {
-        setCurrentWorkspace(workspace)
+        setworkspace(workspace)
         navigate(`/workspaces/${workspace.slug}`)
     }
 
@@ -95,10 +96,10 @@ export default function WorkspaceSidebarNav() {
     const [projects, setProjects] = useState([])
 
     const fetchProjects = async () => {
-        if (!currentWorkspace) return
+        if (!workspace) return
 
         try {
-            const res = await callApi(`/workspaces/${currentWorkspace.slug}/projects`)
+            const res = await callApi(`/workspaces/${workspace.slug}/projects`)
             setProjects(res?.items || [])
         } catch (err) {
             console.error('Failed to fetch projects', err)
@@ -107,7 +108,7 @@ export default function WorkspaceSidebarNav() {
 
     useEffect(() => {
         fetchProjects()
-    }, [currentWorkspace])
+    }, [workspace])
 
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: 1 }}>
@@ -119,7 +120,7 @@ export default function WorkspaceSidebarNav() {
                     workspaces={workspaces}
                     search={workspaceSearch}
                     onSearchChange={setWorkspaceSearch}
-                    currentWorkspace={currentWorkspace}
+                    workspace={workspace}
                     onWorkspaceChange={handleWorkspaceChange}
                 />
             </Box>

@@ -507,3 +507,59 @@ export const getWorkspaceMemberProfile = async ({
     mutualWorkspaces,
   };
 };
+
+
+
+
+
+/**
+ * Get workspace member stats + list
+ */
+export const getWorkspaceMembersSummary = async (workspaceId) => {
+  // Aggregate counts by role
+  const stats = await WorkspaceMember.aggregate([
+    {
+      $match: {
+        workspaceId: new mongoose.Types.ObjectId(workspaceId),
+      },
+    },
+    {
+      $group: {
+        _id: "$role",
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  // Convert stats → easy object
+  const summary = {
+    OWNER: 0,
+    ADMIN: 0,
+    MEMBER: 0,
+    CLIENT: 0,
+  };
+
+  stats.forEach((item) => {
+    summary[item._id] = item.count;
+  });
+
+  // Get all members with user info
+  const members = await WorkspaceMember.find({ workspaceId })
+    .populate("userId", "name email pfp")
+    .sort({ createdAt: -1 });
+
+  return {
+    counts: {
+      owners: summary.OWNER,
+      admins: summary.ADMIN,
+      members: summary.MEMBER,
+      clients: summary.CLIENT,
+      total:
+        summary.OWNER +
+        summary.ADMIN +
+        summary.MEMBER +
+        summary.CLIENT,
+    },
+    members,
+  };
+};

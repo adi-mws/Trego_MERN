@@ -21,6 +21,7 @@ import {
 } from '@mui/icons-material'
 
 import { useLocation } from 'react-router-dom'
+import { useSelector } from 'react-redux'
 
 export default function WorkspaceSwitcher({
   workspaces = [],
@@ -51,10 +52,10 @@ export default function WorkspaceSwitcher({
   // Extract slug from URL (React Router version)
   const segments = location.pathname.split('/')
   const currentSlug = segments.length > 2 ? segments[2] : null
-
+  const workspace = useSelector((state) => state?.workspace);
   const currentName =
     workspaces.find((w) => w.slug === currentSlug)?.name ||
-    currentWorkspace?.name ||
+    workspace?.name ||
     "Switch Workspace"
 
   const open = Boolean(anchorEl)

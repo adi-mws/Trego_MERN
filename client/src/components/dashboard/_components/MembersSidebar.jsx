@@ -43,7 +43,7 @@ export default function MembersSidebar() {
     const [anchorEl, setAnchorEl] = useState(null);
     const [selectedMember, setSelectedMember] = useState(null);
 
-    // ✅ REDUX DATA
+    // REDUX DATA
     const workspaceMembers = useSelector((state) => state.workspace.members);
 
     const handleMemberClick = (event, member) => {
@@ -56,7 +56,7 @@ export default function MembersSidebar() {
         setSelectedMember(null);
     };
 
-    // ✅ filter members
+    // filter members
     const filteredMembers = useMemo(() => {
         if (tab !== "workspace") return [];
 
@@ -65,7 +65,7 @@ export default function MembersSidebar() {
         );
     }, [workspaceMembers, search, tab]);
 
-    // ✅ group by role
+    //  group by role
     const groupedMembers = useMemo(
         () => groupMembers(filteredMembers),
         [filteredMembers]

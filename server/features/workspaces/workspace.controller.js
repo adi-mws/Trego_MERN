@@ -393,3 +393,30 @@ export const getWorkspaceMemberProfileController = async (req, res) => {
     });
   }
 };
+
+
+export const getWorkspaceMembersSummaryController = async (req, res, next) => {
+  try {
+    const { workspaceId } = req.params;
+
+    //  Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(workspaceId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid workspaceId",
+      });
+    }
+
+    const data = await workspaceService.getWorkspaceMembersSummary(workspaceId);
+
+    return res.status(200).json({
+      success: true,
+      counts: data.counts,
+      members: data.members,
+    });
+  } catch (error) {
+    console.error("Get Workspace Members Error:", error);
+
+    next(error)
+  }
+};

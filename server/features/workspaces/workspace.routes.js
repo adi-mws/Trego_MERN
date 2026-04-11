@@ -34,12 +34,15 @@ router.post(
   workspaceController.getWorkspaceMemberProfileController
 );
 
+
+
 // Infinite scroll list (cursor-based)
 router.get(
   "/list",
   ensureAuth,
   workspaceController.getWorkspaceListController
 );
+
 
 router.get(
   "/global/:slug",
@@ -63,4 +66,12 @@ router.put("/:id", ensureAuth, uploadAvatar, workspaceController.updateWorkspace
 // Delete workspace
 router.delete("/:id", ensureAuth, workspaceController.deleteWorkspace);
 
+
+
+// Workspaces members roles
+router.get(
+  "/:workspaceId/members", 
+  ensureAuth, 
+  workspaceController.getWorkspaceMembersSummaryController
+)
 export default router;

@@ -25,41 +25,55 @@ import ProjectLayout from "./layouts/ProjectLayout";
 import ProjectOverviewPage from "./components/features/projects/ProjectOverviewPage";
 import JoinWorkspace from "./components/features/workspaces/_components/JoinWorkspace";
 
+import ProtectedRoute from "./routes/ProtectedRoute";
+import PublicRoute from "./routes/PublicRoute";
+import WorkspaceMemberPage from "./components/features/workspaces/WorkspaceMemberPage";
+import WorkspaceRolesPage from "./components/features/workspaces/WorkspaceRolesPage";
 export default function AppRoutes() {
   useVerifyAuth();
 
   return (
     <>
-      {/* GLOBAL UI */}
       <AlertContainer />
       <Router>
         <ScrollToTop />
         <Routes>
-          {/* PUBLIC */}
-          <Route path="/" element={<MarketingLayout />}>
-            <Route index element={<HomePage />} />
-            <Route path="sign-up" element={<SignUpForm />} />
-            <Route path="sign-in" element={<SignInForm />} />
+          {/* PUBLIC (but restricted when logged in) */}
+          <Route element={<PublicRoute />}>
+            <Route path="/" element={<MarketingLayout />}>
+              <Route index element={<HomePage />} />
+              <Route path="sign-up" element={<SignUpForm />} />
+              <Route path="sign-in" element={<SignInForm />} />
+            </Route>
+          </Route>
+
+          {/* PUBLIC (allowed even if logged in) */}
+          <Route element={<PublicRoute allowAuthenticated={true} />}>
             <Route path="/join/workspace/:inviteCode" element={<JoinWorkspace />} />
           </Route>
-          {/* PROTECTED */}
-          <Route path="/app" element={<AppLayout />}>
-            <Route element={<WorkspacesLayout />}>
-              <Route index element={<WorkspaceListPage />} />
-            </Route>
 
-            <Route path=":workspaceSlug" element={<WorkspaceDetailLayout />}>
-              <Route index element={<WorkspaceOverviewPage />} />
-              <Route path="settings" element={<WorkspaceSettingsPage />} />
-              <Route path="projects/:projectSlug" element={<ProjectLayout />}>
-                <Route index element={<ProjectOverviewPage />} />
+          {/* PROTECTED */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/app" element={<AppLayout />}>
+              <Route element={<WorkspacesLayout />}>
+                <Route index element={<WorkspaceListPage />} />
+              </Route>
+
+              <Route path=":workspaceSlug" element={<WorkspaceDetailLayout />}>
+                <Route index element={<WorkspaceOverviewPage />} />
+                <Route path="members" element={<WorkspaceMemberPage />} />
+                <Route path="roles" element={<WorkspaceRolesPage />} />
+                <Route path="settings" element={<WorkspaceSettingsPage />} />
+                <Route path="projects/:projectSlug" element={<ProjectLayout />}>
+                  <Route index element={<ProjectOverviewPage />} />
+                </Route>
+              </Route>
+
+              <Route path="notifications" element={<WorkspacesLayout />}>
+                <Route index element={<NotificationsPage />} />
               </Route>
             </Route>
-            <Route path="notifications" element={<WorkspacesLayout />}>
-              <Route index element={<NotificationsPage />} />
-            </Route>
           </Route>
-
         </Routes>
       </Router>
     </>
