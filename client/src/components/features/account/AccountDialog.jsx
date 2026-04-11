@@ -63,7 +63,7 @@ export default function AccountDialog() {
         return <PreferencesSection />;
       case "devices":
         return <LoggedInDevicesSection />;
-      case "security":
+      case "account":
         return <AccountSection />;
       default:
         return null;
