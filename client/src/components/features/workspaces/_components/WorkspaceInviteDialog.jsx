@@ -13,6 +13,9 @@ import {
   MenuItem,
 } from '@mui/material'
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
+import { callApi } from '../../../../api/api'
+import { useSelector } from 'react-redux'
+import { useAlert } from '../../../../hooks/useAlert'
 
 const WORKSPACE_ROLE_CONFIG = {
   member: { label: 'Member' },
@@ -36,15 +39,6 @@ const MEMBER_LIMIT_OPTIONS = [
   { label: 'Custom', value: 0 },
 ]
 
-// Only link generation
-function generateInvite(expiryHours, maxUses) {
-  return {
-    inviteKey: crypto.randomUUID(),
-    expiresAt: Date.now() + expiryHours * 60 * 60 * 1000,
-    maxUses,
-  }
-}
-
 export function WorkspaceInviteDialog({ open, onClose }) {
   const [role, setRole] = useState('member')
   const [expiryHours, setExpiryHours] = useState(24)
@@ -53,6 +47,9 @@ export function WorkspaceInviteDialog({ open, onClose }) {
   const [customMaxUses, setCustomMaxUses] = useState('')
 
   const [invite, setInvite] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const workspaceId = useSelector((state) => state?.workspace?._id);
+
 
   const resolvedMaxUses =
     maxUses === 0 ? Number(customMaxUses) : maxUses
@@ -60,21 +57,39 @@ export function WorkspaceInviteDialog({ open, onClose }) {
   const canGenerate =
     maxUses !== 0 || (customMaxUses !== '' && Number(customMaxUses) > 0)
 
-  const generateInviteLink = () => {
+  // BACKEND CALL
+  const generateInviteLink = async () => {
     if (!canGenerate) return
+    setLoading(true)
 
-    const data = generateInvite(expiryHours, resolvedMaxUses)
-
-    setInvite({
-      ...data,
-      link: `${window.location.origin}/join/workspace/${data.inviteKey}`,
+    const res = await callApi({
+      method: "post",
+      url: "/workspaces/invite",
+      data: {
+        workspaceId: workspaceId,
+        role,
+        expiryHours,
+        maxUses: resolvedMaxUses,
+      },
     })
+
+    if (res.success) {
+      setInvite({
+        link: res.data.link,
+      })
+    } else {
+      console.error("Invite generation failed:", res.error);
+    }
+    setLoading(false)
   }
+  const showAlert = useAlert();
 
   const copyValue = async () => {
     if (invite?.link) {
       await navigator.clipboard.writeText(invite.link)
     }
+    
+    showAlert("Invite link copied to clipboard", "success")
   }
 
   const handleClose = () => {
@@ -125,7 +140,7 @@ export function WorkspaceInviteDialog({ open, onClose }) {
             ))}
           </TextField>
 
-          {/* Member limit */}
+          {/* Limit */}
           <TextField
             select
             size="small"
@@ -157,15 +172,15 @@ export function WorkspaceInviteDialog({ open, onClose }) {
             />
           )}
 
-          {/* Generate ONLY LINK */}
+          {/* Button */}
           <Button
             fullWidth
             size="small"
             variant="contained"
             onClick={generateInviteLink}
-            disabled={!canGenerate}
+            disabled={!canGenerate || loading}
           >
-            Generate Invite Link
+            {loading ? "Generating..." : "Generate Invite Link"}
           </Button>
 
           {/* Output */}
@@ -176,19 +191,23 @@ export function WorkspaceInviteDialog({ open, onClose }) {
                 borderRadius: 1,
                 bgcolor: 'action.hover',
                 display: 'flex',
-                gap: 1,
+                flexDirection: 'column',
+                gap: 0.5,
               }}
             >
               <Typography
                 variant="caption"
-                sx={{ flex: 1, wordBreak: 'break-all' }}
+                sx={{ wordBreak: 'break-all' }}
               >
                 {invite.link}
               </Typography>
 
-              <IconButton size="small" onClick={copyValue}>
-                <ContentCopyOutlinedIcon fontSize="inherit" />
-              </IconButton>
+              <Stack direction="row" justifyContent="space-between">
+
+                <IconButton size="small" onClick={copyValue}>
+                  <ContentCopyOutlinedIcon fontSize="inherit" />
+                </IconButton>
+              </Stack>
             </Box>
           )}
         </Stack>

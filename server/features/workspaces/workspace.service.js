@@ -3,6 +3,8 @@ import { Workspace } from "./workspace.model.js";
 import { WorkspaceMember } from "./workspaceMember.model.js";
 import { WorkspaceInvite } from "./workspaceInvite.model.js";
 import { WorkspaceHealth } from "./workspaceHealth.model.js";
+import { Project } from "../projects/project.model.js";
+import crypto from "crypto";
 
 export const createWorkspace = async (data) => {
   let workspace;
@@ -78,6 +80,37 @@ export const getUserWorkspaces = async (userId) => {
   }).lean();
 };
 
+
+export const getWorkspaceGlobalState = async (workspaceSlug) => {
+  const workspace = await Workspace.findOne({ slug: workspaceSlug })
+    .populate({
+      path: "members",
+      populate: {
+        path: "userId",
+        select: "name avatar email",
+      },
+    })
+    .populate("projects")
+    .lean();
+
+  if (!workspace) {
+    throw new Error("Workspace not found");
+  }
+
+  const members = (workspace.members || []).map((m) => ({
+    _id: m.userId?._id,
+    name: m.userId?.name,
+    avatar: m.userId?.avatar,
+    email: m.userId?.email,
+  }));
+
+
+  return {
+    ...workspace,
+    members,
+    totalMembers: members.length,
+  };
+};
 
 
 /*  UPDATE  */
@@ -271,5 +304,102 @@ export const checkWorkspaceMembership = async ({
     userId,
   });
 
-  return !!membership; 
+  return !!membership;
+};
+
+
+
+
+
+
+// * Workspace Invite
+
+export const generateWorkspaceInvite = async ({
+  workspaceId,
+  createdById,
+  role = "MEMBER",
+  expiryHours = 24,
+  maxUses = 1,
+}) => {
+  const code = crypto.randomBytes(16).toString("hex");
+
+  const expiresAt = expiryHours
+    ? new Date(Date.now() + expiryHours * 60 * 60 * 1000)
+    : null;
+
+  const inviteUsageLimit = maxUses === -1 ? -1 : Number(maxUses);
+
+  await WorkspaceInvite.create({
+    workspaceId,
+    createdById,
+    type: "LINK",
+    role,
+    code,
+    expiresAt,
+    inviteUsageLimit,
+  });
+
+  const link = `${process.env.CLIENT_URL}/join/workspace/${code}`;
+
+  return { link };
+};
+
+
+export const joinWorkspaceByInvite = async ({ code, userId }) => {
+  // find invite
+  const invite = await WorkspaceInvite.findOne({ code });
+
+  if (!invite) {
+    throw new Error("Invalid invite link");
+  }
+
+  // validate using schema method
+  if (!invite.isValidInvite()) {
+    throw new Error("Invite is expired, inactive, or limit reached");
+  }
+
+  // get workspace
+  const workspace = await Workspace.findById(invite.workspaceId).populate("members", "role userId");
+
+  if (!workspace) {
+    throw new Error("Workspace not found");
+  }
+
+  // check if already member
+  const alreadyMember = workspace.members.some((m) => {
+    const id = m.userId?._id || m.userId;
+    return id.toString() === userId.toString();
+  });
+
+  if (!alreadyMember) {
+    workspace.members.push({
+      userId,
+      role: invite.role,
+    })
+
+    await workspace.save();
+
+  }
+  else {
+    throw new Error("User is already a member of this workspace");
+  }
+
+
+  // increment usage
+  invite.usedCount += 1;
+
+  // auto deactivate if limit reached
+  if (
+    invite.inviteUsageLimit !== -1 &&
+    invite.usedCount >= invite.inviteUsageLimit
+  ) {
+    invite.isActive = false;
+  }
+
+  await invite.save();
+
+  return {
+    workspaceId: workspace._id,
+    workspaceSlug: workspace.slug,
+  }
 };

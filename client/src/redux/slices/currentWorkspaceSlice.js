@@ -3,6 +3,7 @@ import { createSlice } from '@reduxjs/toolkit'
 const initialState = {
   currentWorkspace: null,
   name: null, 
+  _id : null,
   slug: null,
   avatar: null, 
   members: [],
@@ -23,6 +24,7 @@ const currentWorkspaceSlice = createSlice({
       state.name = ws?.name || null
       state.slug = ws?.slug || null
       state.avatar = ws?.avatar || null
+      state._id = ws?._id || null
       state.members = ws?.members || []
       state.totalMembers = ws?.totalMembers || 0
       state.isLoading = false
@@ -41,6 +43,7 @@ const currentWorkspaceSlice = createSlice({
     clearWorkspace: (state) => {
       state.currentWorkspace = null
       state.members = []
+      state._id = null
       state.avatar = null   
       state.name = null
       state.slug = null 

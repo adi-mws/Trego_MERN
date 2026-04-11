@@ -15,7 +15,7 @@ import {
 import crypto from "crypto";
 import { Visibility, VisibilityOff, LockOutlined } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
-import { Link as NavLink, useNavigate } from "react-router-dom";
+import { Link as NavLink, useNavigate, useSearchParams } from "react-router-dom";
 import { APP_ROUTES, AUTH_ROUTES } from "../../../lib/routes";
 import { callApi } from "../../../api/api";
 import { useAlert } from "../../../hooks/useAlert";
@@ -76,6 +76,8 @@ export default function SignInForm() {
     handleSubmit,
     formState: { errors },
   } = useForm();
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get("redirect");
 
   //  Credentials Sign In
   const onSubmit = async (data) => {
@@ -98,10 +100,11 @@ export default function SignInForm() {
     if (response.success) {
       login(response?.data);
       showAlert(response.data?.message, "success");
-      navigate(APP_ROUTES.root);
+
+      navigate(redirect || APP_ROUTES.root);
     }
     else {
-console.log(response.error)
+      console.log(response.error)
       setError(response?.error?.message || "An error occurred. Please try again.");
     }
 
@@ -257,7 +260,9 @@ console.log(response.error)
             New here?{" "}
             <Link
               component={NavLink}
-              to={AUTH_ROUTES.signUp}
+              to={
+                redirect ? 
+                `${AUTH_ROUTES.signUp}?redirect=${redirect}` : AUTH_ROUTES.signUp}
               variant="caption"
               underline="none"
               color="primary.main"

@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 
+
 const workspaceInviteSchema = new mongoose.Schema(
   {
     workspaceId: {
@@ -17,13 +18,13 @@ const workspaceInviteSchema = new mongoose.Schema(
 
     type: {
       type: String,
-      enum: ["LINK", "EMAIL"],
+      enum: ["LINK"],
       required: true,
     },
 
     role: {
       type: String,
-      enum: ["ADMIN", "MEMBER"],
+      enum: ["ADMIN", "MEMBER", "CLIENT"],
       default: "MEMBER",
     },
 
@@ -31,11 +32,15 @@ const workspaceInviteSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
+      index: true,
     },
 
-    expiry: Date,
+    expiresAt: Date,
 
-    inviteUsageLimit: Number,
+    inviteUsageLimit: {
+      type: Number,
+      default: 1,
+    },
 
     usedCount: {
       type: Number,
@@ -47,10 +52,25 @@ const workspaceInviteSchema = new mongoose.Schema(
       default: true,
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
+
+workspaceInviteSchema.methods.isValidInvite = function () {
+  if (!this.isActive) return false;
+
+  if (this.expiresAt && new Date() > this.expiresAt) return false;
+
+  if (
+    this.inviteUsageLimit !== -1 &&
+    this.usedCount >= this.inviteUsageLimit
+  ) {
+    return false;
+  }
+
+  return true;
+};
+
+workspaceInviteSchema.index({ workspaceId: 1, code: 1 });
 
 export const WorkspaceInvite = mongoose.model(
   "WorkspaceInvite",

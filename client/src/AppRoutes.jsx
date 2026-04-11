@@ -23,6 +23,7 @@ import WorkspaceOverviewPage from "./components/features/workspaces/WorkspaceOve
 import WorkspaceSettingsPage from "./components/features/workspaces/WorkspaceSettingsPage";
 import ProjectLayout from "./layouts/ProjectLayout";
 import ProjectOverviewPage from "./components/features/projects/ProjectOverviewPage";
+import JoinWorkspace from "./components/features/workspaces/_components/JoinWorkspace";
 
 export default function AppRoutes() {
   useVerifyAuth();
@@ -39,6 +40,7 @@ export default function AppRoutes() {
             <Route index element={<HomePage />} />
             <Route path="sign-up" element={<SignUpForm />} />
             <Route path="sign-in" element={<SignInForm />} />
+            <Route path="/join/workspace/:inviteCode" element={<JoinWorkspace />} />
           </Route>
           {/* PROTECTED */}
           <Route path="/app" element={<AppLayout />}>

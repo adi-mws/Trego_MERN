@@ -12,7 +12,7 @@ import {
   Alert,
   Link
 } from "@mui/material";
-import { Link as NavLink, useNavigate } from "react-router-dom";
+import { Link as NavLink, useNavigate, useSearchParams } from "react-router-dom";
 import { AUTH_ROUTES } from "../../../lib/routes"
 import { Visibility, VisibilityOff, PersonAddOutlined } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
@@ -31,6 +31,8 @@ export default function SignUpForm() {
     formState: { errors },
   } = useForm();
 
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get("redirect");
   const password = watch("password");
   const navigate = useNavigate();
   const showAlert = useAlert();
@@ -41,9 +43,12 @@ export default function SignUpForm() {
       url: "/auth/sign-up",
       data: data,
     })
-    console.log(response)
+
+
     if (response.success) {
-      navigate(AUTH_ROUTES.signIn)
+
+      if (redirect) navigate(`${AUTH_ROUTES.signIn}?redirect=${redirect}`);
+      else navigate(AUTH_ROUTES.signIn);
       showAlert(response.data?.message, "success");
     } else {
       setError(response?.error?.message || "An error occurred. Please try again.");

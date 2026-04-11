@@ -6,9 +6,9 @@ import { createUploader } from "../../middlewares/multer.js";
 const router = express.Router();
 
 const uploadAvatar = createUploader(
-  "avatars",   
-  "single",      
-  "avatar",     
+  "avatars",
+  "single",
+  "avatar",
   1,
   ["image/jpeg", "image/png", "image/webp"],
   true,
@@ -22,11 +22,22 @@ router.post("/", ensureAuth, uploadAvatar, workspaceController.createWorkspace);
 // Get all workspaces of user (basic list)
 router.get("/", ensureAuth, workspaceController.getUserWorkspaces);
 
+// Generate invite link for workspace
+router.post("/invite", ensureAuth, workspaceController.generateWorkspaceInviteController);
+// Join workspace via invite code
+router.post("/join/:code", ensureAuth, workspaceController.joinWorkspaceByInviteController);
+
 // Infinite scroll list (cursor-based)
 router.get(
   "/list",
   ensureAuth,
   workspaceController.getWorkspaceListController
+);
+
+router.get(
+  "/global/:slug",
+  ensureAuth,
+  workspaceController.getWorkspaceGlobalStateController
 );
 
 // Get workspace by slug

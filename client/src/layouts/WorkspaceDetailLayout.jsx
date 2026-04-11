@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import WorkspaceSidebarNav from '../components/dashboard/_components/WorkspaceSidebarNav'
 import MembersSidebar from '../components/dashboard/_components/MembersSidebar'
 import Header from '../components/dashboard/_components/Header'
@@ -7,17 +7,11 @@ import { Box, Stack, Avatar, Chip } from '@mui/material'
 import { Outlet, useParams } from 'react-router-dom'
 
 import { useHeader } from '../contexts/HeaderContext'
+import { callApi } from '../api/api'
+import { getImageUrl } from '../utils/image.utils'
+import { setWorkspace, setLoading } from '../redux/slices/currentWorkspaceSlice'
+import { useDispatch, useSelector } from 'react-redux';
 
-// 🔧 You should replace this with real data from API/store
-const mockWorkspace = {
-  members: [
-    { id: 1, name: 'Aditya', avatar: '' },
-    { id: 2, name: 'Rahul', avatar: '' },
-    { id: 3, name: 'Priya', avatar: '' },
-    { id: 4, name: 'Amit', avatar: '' },
-  ],
-  totalMembers: 12,
-}
 
 const AVATAR_COLORS = ['#FF6B6B', '#4ECDC4', '#ebbc00', '#6C5CE7']
 
@@ -28,20 +22,47 @@ function formatMemberCount(count) {
 export default function WorkspacesLayout() {
   const { setHeaderLeftContent, setHeaderTitle } = useHeader()
   const { workspaceSlug } = useParams()
+  const dispatch = useDispatch();
+  const workspace = useSelector((state) => state?.workspace);
 
-  const ws = mockWorkspace 
+  const fetchWorkspace = async () => {
+    dispatch(setLoading(true));
+    const res = await callApi({
+      url: `/workspaces/global/${workspaceSlug}`,
+    })
+      console.log("Fetched workspace:", res.data.workspace);
+
+    if (res.success) {
+      console.log("Fetched workspace:", res.data.workspace);
+      dispatch(setWorkspace(res.data.workspace))
+      dispatch(setLoading(false))
+
+    } else {
+      console.error("Failed to fetch workspace:", res.error)
+    }
+    dispatch(setLoading(false))
+  }
 
   useEffect(() => {
-    setHeaderTitle(workspaceSlug || 'Workspace')
+    if (workspaceSlug) {
+      fetchWorkspace()
+    }
+  }, [workspaceSlug])
+
+  useEffect(() => {
+    if (!workspace) return
+
+    setHeaderTitle(workspace.name || workspaceSlug || 'Workspace')
+
     setHeaderLeftContent(
       <>
-        <Chip label="Owner" sx={{fontSize: 12}} size='small' color='success' />
+        <Chip label="Owner" sx={{ fontSize: 12 }} size="small" color="success" />
 
         <Stack direction="row" spacing={-0.75} alignItems="center">
-
-          {(ws.members ?? []).slice(0, 4).map((member, index) => (
+          {(workspace.members ?? []).slice(0, 4).map((member, index) => (
             <Avatar
-              key={member.id}
+              key={member._id || index}
+              src={getImageUrl(member.avatar)}
               sx={{
                 width: 24,
                 height: 24,
@@ -52,7 +73,7 @@ export default function WorkspacesLayout() {
                 bgcolor: AVATAR_COLORS[index % AVATAR_COLORS.length],
               }}
             >
-              {member.name?.[0]?.toUpperCase()}
+              {!member.avatar && member.name?.[0]?.toUpperCase()}
             </Avatar>
           ))}
 
@@ -67,13 +88,12 @@ export default function WorkspacesLayout() {
               color: 'text.secondary',
             }}
           >
-            {formatMemberCount(ws.totalMembers)}
+            {formatMemberCount(workspace.totalMembers || 0)}
           </Box>
-
         </Stack>
       </>
     )
-  }, [workspaceSlug])
+  }, [workspace, workspaceSlug])
 
   return (
     <Box
@@ -93,7 +113,7 @@ export default function WorkspacesLayout() {
         <WorkspaceSidebarNav />
       </Box>
 
-      {/* MAIN CONTENT */}
+      {/* MAIN */}
       <Box
         sx={{
           display: 'flex',
@@ -110,11 +130,10 @@ export default function WorkspacesLayout() {
             p: 2,
           }}
         >
-          <Outlet />
+          <Outlet context={{ workspace }} />
         </Box>
 
-
-        <MembersSidebar />
+        <MembersSidebar workspace={workspace} loading={workspace.isLoading} />
       </Box>
     </Box>
   )
