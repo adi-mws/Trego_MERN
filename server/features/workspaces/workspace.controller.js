@@ -1,4 +1,5 @@
 import { Workspace } from "./workspace.model.js";
+import { WorkspaceMember } from "./workspaceMember.model.js";
 import * as workspaceService from "./workspace.service.js";
 import mongoose from "mongoose";
 /*  CREATE WORKSPACE  */
@@ -208,7 +209,7 @@ export const getWorkspaceGlobalStateController = async (req, res) => {
   try {
     const { slug } = req.params;
 
-    const workspace = await workspaceService.getWorkspaceGlobalState(slug);
+    const workspace = await workspaceService.getWorkspaceGlobalState(slug, req.user.userId);
     if (!workspace) {
       return res.status(404).json({
         success: false,
@@ -232,6 +233,7 @@ export const getWorkspaceGlobalStateController = async (req, res) => {
 
 
 
+
 export const generateWorkspaceInviteController = async (req, res) => {
   try {
     let {
@@ -243,6 +245,13 @@ export const generateWorkspaceInviteController = async (req, res) => {
 
     const userId = req.user?.userId;
 
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
     if (!workspaceId || !mongoose.Types.ObjectId.isValid(workspaceId)) {
       return res.status(400).json({
         success: false,
@@ -250,8 +259,8 @@ export const generateWorkspaceInviteController = async (req, res) => {
       });
     }
 
-    const workspace = await Workspace.findById(workspaceId)
-      .populate("members", "role userId");
+    // Check workspace exists
+    const workspace = await Workspace.findById(workspaceId).select("_id");
 
     if (!workspace) {
       return res.status(404).json({
@@ -260,18 +269,23 @@ export const generateWorkspaceInviteController = async (req, res) => {
       });
     }
 
-    const member = workspace.members.find(
-      (m) => m.userId.toString() === userId.toString()
-    );
+    const member = await WorkspaceMember.findOne({
+      workspaceId,
+      userId,
+    }).lean();
 
     const allowedRoles = ["ADMIN", "OWNER"];
 
-    if (!member || !allowedRoles.includes(member.role)) {
+    const userRole = member?.role?.toUpperCase();
+
+    if (!member || !allowedRoles.includes(userRole)) {
       return res.status(403).json({
         success: false,
         message: "Only admins and owners can create invites",
       });
     }
+
+    // Normalize role input
     role = role.toUpperCase();
 
     const { link } = await workspaceService.generateWorkspaceInvite({
@@ -325,16 +339,57 @@ export const joinWorkspaceByInviteController = async (req, res) => {
 
     res.json({
       success: true,
-     ...data ,
+      ...data,
       message: "Joined workspace successfully",
     });
 
-} catch (err) {
-  console.error("Join workspace error:", err);
+  } catch (err) {
+    console.error("Join workspace error:", err);
 
-  res.status(400).json({
-    success: false,
-    message: err.message,
-  });
-}
+    res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+
+export const getWorkspaceMemberProfileController = async (req, res) => {
+  try {
+    const { userId, workspaceId } = req.body;
+    const viewerId = req.user?.userId;
+
+    if (!viewerId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    if (!userId || !workspaceId) {
+      return res.status(400).json({
+        success: false,
+        message: "userId and workspaceId are required",
+      });
+    }
+
+    const data = await workspaceService.getWorkspaceMemberProfile({
+      userId,
+      workspaceId,
+      viewerId,
+    });
+
+    res.json({
+      success: true,
+      data,
+    });
+
+  } catch (err) {
+    console.error("Get member profile error:", err);
+
+    res.status(400).json({
+      success: false,
+      message: err.message || "Failed to fetch member profile",
+    });
+  }
 };

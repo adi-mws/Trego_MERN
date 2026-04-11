@@ -9,7 +9,7 @@ import { Outlet, useParams } from 'react-router-dom'
 import { useHeader } from '../contexts/HeaderContext'
 import { callApi } from '../api/api'
 import { getImageUrl } from '../utils/image.utils'
-import { setWorkspace, setLoading } from '../redux/slices/currentWorkspaceSlice'
+import { setWorkspace, setLoading, clearWorkspace } from '../redux/slices/currentWorkspaceSlice'
 import { useDispatch, useSelector } from 'react-redux';
 
 
@@ -19,7 +19,7 @@ function formatMemberCount(count) {
   return `${count} members`
 }
 
-export default function WorkspacesLayout() {
+export default function WorkspaceDetailLayout() {
   const { setHeaderLeftContent, setHeaderTitle } = useHeader()
   const { workspaceSlug } = useParams()
   const dispatch = useDispatch();
@@ -30,10 +30,9 @@ export default function WorkspacesLayout() {
     const res = await callApi({
       url: `/workspaces/global/${workspaceSlug}`,
     })
-      console.log("Fetched workspace:", res.data.workspace);
 
     if (res.success) {
-      console.log("Fetched workspace:", res.data.workspace);
+      console.log(res.data.workspace)
       dispatch(setWorkspace(res.data.workspace))
       dispatch(setLoading(false))
 
@@ -47,6 +46,8 @@ export default function WorkspacesLayout() {
     if (workspaceSlug) {
       fetchWorkspace()
     }
+
+    return () => dispatch(clearWorkspace());
   }, [workspaceSlug])
 
   useEffect(() => {
@@ -56,7 +57,7 @@ export default function WorkspacesLayout() {
 
     setHeaderLeftContent(
       <>
-        <Chip label="Owner" sx={{ fontSize: 12 }} size="small" color="success" />
+        <Chip label={workspace.role} sx={{ fontSize: 12 }} size="small" color="success" />
 
         <Stack direction="row" spacing={-0.75} alignItems="center">
           {(workspace.members ?? []).slice(0, 4).map((member, index) => (

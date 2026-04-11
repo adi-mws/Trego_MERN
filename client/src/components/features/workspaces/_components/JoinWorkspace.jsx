@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Box, Typography, Button, CircularProgress } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
 import { callApi } from "../../../../api/api";
+import { WORKSPACE_ROUTES } from "../../../../lib/routes";
 
 export default function JoinWorkspace() {
     const { inviteCode } = useParams();
@@ -24,7 +25,7 @@ export default function JoinWorkspace() {
                 setSuccess(true);
 
                 setTimeout(() => {
-                    navigate(`/workspace/${res.data.workspaceSlug}`);
+                    navigate(`${WORKSPACE_ROUTES.workspace(res.data.workspaceSlug)}`);
                 }, 1500);
             } else {
                 setError(res.error.message || "Invalid invite");

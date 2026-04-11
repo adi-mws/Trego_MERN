@@ -24,26 +24,6 @@ const workspaceSchema = new mongoose.Schema(
       index: true,
     },
 
-    members: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "WorkspaceMember",
-      },
-    ],
-
-    projects: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Project",
-      },
-    ],
-
-    invites: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "WorkspaceInvite",
-      },
-    ],
   },
   {
     timestamps: true,

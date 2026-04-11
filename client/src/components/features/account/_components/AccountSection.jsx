@@ -15,7 +15,7 @@ import SectionHeader from "./SectionHeader";
 import { WarningAmber, Visibility, VisibilityOff } from "@mui/icons-material";
 import { useState } from "react";
 
-function SecuritySection() {
+function AccountSection() {
   const [showPassword, setShowPassword] = useState({
     current: false,
     new: false,
@@ -129,4 +129,4 @@ function SecuritySection() {
   );
 }
 
-export default SecuritySection;
+export default AccountSection;

@@ -125,7 +125,7 @@ export default function UserMenu() {
                         openDialog("profile");
                     }}
                 >
-                    Account
+                    Profile
                 </MenuItem>
 
                 <MenuItem onClick={() => {
@@ -135,6 +135,25 @@ export default function UserMenu() {
                 }} sx={{ fontSize: 'inherit' }}
                 >
                     Preferences
+                </MenuItem>
+                <MenuItem
+                    sx={{ fontSize: 14 }}
+                    onClick={() => {
+                        handleClose();
+                        openDialog("devices");
+                    }}
+                >
+                    Devices
+                </MenuItem>
+
+                <MenuItem
+                    sx={{ fontSize: 14 }}
+                    onClick={() => {
+                        handleClose();
+                        openDialog("account");
+                    }}
+                >
+                    Account
                 </MenuItem>
 
                 <Divider />

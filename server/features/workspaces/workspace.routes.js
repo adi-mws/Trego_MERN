@@ -27,6 +27,13 @@ router.post("/invite", ensureAuth, workspaceController.generateWorkspaceInviteCo
 // Join workspace via invite code
 router.post("/join/:code", ensureAuth, workspaceController.joinWorkspaceByInviteController);
 
+
+router.post(
+  "/members/profile",
+  ensureAuth,
+  workspaceController.getWorkspaceMemberProfileController
+);
+
 // Infinite scroll list (cursor-based)
 router.get(
   "/list",

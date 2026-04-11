@@ -17,9 +17,8 @@ import { useAccountDialog } from "../../../contexts/AccountDialogContext";
 // Sections
 import ProfileSection from "./_components/ProfileSection";
 import PreferencesSection from "./_components/PreferencesSection";
-import SecuritySection from "./_components/SecuritySection";
 import LoggedInDevicesSection from "./_components/LoggedInDevicesSection.jsx";
-
+import AccountSection from "./_components/AccountSection.jsx";
 const SECTIONS = [
   {
     key: "profile",
@@ -37,8 +36,8 @@ const SECTIONS = [
     icon: <DevicesIcon fontSize="small" />,
   },
   {
-    key: "security",
-    label: "Security",
+    key: "account",
+    label: "Account",
     icon: <SecurityIcon fontSize="small" />,
   },
 ];
@@ -65,7 +64,7 @@ export default function AccountDialog() {
       case "devices":
         return <LoggedInDevicesSection />;
       case "security":
-        return <SecuritySection />;
+        return <AccountSection />;
       default:
         return null;
     }

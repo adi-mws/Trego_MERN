@@ -5,6 +5,7 @@ import { WorkspaceInvite } from "./workspaceInvite.model.js";
 import { WorkspaceHealth } from "./workspaceHealth.model.js";
 import { Project } from "../projects/project.model.js";
 import crypto from "crypto";
+import { User } from "../user/user.model.js";
 
 export const createWorkspace = async (data) => {
   let workspace;
@@ -81,38 +82,55 @@ export const getUserWorkspaces = async (userId) => {
 };
 
 
-export const getWorkspaceGlobalState = async (workspaceSlug) => {
-  const workspace = await Workspace.findOne({ slug: workspaceSlug })
-    .populate({
-      path: "members",
-      populate: {
-        path: "userId",
-        select: "name avatar email",
-      },
-    })
-    .populate("projects")
-    .lean();
+export const getWorkspaceGlobalState = async (workspaceSlug, userId) => {
+  // 1. Get workspace
+  const workspace = await Workspace.findOne({ slug: workspaceSlug }).lean();
 
   if (!workspace) {
     throw new Error("Workspace not found");
   }
 
-  const members = (workspace.members || []).map((m) => ({
+  // 2. Get all members
+  const memberDocs = await WorkspaceMember.find({
+    workspaceId: workspace._id,
+  })
+    .populate("userId", "name avatar email")
+    .lean();
+
+  const members = memberDocs.map((m) => ({
     _id: m.userId?._id,
     name: m.userId?.name,
     avatar: m.userId?.avatar,
     email: m.userId?.email,
+    role: m.role,
+    joinedAt: m.joinedAt,
   }));
 
+  // 3. Get current user's role
+  let currentUserRole = null;
 
+  if (userId) {
+    const currentMember = memberDocs.find(
+      (m) => m.userId?._id?.toString() === userId.toString()
+    );
+
+    currentUserRole = currentMember?.role || null;
+  }
+
+  // 4. Get projects
+  const projects = await Project.find({
+    workspaceId: workspace._id,
+  }).lean();
+
+  // 5. Return combined state
   return {
     ...workspace,
     members,
     totalMembers: members.length,
+    currentUserRole,
+    projects,
   };
 };
-
-
 /*  UPDATE  */
 export const updateWorkspace = async (workspaceId, data) => {
   return await Workspace.findByIdAndUpdate(workspaceId, data, {
@@ -345,50 +363,47 @@ export const generateWorkspaceInvite = async ({
 };
 
 
+
 export const joinWorkspaceByInvite = async ({ code, userId }) => {
-  // find invite
+  // Find invite
   const invite = await WorkspaceInvite.findOne({ code });
 
   if (!invite) {
     throw new Error("Invalid invite link");
   }
 
-  // validate using schema method
+  // Validate invite
   if (!invite.isValidInvite()) {
-    throw new Error("Invite is expired, inactive, or limit reached");
+    throw new Error("Invite is expired, inactive, or usage limit reached");
   }
 
-  // get workspace
-  const workspace = await Workspace.findById(invite.workspaceId).populate("members", "role userId");
+  // Get workspace
+  const workspace = await Workspace.findById(invite.workspaceId).select("_id slug");
 
   if (!workspace) {
     throw new Error("Workspace not found");
   }
 
-  // check if already member
-  const alreadyMember = workspace.members.some((m) => {
-    const id = m.userId?._id || m.userId;
-    return id.toString() === userId.toString();
+  // Check if user is already a member
+  const existingMember = await WorkspaceMember.findOne({
+    workspaceId: invite.workspaceId,
+    userId,
   });
 
-  if (!alreadyMember) {
-    workspace.members.push({
-      userId,
-      role: invite.role,
-    })
-
-    await workspace.save();
-
-  }
-  else {
+  if (existingMember) {
     throw new Error("User is already a member of this workspace");
   }
 
+  // Create new workspace member
+  await WorkspaceMember.create({
+    workspaceId: invite.workspaceId,
+    userId,
+    role: invite.role,
+  });
 
-  // increment usage
+  // Increment invite usage
   invite.usedCount += 1;
 
-  // auto deactivate if limit reached
   if (
     invite.inviteUsageLimit !== -1 &&
     invite.usedCount >= invite.inviteUsageLimit
@@ -401,5 +416,94 @@ export const joinWorkspaceByInvite = async ({ code, userId }) => {
   return {
     workspaceId: workspace._id,
     workspaceSlug: workspace.slug,
+  };
+};
+
+
+
+
+
+
+
+
+export const getWorkspaceMemberProfile = async ({
+  userId,        // target user
+  workspaceId,   // current workspace
+  viewerId       // logged-in user
+}) => {
+  if (!userId || !workspaceId || !viewerId) {
+    throw new Error("userId, workspaceId and viewerId are required");
   }
+
+  // 1. User
+  const user = await User.findById(userId)
+    .select("name email avatar about profile lastOnline")
+    .lean();
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  // 2. Membership in current workspace
+  const membership = await WorkspaceMember.findOne({
+    userId,
+    workspaceId,
+  })
+    .select("role joinedAt")
+    .lean();
+
+  if (!membership) {
+    throw new Error("User is not a member of this workspace");
+  }
+
+  // 3. Get all workspaceIds of target user
+  const targetMemberships = await WorkspaceMember.find({ userId })
+    .select("workspaceId")
+    .lean();
+
+  const targetWorkspaceIds = targetMemberships.map((m) =>
+    m.workspaceId.toString()
+  );
+
+  // 4. Get all workspaceIds of viewer
+  const viewerMemberships = await WorkspaceMember.find({ userId: viewerId })
+    .select("workspaceId")
+    .lean();
+
+  const viewerWorkspaceIds = new Set(
+    viewerMemberships.map((m) => m.workspaceId.toString())
+  );
+
+  // 5. Intersection (TRUE mutual)
+  const mutualIds = targetWorkspaceIds.filter((id) =>
+    viewerWorkspaceIds.has(id)
+  );
+
+  // 6. Fetch mutual workspaces (limit 5)
+  const mutualWorkspaces = await Workspace.find({
+    _id: { $in: mutualIds },
+  })
+    .select("name avatar")
+    .limit(5)
+    .lean();
+
+  // 7. Response
+  return {
+    name: user.name,
+    email: user.email,
+    avatar: user.avatar,
+
+    role: membership.role,
+    joinedAt: membership.joinedAt,
+
+    about: user.about,
+
+    githubUrl: user.profile?.githubUrl || "",
+    linkedinUrl: user.profile?.linkedinUrl || "",
+    facebookUrl: user.profile?.facebookUrl || "",
+
+    lastOnline: user.lastOnline,
+
+    mutualWorkspaces,
+  };
 };
