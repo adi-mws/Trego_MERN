@@ -28,7 +28,6 @@ import JoinWorkspace from "./components/features/workspaces/_components/JoinWork
 import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicRoute from "./routes/PublicRoute";
 import WorkspaceMemberPage from "./components/features/workspaces/WorkspaceMemberPage";
-import WorkspaceRolesPage from "./components/features/workspaces/WorkspaceRolesPage";
 export default function AppRoutes() {
   useVerifyAuth();
 
@@ -62,7 +61,6 @@ export default function AppRoutes() {
               <Route path=":workspaceSlug" element={<WorkspaceDetailLayout />}>
                 <Route index element={<WorkspaceOverviewPage />} />
                 <Route path="members" element={<WorkspaceMemberPage />} />
-                <Route path="roles" element={<WorkspaceRolesPage />} />
                 <Route path="settings" element={<WorkspaceSettingsPage />} />
                 <Route path="projects/:projectSlug" element={<ProjectLayout />}>
                   <Route index element={<ProjectOverviewPage />} />

@@ -563,3 +563,123 @@ export const getWorkspaceMembersSummary = async (workspaceId) => {
     members,
   };
 };
+
+
+export const getWorkspaceMembersByRole = async (workspaceId, role) => {
+  const match = {
+    workspaceId: new mongoose.Types.ObjectId(workspaceId),
+  };
+
+  // apply role filter only if provided
+  if (role) {
+    match.role = role.toUpperCase();
+  }
+
+  const members = await WorkspaceMember.find(match)
+    .populate("userId", "_id name email avatar")
+    .select("role userId")
+    .lean();
+
+  return members.map((m) => ({
+    _id: m.userId?._id,
+    name: m.userId?.name,
+    email: m.userId?.email,
+    avatar: m.userId?.avatar,
+    role: m.role,
+  }));
+};
+
+
+
+/**
+ * Update role / transfer ownership
+ */
+export const updateWorkspaceMemberRole = async ({
+  workspaceId,
+  currentUserId,
+  targetUserId,
+  newRole,
+}) => {
+  //  Get current user membership
+  const currentUser = await WorkspaceMember.findOne({
+    workspaceId,
+    userId: currentUserId,
+  });
+
+  if (!currentUser) {
+    throw new Error("You are not a member of this workspace");
+  }
+
+  //  Only ADMIN / OWNER allowed
+  if (!["ADMIN", "OWNER"].includes(currentUser.role)) {
+    throw new Error("Unauthorized action");
+  }
+
+  //  Get target user
+  const targetUser = await WorkspaceMember.findOne({
+    workspaceId,
+    userId: targetUserId,
+  });
+
+  if (!targetUser) {
+    throw new Error("Target user not found");
+  }
+
+  const currentRole = currentUser.role;
+  const targetRole = targetUser.role;
+
+  //  RULES
+
+  //  ADMIN restrictions
+  if (currentRole === "ADMIN") {
+    if (targetRole === "OWNER") {
+      throw new Error("Admin cannot modify owner");
+    }
+
+    if (newRole === "OWNER") {
+      throw new Error("Admin cannot assign owner");
+    }
+  }
+
+  //  OWNER LOGIC
+
+  if (currentRole === "OWNER") {
+    //  Transfer ownership
+    if (newRole === "OWNER") {
+      if (targetRole !== "ADMIN") {
+        throw new Error("Only admin can be promoted to owner");
+      }
+
+      // current owner → ADMIN
+      await WorkspaceMember.updateOne(
+        { workspaceId, userId: currentUserId },
+        { role: "ADMIN" }
+      );
+
+      // target → OWNER
+      targetUser.role = "OWNER";
+      await targetUser.save();
+
+      return {
+        message: "Ownership transferred successfully",
+      };
+    }
+  }
+  //  NORMAL ROLE UPDATE
+  const validRoles = ["CLIENT", "MEMBER", "ADMIN"];
+  if (!validRoles.includes(newRole)) {
+    throw new Error("Invalid role");
+  }
+
+  //  Cannot modify OWNER (unless transfer)
+  if (targetRole === "OWNER") {
+    throw new Error("Cannot modify owner directly");
+  }
+
+  targetUser.role = newRole;
+  await targetUser.save();
+
+  return {
+    message: "Role updated successfully",
+  };
+};

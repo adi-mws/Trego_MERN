@@ -18,10 +18,11 @@ import GroupsIcon from "@mui/icons-material/Groups";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import PersonIcon from "@mui/icons-material/Person";
 import SupportAgentIcon from "@mui/icons-material/SupportAgent";
-
-import { useParams } from "react-router-dom";
 import { callApi } from "../../../api/api";
 import { useSelector } from "react-redux";
+import { getImageUrl } from "../../../utils/image.utils";
+import SelectMemberDialog from "./_components/SelectMemberDialog";
+import useAuth from "../../../hooks/useAuth";
 
 const roleOrder = ["CLIENT", "MEMBER", "ADMIN", "OWNER"];
 
@@ -33,7 +34,10 @@ const roleConfig = {
 };
 
 export default function WorkspaceMemberPage() {
-    const workspaceId = useSelector((state) => state?.workspace._id)
+    const [openSelectMemberDialog, setOpenSelectMemberDialog] = useState(false);
+
+    const workspaceId = useSelector((state) => state?.workspace._id);
+    const { user } = useAuth();
     const [data, setData] = useState({
         counts: {},
         members: [],
@@ -54,15 +58,17 @@ export default function WorkspaceMemberPage() {
     }
 
     useEffect(() => {
-        fetchMembers();
-    }, []);
+        if (workspaceId) {
+            fetchMembers();
+        }
+    }, [workspaceId]);
 
     const updateRole = async (memberId, newRole) => {
         try {
             setLoadingId(memberId);
 
             const res = await callApi({
-                method: "GET",
+                method: "PUT",
                 url: "/workspaces/members/roles",
                 data: { memberId, role: newRole },
             });
@@ -85,11 +91,15 @@ export default function WorkspaceMemberPage() {
     };
 
     const handleRoleUp = (id, role) => {
+
         const i = roleOrder.indexOf(role);
         if (i < roleOrder.length - 1) updateRole(id, roleOrder[i + 1]);
     };
 
     const handleRoleDown = (id, role) => {
+        if (role === 'OWNER') {
+            setOpenSelectMemberDialog(true);
+        }
         const i = roleOrder.indexOf(role);
         if (i > 0) updateRole(id, roleOrder[i - 1]);
     };
@@ -105,8 +115,9 @@ export default function WorkspaceMemberPage() {
                     { label: "Members", value: counts?.members, icon: <PersonIcon /> },
                     { label: "Clients", value: counts?.clients, icon: <SupportAgentIcon /> },
                 ].map((item, i) => (
-                    <Grid item xs={12} sm={6} md={3} key={i}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }} key={i}>
                         <Card
+                            variant="outlined"
                             sx={{
                                 borderRadius: 3,
                                 border: "1px solid",
@@ -133,8 +144,7 @@ export default function WorkspaceMemberPage() {
                 ))}
             </Grid>
 
-            {/* 👥 MEMBERS */}
-            <Card
+            <Box
                 sx={{
                     borderRadius: 3,
                     border: "1px solid",
@@ -142,7 +152,7 @@ export default function WorkspaceMemberPage() {
                 }}
             >
                 <CardContent>
-                    <Typography variant="h6" mb={2}>
+                    <Typography variant="body1" mb={2}>
                         Workspace Members
                     </Typography>
 
@@ -169,7 +179,7 @@ export default function WorkspaceMemberPage() {
                                     >
                                         {/* LEFT */}
                                         <Stack direction="row" spacing={2} alignItems="center">
-                                            <Avatar src={member.userId?.pfp}>
+                                            <Avatar src={getImageUrl(member.userId?.avatar)}>
                                                 {member.userId?.name?.[0]}
                                             </Avatar>
 
@@ -193,7 +203,7 @@ export default function WorkspaceMemberPage() {
 
                                             <IconButton
                                                 size="small"
-                                                onClick={() =>
+                                                onClick={() => 
                                                     handleRoleDown(member._id, member.role)
                                                 }
                                                 disabled={
@@ -206,11 +216,12 @@ export default function WorkspaceMemberPage() {
 
                                             <IconButton
                                                 size="small"
-                                                onClick={() =>
+                                                onClick={() => {
                                                     handleRoleUp(member._id, member.role)
-                                                }
+
+                                                }}
                                                 disabled={
-                                                    member.role === "OWNER" ||
+                                                    member.role === "OWNER" || (members.some((m) => m.role === "OWNER" && member.role === "ADMIN")) ||
                                                     loadingId === member._id
                                                 }
                                             >
@@ -229,7 +240,18 @@ export default function WorkspaceMemberPage() {
                         </Stack>
                     )}
                 </CardContent>
-            </Card>
+            </Box>
+
+            <SelectMemberDialog
+                open={openSelectMemberDialog}
+                onClose={() => setOpenSelectMemberDialog(false)}
+                title="Transfer Ownership"
+                description="Select a member to transfer ownership of this workspace."
+                excludeUserId={user?._id}
+                onSelect={(member) => {
+                    console.log("Selected:", member);
+                }}
+            />
         </Box>
     );
 }

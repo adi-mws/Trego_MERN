@@ -420,3 +420,75 @@ export const getWorkspaceMembersSummaryController = async (req, res, next) => {
     next(error)
   }
 };
+
+
+export const getWorkspaceMembersByRoleController = async (req, res, next) => {
+  try {
+    const { workspaceId } = req.params;
+    let { role } = req.query;
+
+    // validate workspaceId
+    if (!mongoose.Types.ObjectId.isValid(workspaceId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid workspaceId",
+      });
+    }
+
+    // normalize role
+    if (role) {
+      role = role.toUpperCase();
+    }
+
+    const members = await workspaceService.getWorkspaceMembersByRole(workspaceId, role);
+
+    return res.status(200).json({
+      success: true,
+      count: members.length,
+      members,
+    });
+  } catch (error) {
+    console.error("Get Members By Role Error:", error);
+
+    next(error)
+  }
+};
+
+
+
+export const updateWorkspaceMemberRoleController = async (req, res) => {
+  try {
+    const { workspaceId } = req.params;
+    const { targetUserId, role } = req.body;
+
+    const currentUserId = req.user._id; // from auth middleware
+
+    if (!mongoose.Types.ObjectId.isValid(workspaceId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid workspaceId",
+      });
+    }
+
+    const result = await workspaceService.updateWorkspaceMemberRole({
+      workspaceId,
+      currentUserId,
+      targetUserId,
+      newRole: role,
+    });
+
+    return res.status(200).json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    console.error("Role Update Error:", error);
+
+    return res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
