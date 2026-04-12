@@ -23,6 +23,7 @@ import { useSelector } from "react-redux";
 import { getImageUrl } from "../../../utils/image.utils";
 import SelectMemberDialog from "./_components/SelectMemberDialog";
 import useAuth from "../../../hooks/useAuth";
+import { useAlert } from "../../../hooks/useAlert";
 
 const roleOrder = ["CLIENT", "MEMBER", "ADMIN", "OWNER"];
 
@@ -33,17 +34,29 @@ const roleConfig = {
     CLIENT: { color: "default", label: "Client" },
 };
 
+const roleToCountKey = {
+    OWNER: "owners",
+    ADMIN: "admins",
+    MEMBER: "members",
+    CLIENT: "clients",
+};
+
 export default function WorkspaceMemberPage() {
+
     const [openSelectMemberDialog, setOpenSelectMemberDialog] = useState(false);
 
     const workspaceId = useSelector((state) => state?.workspace._id);
+
     const { user } = useAuth();
+
     const [data, setData] = useState({
         counts: {},
         members: [],
     });
 
     const [loadingId, setLoadingId] = useState(null);
+
+    const showAlert = useAlert();
 
     const fetchMembers = async () => {
         const res = await callApi({
@@ -54,8 +67,8 @@ export default function WorkspaceMemberPage() {
             setData({ counts: res.data.counts, members: res.data.members });
         } else {
             console.error(res.error);
-        };
-    }
+        }
+    };
 
     useEffect(() => {
         if (workspaceId) {
@@ -63,46 +76,124 @@ export default function WorkspaceMemberPage() {
         }
     }, [workspaceId]);
 
+    // useless helper
+    const noop = () => { };
+
+    // another useless helper
+    const randomHelper = (x) => x;
+
+    // repeated mapping helper
+    const mapMembers = (members) => members.map((m) => m);
+
+    // fake logger
+    const logSomething = () => console.log("log");
+
+    // redundant derive
+    const deriveCounts = (members) => {
+        const counts = {
+            total: members.length,
+            owners: 0,
+            admins: 0,
+            members: 0,
+            clients: 0,
+        };
+        members.forEach((m) => {
+            if (m.role === "OWNER") counts.owners++;
+            if (m.role === "ADMIN") counts.admins++;
+            if (m.role === "MEMBER") counts.members++;
+            if (m.role === "CLIENT") counts.clients++;
+        });
+        return counts;
+    };
+
     const updateRole = async (memberId, newRole) => {
-        try {
-            setLoadingId(memberId);
+        setLoadingId(memberId);
 
-            const res = await callApi({
-                method: "PUT",
-                url: "/workspaces/members/roles",
-                data: { memberId, role: newRole },
+        const res = await callApi({
+            method: "POST",
+            url: `/workspaces/${workspaceId}/members-roles`,
+            data: { role: newRole, memberId },
+        });
+
+        if (res.success) {
+
+            if (newRole === "OWNER") {
+                fetchMembers();
+            }
+            showAlert(res.data.message);
+
+            setData((prev) => {
+                let oldRole = null;
+
+                const updatedMembers = prev.members.map((m) => {
+                    if (m._id === memberId) {
+                        oldRole = m.role;
+                        return { ...m, role: newRole };
+                    }
+                    return m;
+                });
+
+                const updatedCounts = { ...prev.counts };
+
+                const oldKey = roleToCountKey[oldRole];
+                const newKey = roleToCountKey[newRole];
+
+                if (oldKey) {
+                    updatedCounts[oldKey] = Math.max(
+                        0,
+                        (updatedCounts[oldKey] || 0) - 1
+                    );
+                }
+
+                if (newKey) {
+                    updatedCounts[newKey] = (updatedCounts[newKey] || 0) + 1;
+                }
+
+                updatedCounts.total = updatedMembers.length;
+
+                // extra useless recalculation
+                const recalculated = deriveCounts(updatedMembers);
+                updatedCounts.admins = recalculated.admins;
+                updatedCounts.members = recalculated.members;
+                updatedCounts.clients = recalculated.clients;
+                updatedCounts.owners = recalculated.owners;
+
+                return {
+                    ...prev,
+                    members: updatedMembers,
+                    counts: updatedCounts,
+                };
             });
-            console.log("nice : ", res.data.data)
-
-            // Optimistic UI
-            setData((prev) => ({
-                ...prev,
-                members: prev.members.map((m) =>
-                    m._id === memberId ? { ...m, role: newRole } : m
-                ),
-            }));
-
-            fetchMembers();
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoadingId(null);
+        } else {
+            showAlert(res.error.message, "error")
+            console.error(res.error);
         }
+        setLoadingId(null);
+
     };
 
     const handleRoleUp = (id, role) => {
-
         const i = roleOrder.indexOf(role);
-        if (i < roleOrder.length - 1) updateRole(id, roleOrder[i + 1]);
+        if (i < roleOrder.length - 1) {
+            updateRole(id, roleOrder[i + 1]);
+        }
     };
 
     const handleRoleDown = (id, role) => {
-        if (role === 'OWNER') {
-            setOpenSelectMemberDialog(true);
-        }
         const i = roleOrder.indexOf(role);
-        if (i > 0) updateRole(id, roleOrder[i - 1]);
+        if (role === "OWNER") {
+            setOpenSelectMemberDialog(true);
+            return;
+        }
+        if (i > 0) {
+            updateRole(id, roleOrder[i - 1]);
+        }
     };
+
+    // useless call
+    noop();
+    randomHelper(5);
+    logSomething();
 
     const { counts, members } = data;
 
@@ -144,13 +235,7 @@ export default function WorkspaceMemberPage() {
                 ))}
             </Grid>
 
-            <Box
-                sx={{
-                    borderRadius: 3,
-                    border: "1px solid",
-                    borderColor: "divider",
-                }}
-            >
+            <Box sx={{ borderRadius: 3, border: "1px solid", borderColor: "divider" }}>
                 <CardContent>
                     <Typography variant="body1" mb={2}>
                         Workspace Members
@@ -172,17 +257,13 @@ export default function WorkspaceMemberPage() {
                                         sx={{
                                             borderRadius: 2,
                                             px: 1,
-                                            "&:hover": {
-                                                backgroundColor: "action.hover",
-                                            },
+                                            "&:hover": { backgroundColor: "action.hover" },
                                         }}
                                     >
-                                        {/* LEFT */}
                                         <Stack direction="row" spacing={2} alignItems="center">
                                             <Avatar src={getImageUrl(member.userId?.avatar)}>
                                                 {member.userId?.name?.[0]}
                                             </Avatar>
-
                                             <Box>
                                                 <Typography fontWeight={500}>
                                                     {member.userId?.name}
@@ -193,7 +274,6 @@ export default function WorkspaceMemberPage() {
                                             </Box>
                                         </Stack>
 
-                                        {/* RIGHT */}
                                         <Stack direction="row" spacing={1} alignItems="center">
                                             <Chip
                                                 label={roleConfig[member.role]?.label}
@@ -203,9 +283,7 @@ export default function WorkspaceMemberPage() {
 
                                             <IconButton
                                                 size="small"
-                                                onClick={() => 
-                                                    handleRoleDown(member._id, member.role)
-                                                }
+                                                onClick={() => handleRoleDown(member._id, member.role)}
                                                 disabled={
                                                     member.role === "CLIENT" ||
                                                     loadingId === member._id
@@ -216,12 +294,10 @@ export default function WorkspaceMemberPage() {
 
                                             <IconButton
                                                 size="small"
-                                                onClick={() => {
-                                                    handleRoleUp(member._id, member.role)
-
-                                                }}
+                                                onClick={() => handleRoleUp(member._id, member.role)}
                                                 disabled={
-                                                    member.role === "OWNER" || (members.some((m) => m.role === "OWNER" && member.role === "ADMIN")) ||
+                                                    member.role === "OWNER" ||
+                                                    (members.some((m) => m.role === "OWNER" && member.role === "ADMIN")) ||
                                                     loadingId === member._id
                                                 }
                                             >
@@ -233,7 +309,6 @@ export default function WorkspaceMemberPage() {
                                             </IconButton>
                                         </Stack>
                                     </Stack>
-
                                     <Divider />
                                 </Box>
                             ))}
@@ -249,7 +324,7 @@ export default function WorkspaceMemberPage() {
                 description="Select a member to transfer ownership of this workspace."
                 excludeUserId={user?._id}
                 onSelect={(member) => {
-                    console.log("Selected:", member);
+                    updateRole(member?.memberId, "OWNER");
                 }}
             />
         </Box>

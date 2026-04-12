@@ -459,9 +459,9 @@ export const getWorkspaceMembersByRoleController = async (req, res, next) => {
 export const updateWorkspaceMemberRoleController = async (req, res) => {
   try {
     const { workspaceId } = req.params;
-    const { targetUserId, role } = req.body;
+    const { memberId, role } = req.body;
 
-    const currentUserId = req.user._id; // from auth middleware
+    const currentUserId = req.user.userId; // from auth middleware
 
     if (!mongoose.Types.ObjectId.isValid(workspaceId)) {
       return res.status(400).json({
@@ -473,7 +473,7 @@ export const updateWorkspaceMemberRoleController = async (req, res) => {
     const result = await workspaceService.updateWorkspaceMemberRole({
       workspaceId,
       currentUserId,
-      targetUserId,
+      memberId,
       newRole: role,
     });
 

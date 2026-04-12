@@ -23,7 +23,7 @@ export const getUserGlobalData = async (req, res, next) => {
       });
     }
 
-    let sessions = await getUserSessionsSafe(userId);
+    let sessions = await getUserSessionsSafe(userId, {type: "ACTIVE"});
 
     // Mark current session
     if (currentDeviceId) {

@@ -84,7 +84,7 @@ router.get(
 
 
 router.post(
-  "/:workspaceId/members/roles",
+  "/:workspaceId/members-roles",
   ensureAuth, 
   workspaceController.updateWorkspaceMemberRoleController
 );

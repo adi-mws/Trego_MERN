@@ -582,6 +582,7 @@ export const getWorkspaceMembersByRole = async (workspaceId, role) => {
 
   return members.map((m) => ({
     _id: m.userId?._id,
+    memberId: m._id,
     name: m.userId?.name,
     email: m.userId?.email,
     avatar: m.userId?.avatar,
@@ -597,10 +598,10 @@ export const getWorkspaceMembersByRole = async (workspaceId, role) => {
 export const updateWorkspaceMemberRole = async ({
   workspaceId,
   currentUserId,
-  targetUserId,
+  memberId,       // ✅ changed
   newRole,
 }) => {
-  //  Get current user membership
+  // 🔹 Get current user membership
   const currentUser = await WorkspaceMember.findOne({
     workspaceId,
     userId: currentUserId,
@@ -610,27 +611,32 @@ export const updateWorkspaceMemberRole = async ({
     throw new Error("You are not a member of this workspace");
   }
 
-  //  Only ADMIN / OWNER allowed
+  // 🔹 Only ADMIN / OWNER allowed
   if (!["ADMIN", "OWNER"].includes(currentUser.role)) {
     throw new Error("Unauthorized action");
   }
 
-  //  Get target user
-  const targetUser = await WorkspaceMember.findOne({
-    workspaceId,
-    userId: targetUserId,
+  // 🔹 Get target membership by memberId
+  const targetMember = await WorkspaceMember.findOne({
+    _id: memberId,
+    workspaceId, // extra safety
   });
 
-  if (!targetUser) {
-    throw new Error("Target user not found");
+  if (!targetMember) {
+    throw new Error("Target member not found");
   }
 
   const currentRole = currentUser.role;
-  const targetRole = targetUser.role;
+  const targetRole = targetMember.role;
 
-  //  RULES
+  // 🚫 Prevent self-role changes (recommended)
+  if (targetMember.userId.toString() === currentUserId.toString()) {
+    throw new Error("You cannot change your own role");
+  }
 
-  //  ADMIN restrictions
+  // =========================
+  // 🔒 ADMIN RULES
+  // =========================
   if (currentRole === "ADMIN") {
     if (targetRole === "OWNER") {
       throw new Error("Admin cannot modify owner");
@@ -641,10 +647,11 @@ export const updateWorkspaceMemberRole = async ({
     }
   }
 
-  //  OWNER LOGIC
-
+  // =========================
+  // 👑 OWNER RULES
+  // =========================
   if (currentRole === "OWNER") {
-    //  Transfer ownership
+    // 🔁 Transfer ownership
     if (newRole === "OWNER") {
       if (targetRole !== "ADMIN") {
         throw new Error("Only admin can be promoted to owner");
@@ -657,27 +664,35 @@ export const updateWorkspaceMemberRole = async ({
       );
 
       // target → OWNER
-      targetUser.role = "OWNER";
-      await targetUser.save();
+      await WorkspaceMember.updateOne(
+        { _id: memberId },
+        { role: "OWNER" }
+      );
 
       return {
         message: "Ownership transferred successfully",
       };
     }
   }
-  //  NORMAL ROLE UPDATE
+
+  // =========================
+  // 🔄 NORMAL ROLE UPDATE
+  // =========================
   const validRoles = ["CLIENT", "MEMBER", "ADMIN"];
+
   if (!validRoles.includes(newRole)) {
     throw new Error("Invalid role");
   }
 
-  //  Cannot modify OWNER (unless transfer)
+  // 🚫 Cannot modify OWNER directly
   if (targetRole === "OWNER") {
     throw new Error("Cannot modify owner directly");
   }
 
-  targetUser.role = newRole;
-  await targetUser.save();
+  await WorkspaceMember.updateOne(
+    { _id: memberId },
+    { role: newRole }
+  );
 
   return {
     message: "Role updated successfully",
