@@ -7,27 +7,30 @@ import {
 import ScrollToTop from "./components/global/ScrollToTop";
 import HomePage from "./components/marketing/home/HomePage";
 import AlertContainer from "./components/global/AlertContainer";
-
 import MarketingLayout from "./layouts/MarketingLayout";
 import SignUpForm from "./components/features/auth/SignUpForm";
 import SignInForm from "./components/features/auth/SignInForm";
-
 import WorkspacesLayout from "./layouts/WorkspacesLayout";
 import WorkspaceListPage from "./components/features/workspaces/WorkspaceListPage";
 import NotificationsPage from "./components/features/notifications/NotificationsPage";
-
 import useVerifyAuth from "./hooks/useVerifyAuth";
 import AppLayout from "./layouts/AppLayout";
 import WorkspaceDetailLayout from "./layouts/WorkspaceDetailLayout";
 import WorkspaceOverviewPage from "./components/features/workspaces/WorkspaceOverviewPage";
 import WorkspaceSettingsPage from "./components/features/workspaces/WorkspaceSettingsPage";
 import ProjectLayout from "./layouts/ProjectLayout";
-import ProjectOverviewPage from "./components/features/projects/ProjectOverviewPage";
 import JoinWorkspace from "./components/features/workspaces/_components/JoinWorkspace";
-
 import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicRoute from "./routes/PublicRoute";
 import WorkspaceMemberPage from "./components/features/workspaces/WorkspaceMemberPage";
+import WorkspaceProjectsPage from "./components/features/workspaces/WorkspaceProjectsPage";
+import ProjectSettings from "./components/features/projects/ProjectSettings";
+import ProjectOverview from "./components/features/projects/ProjectOverview";
+import ProjectMembers from "./components/features/projects/ProjectMembers";
+import ProjectTaskBoard from "./components/features/projects/ProjectTaskBoard";
+import ProjectTasks from "./components/features/projects/ProjectTasks";
+
+
 export default function AppRoutes() {
   useVerifyAuth();
 
@@ -62,8 +65,13 @@ export default function AppRoutes() {
                 <Route index element={<WorkspaceOverviewPage />} />
                 <Route path="members" element={<WorkspaceMemberPage />} />
                 <Route path="settings" element={<WorkspaceSettingsPage />} />
+                <Route path="projects" element={<WorkspaceProjectsPage />} />
                 <Route path="projects/:projectSlug" element={<ProjectLayout />}>
-                  <Route index element={<ProjectOverviewPage />} />
+                  <Route index element={<ProjectOverview />} />
+                  <Route path="tasks" element={<ProjectTasks />} />
+                <Route path="board" element={<ProjectTaskBoard />} />
+                  <Route path="members" element={<ProjectMembers />} />
+                  <Route path="settings" element={<ProjectSettings />} />
                 </Route>
               </Route>
 

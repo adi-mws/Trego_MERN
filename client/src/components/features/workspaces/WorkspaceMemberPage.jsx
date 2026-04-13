@@ -55,7 +55,6 @@ export default function WorkspaceMemberPage() {
     });
 
     const [loadingId, setLoadingId] = useState(null);
-
     const showAlert = useAlert();
 
     const fetchMembers = async () => {

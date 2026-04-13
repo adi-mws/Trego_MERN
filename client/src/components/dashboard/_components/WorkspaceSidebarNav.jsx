@@ -17,13 +17,14 @@ import {
     ExpandMore as ExpandMoreIcon,
     Cabin as AIIcon,
     Folder as ProjectIcon,
+    Add,
 } from '@mui/icons-material';
 
 import WorkspaceSwitcher from '../../features/workspaces/_components/WorkspaceSwitcher';
 import { useNavigate } from 'react-router-dom';
 import { callApi } from '../../../api/api';
 import { useSelector } from 'react-redux';
-import { WORKSPACE_ROUTES } from '../../../lib/routes';
+import { PROJECT_ROUTES, WORKSPACE_ROUTES } from '../../../lib/routes';
 
 
 export default function WorkspaceSidebarNav() {
@@ -37,7 +38,7 @@ export default function WorkspaceSidebarNav() {
                 { id: 'members', label: 'Overview', icon: <PeopleIcon />, path: WORKSPACE_ROUTES.workspace(workspace?.slug) },
                 { id: 'members', label: 'Members', icon: <PeopleIcon />, path: WORKSPACE_ROUTES.workspaceMembers(workspace?.slug) },
                 // { id: 'billings', label: 'Billings', icon: <PeopleIcon />, path: '/billings' },
-                { id: 'settings', label: 'Settings', icon: <SettingsIcon />, path: WORKSPACE_ROUTES.workspaceSettings(workspace?.slug) },
+                // { id: 'settings', label: 'Settings', icon: <SettingsIcon />, path: WORKSPACE_ROUTES.workspaceSettings(workspace?.slug) },
                 { id: 'roles', label: 'Roles', icon: <RolesIcon />, path: WORKSPACE_ROUTES.workspaceRoles(workspace?.slug) },
             ],
         },
@@ -165,6 +166,31 @@ export default function WorkspaceSidebarNav() {
                                 <ListItemText primary={project.name} />
                             </ListItemButton>
                         ))}
+
+                        <ListItemButton
+                            onClick={() => navigate(PROJECT_ROUTES.overview(workspace?.slug, "pro"))}
+                            sx={{
+                                pl: 3,
+                                mt: 0.5,
+                                borderRadius: 1,
+                                color: "primary.main",
+                                "&:hover": {
+                                    backgroundColor: "action.hover",
+                                },
+                            }}
+                        >
+                            <ListItemIcon sx={{ minWidth: 28, color: "primary.main" }}>
+                                <Add fontSize="small" />
+                            </ListItemIcon>
+
+                            <ListItemText
+                                primary="New Project"
+                                primaryTypographyProps={{
+                                    fontSize: 13,
+                                    fontWeight: 500,
+                                }}
+                            />
+                        </ListItemButton>
                     </List>
                 </Collapse>
             </Box>

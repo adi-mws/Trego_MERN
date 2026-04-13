@@ -6,7 +6,7 @@ import userGlobalReducer from "./slices/userGlobalSlice";
 import confirmReducer from "./slices/confirmSlice";
 import alertReducer from './slices/alertSlice';
 import notificationReducer from "./slices/notificationSlice";
-import workspaceReducer from "./slices/currentWorkspaceSlice";
+import workspaceReducer from "./slices/workspaceSlice";
 export const store = configureStore({
   reducer: {
     auth: authReducer,           // handles role, isAuthenticated, data

@@ -1,17 +1,19 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import WorkspaceSidebarNav from '../components/dashboard/_components/WorkspaceSidebarNav'
-import MembersSidebar from '../components/dashboard/_components/MembersSidebar'
 import Header from '../components/dashboard/_components/Header'
-
+import RightSidebar from '../components/dashboard/_components/RightSidebar'
 import { Box, Stack, Avatar, Chip } from '@mui/material'
 import { Outlet, useParams } from 'react-router-dom'
 
 import { useHeader } from '../contexts/HeaderContext'
 import { callApi } from '../api/api'
 import { getImageUrl } from '../utils/image.utils'
-import { setWorkspace, setLoading, clearWorkspace } from '../redux/slices/currentWorkspaceSlice'
-import { useDispatch, useSelector } from 'react-redux';
-
+import {
+  setWorkspace,
+  setLoading,
+  clearWorkspace,
+} from '../redux/slices/workspaceSlice'
+import { useDispatch, useSelector } from 'react-redux'
 
 const AVATAR_COLORS = ['#FF6B6B', '#4ECDC4', '#ebbc00', '#6C5CE7']
 
@@ -21,33 +23,32 @@ function formatMemberCount(count) {
 
 export default function WorkspaceDetailLayout() {
   const { setHeaderLeftContent, setHeaderTitle } = useHeader()
-  const { workspaceSlug } = useParams()
-  const dispatch = useDispatch();
-  const workspace = useSelector((state) => state?.workspace);
+  const { workspaceSlug, projectSlug } = useParams()
+
+  const dispatch = useDispatch()
+  const workspace = useSelector((state) => state?.workspace)
 
   const fetchWorkspace = async () => {
-    dispatch(setLoading(true));
-    const res = await callApi({
-      url: `/workspaces/global/${workspaceSlug}`,
-    })
+    try {
+      dispatch(setLoading(true))
 
-    if (res.success) {
-      console.log(res.data.workspace)
-      dispatch(setWorkspace(res.data.workspace))
+      const res = await callApi({
+        url: `/workspaces/global/${workspaceSlug}`,
+      })
+
+      if (res.success) {
+        dispatch(setWorkspace(res.data.workspace))
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
       dispatch(setLoading(false))
-
-    } else {
-      console.error("Failed to fetch workspace:", res.error)
     }
-    dispatch(setLoading(false))
   }
 
   useEffect(() => {
-    if (workspaceSlug) {
-      fetchWorkspace()
-    }
-
-    return () => dispatch(clearWorkspace());
+    if (workspaceSlug) fetchWorkspace()
+    return () => dispatch(clearWorkspace())
   }, [workspaceSlug])
 
   useEffect(() => {
@@ -57,10 +58,10 @@ export default function WorkspaceDetailLayout() {
 
     setHeaderLeftContent(
       <>
-        <Chip label={workspace.role} sx={{ fontSize: 12 }} size="small" color="success" />
+        <Chip label={workspace.role} size="small" color="success" sx={{ fontSize: 12 }} />
 
         <Stack direction="row" spacing={-0.75} alignItems="center">
-          {(workspace.members ?? []).slice(0, 4).map((member, index) => (
+          {(workspace.members || []).slice(0, 4).map((member, index) => (
             <Avatar
               key={member._id || index}
               src={getImageUrl(member.avatar)}
@@ -96,17 +97,23 @@ export default function WorkspaceDetailLayout() {
     )
   }, [workspace, workspaceSlug])
 
+  const isProjectView = Boolean(projectSlug)
+
   return (
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: '240px 1fr',
+        gridTemplateColumns: isProjectView
+          ? '240px 1fr auto'
+          : '240px 1fr auto',
+        gridTemplateRows: 'auto 1fr',
         height: '100vh',
       }}
     >
       {/* LEFT SIDEBAR */}
       <Box
         sx={{
+          gridRow: '1 / span 2',
           borderRight: '1px solid',
           borderColor: 'divider',
         }}
@@ -114,27 +121,41 @@ export default function WorkspaceDetailLayout() {
         <WorkspaceSidebarNav />
       </Box>
 
-      {/* MAIN */}
+      {/* HEADER (ONLY CENTER) */}
       <Box
         sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
+          gridColumn: '2',
+          gridRow: '1',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
         }}
       >
         <Header />
+      </Box>
 
-        <Box
-          sx={{
-            flex: 1,
-            overflow: 'auto',
-            p: 2,
-          }}
-        >
-          <Outlet context={{ workspace }} />
-        </Box>
+      {/* MAIN CONTENT */}
+      <Box
+        sx={{
+          gridColumn: '2',
+          gridRow: '2',
+          overflow: 'auto',
+          p: 2,
+        }}
+      >
+        <Outlet context={{ workspace }} />
+      </Box>
 
-        <MembersSidebar workspace={workspace} loading={workspace.isLoading} />
+      {/* RIGHT SIDEBAR */}
+
+      <Box
+        sx={{
+          gridColumn: "3",
+          gridRow: "1 / span 2",
+          borderLeft: "1px solid",
+          borderColor: "divider",
+        }}
+      >
+        <RightSidebar />
       </Box>
     </Box>
   )

@@ -7,10 +7,18 @@ import {
   Stack,
 } from "@mui/material";
 import PersonAddAltIcon from "@mui/icons-material/PersonAddAlt";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import { WorkspaceInviteDialog } from "./_components/WorkspaceInviteDialog";
 
 export default function WorkspaceOverviewPage() {
   const [workspaceInviteOpen, setWorkspaceInviteOpen] = useState(false);
+
+  const handleCreateProject = () => {
+    console.log("Create Project Clicked");
+  };
+
+  console.log('hi')
+
   return (
     <Box p={{ xs: 2, md: 3 }}>
 
@@ -26,15 +34,26 @@ export default function WorkspaceOverviewPage() {
         {/* Title Skeleton */}
         <Skeleton variant="text" width={200} height={40} />
 
-        {/* Invite Button */}
-        <Button
-          variant="contained"
-          startIcon={<PersonAddAltIcon />}
-          sx={{ borderRadius: 2 }}
-          onClick={() => setWorkspaceInviteOpen(true)}
-        >
-          Invite Members
-        </Button>
+        {/* ACTION BUTTONS */}
+        <Stack direction="row" spacing={1} flexWrap="wrap">
+          <Button
+            variant="outlined"
+            startIcon={<AddCircleOutlineIcon />}
+            sx={{ borderRadius: 2 }}
+            onClick={handleCreateProject}
+          >
+            New Project
+          </Button>
+
+          <Button
+            variant="contained"
+            startIcon={<PersonAddAltIcon />}
+            sx={{ borderRadius: 2 }}
+            onClick={() => setWorkspaceInviteOpen(true)}
+          >
+            Invite Members
+          </Button>
+        </Stack>
       </Stack>
 
       {/* TOP METRICS CARDS */}

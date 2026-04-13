@@ -13,7 +13,7 @@ const initialState = {
   error: null,
 }
 
-const currentWorkspaceSlice = createSlice({
+const workspaceSlice = createSlice({
   name: 'workspace',
   initialState,
 
@@ -62,6 +62,6 @@ export const {
   setLoading,
   setError,
   clearWorkspace,
-} = currentWorkspaceSlice.actions
+} = workspaceSlice.actions
 
-export default currentWorkspaceSlice.reducer
+export default workspaceSlice.reducer

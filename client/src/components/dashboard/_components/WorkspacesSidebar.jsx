@@ -26,6 +26,7 @@ const NAV_ITEMS = [
 export default function WorkspacesSidebar() {
     const location = useLocation();
     const pathname = location.pathname;
+    
 
     return (
         <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 4 }}>
