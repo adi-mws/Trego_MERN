@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import slugify from "slugify";
 
 const workspaceSchema = new mongoose.Schema(
   {
@@ -30,7 +31,35 @@ const workspaceSchema = new mongoose.Schema(
   }
 );
 
+
+workspaceSchema.pre("validate", async function () {
+  if (!this.isModified("name") && this.slug) return;
+
+  const baseSlug = slugify(this.name, {
+    lower: true,
+    strict: true,
+  });
+
+  let slug = baseSlug;
+  let counter = 0;
+
+  while (true) {
+    const existing = await this.constructor.findOne({ slug });
+
+    if (!existing) break;
+
+    counter += 1;
+    slug = `${baseSlug}-${counter}`;
+  }
+
+  this.slug = slug;
+});
+
 export const Workspace = mongoose.model("Workspace", workspaceSchema);
+
+
+
+
 
 
 

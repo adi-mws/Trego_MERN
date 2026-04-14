@@ -115,6 +115,7 @@ console.log(data);
   /*  CREATE WORKSPACE  */
 
   const handleCreateWorkspace = async (workspace) => {
+    console.log(workspace)
     setWorkspaces((prev) => [workspace, ...prev]);
   };
 

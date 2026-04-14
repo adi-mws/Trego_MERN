@@ -16,78 +16,26 @@ const uploadAvatar = createUploader(
 );
 
 
-// Create workspace
-router.post("/", ensureAuth, uploadAvatar, workspaceController.createWorkspace);
-
-// Get all workspaces of user (basic list)
+router.post("/", ensureAuth, uploadAvatar, workspaceController.createWorkspaceController);
 router.get("/", ensureAuth, workspaceController.getUserWorkspacesController);
 
-// Generate invite link for workspace
 router.post("/invite", ensureAuth, workspaceController.generateWorkspaceInviteController);
-// Join workspace via invite code
 router.post("/join/:code", ensureAuth, workspaceController.joinWorkspaceByInviteController);
 
+router.post("/members/profile", ensureAuth, workspaceController.getWorkspaceMemberProfileController);
 
-router.post(
-  "/members/profile",
-  ensureAuth,
-  workspaceController.getWorkspaceMemberProfileController
-);
+router.get("/list", ensureAuth, workspaceController.getWorkspaceListController);
 
+router.get("/global/:slug", ensureAuth, workspaceController.getWorkspaceGlobalStateController);
+router.get("/slug/:slug", ensureAuth, workspaceController.getWorkspaceBySlug);
 
-
-
-// Infinite scroll list (cursor-based)
-router.get(
-  "/list",
-  ensureAuth,
-  workspaceController.getWorkspaceListController
-);
+router.get("/:workspaceId/members", ensureAuth, workspaceController.getWorkspaceMembersSummaryController);
+router.get("/:workspaceId/members-list", ensureAuth, workspaceController.getWorkspaceMembersByRoleController);
+router.post("/:workspaceId/members-roles", ensureAuth, workspaceController.updateWorkspaceMemberRoleController);
 
 
-router.get(
-  "/global/:slug",
-  ensureAuth,
-  workspaceController.getWorkspaceGlobalStateController
-);
-
-// Get workspace by slug
-router.get(
-  "/slug/:slug",
-  ensureAuth,
-  workspaceController.getWorkspaceBySlug
-);
-
-// Get workspace by ID
 router.get("/:id", ensureAuth, workspaceController.getWorkspace);
-
-// Update workspace
 router.put("/:id", ensureAuth, uploadAvatar, workspaceController.updateWorkspace);
-
-// Delete workspace
 router.delete("/:id", ensureAuth, workspaceController.deleteWorkspace);
-
-
-
-// Workspaces members roles
-router.get(
-  "/:workspaceId/members",
-  ensureAuth,
-  workspaceController.getWorkspaceMembersSummaryController
-)
-
-router.get(
-  "/:workspaceId/members-list",
-  ensureAuth,
-  workspaceController.getWorkspaceMembersByRoleController
-);
-
-
-router.post(
-  "/:workspaceId/members-roles",
-  ensureAuth, 
-  workspaceController.updateWorkspaceMemberRoleController
-);
-
 
 export default router;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -78,7 +78,27 @@ export default function CreateWorkspaceDialog({
   /* SUBMIT */
 
   const onSubmit = async (data) => {
-    await onWorkspaceCreation(data, file)
+
+    const formData = new FormData();
+
+    formData.append("avatar", file);
+    formData.append("name", data.name);
+    formData.append("about", data.about);
+
+    const response = await callApi({
+      method: "POST",
+      url: "/workspaces",
+      data: data,
+      isFormData: true,
+    })
+    if (response.success) {
+       onWorkspaceCreation(response.data.workspace);
+       reset();
+       onClose();
+    } else {
+      console.error(response.error);
+    }
+
   };
 
   /* RENDER */

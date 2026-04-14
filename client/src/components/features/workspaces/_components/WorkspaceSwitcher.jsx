@@ -22,18 +22,19 @@ import {
 
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
-import { setWorkspace } from '../../../../redux/slices/workspaceSlice'
 import { useEffect } from 'react'
 import { callApi } from '../../../../api/api'
 import { WORKSPACE_ROUTES } from '../../../../lib/routes'
+import CreateWorkspaceDialog from './CreateWorkspaceDialog'
+import Loading from '../../../global/Loading'
 
 export default function WorkspaceSwitcher() {
 
   const [anchorEl, setAnchorEl] = useState(null)
   const [workspaces, setWorkspaces] = useState([])
   const [workspaceSearch, setWorkspaceSearch] = useState("");
-  const [workspaceChanging, setWorkspaceChanging] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [openCreateWorkspaceDialog, setOpenCreateWorkspaceDialog] = useState(false);
   const navigate = useNavigate()
   const { currentWorkspace, isLoading: isWorkspaceChanging } = useSelector((state) => state?.workspace)
   const fetchWorkspaces = async () => {
@@ -70,7 +71,7 @@ export default function WorkspaceSwitcher() {
   const handleClose = () => {
     setAnchorEl(null)
     setWorkspaceSearch("")
-    
+
   }
 
   const handleWorkspaceSelect = async (workspace) => {
@@ -89,6 +90,14 @@ export default function WorkspaceSwitcher() {
     "Switch Workspace"
 
   const open = Boolean(anchorEl)
+
+
+  const handleWorkspaceCreation = () => {
+
+  }
+  if (loading) {
+    <Loading />
+  }
 
   return (
     <>
@@ -227,12 +236,14 @@ export default function WorkspaceSwitcher() {
               startIcon={<AddIcon />}
               fullWidth
               size="small"
+              onClick={(setOpenCreateWorkspaceDialog(true))}
               sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
             >
               New Workspace
             </Button>
           </Box>
         </Box>
+        <CreateWorkspaceDialog onClose={() => setOpenCreateWorkspaceDialog(false)} open={openCreateWorkspaceDialog} onWorkspaceCreation={handleWorkspaceCreation} />
       </Popover>
     </>
   )

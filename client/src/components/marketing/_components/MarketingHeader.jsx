@@ -35,6 +35,7 @@ export default function MarketingHeader() {
                             {/* Logo (Left) */}
                             <Box
                                 component="img"
+                                onClick={() => navigate('/')}
                                 src="/images/logo-with-text.png"
                                 alt="Logo"
                                 sx={{ width: 100 }}
@@ -98,7 +99,7 @@ function NavItem({
     return (
         <Typography
             component={Link}
-            href={link}
+            to={link}
             variant="body2"
             sx={{
                 fontWeight: 600,

@@ -2,42 +2,45 @@ import { Workspace } from "./workspace.model.js";
 import { WorkspaceMember } from "./workspaceMember.model.js";
 import * as workspaceService from "./workspace.service.js";
 import mongoose from "mongoose";
-/*  CREATE WORKSPACE  */
-export const createWorkspace = async (req, res) => {
-  try {
-    const { name, slug, avatar, about } = req.body;
+import { saveFile } from "../../utils/upload.utils.js";
 
-    if (!name || !slug) {
+/*  CREATE WORKSPACE  */
+export const createWorkspaceController = async (req, res, next) => {
+  try {
+    const { name, about } = req.body;
+    let avatar = null;
+    if (req.file) {
+      avatar = await saveFile(req.file, "workspaces/avatars");
+    }
+    if (!name?.trim()) {
       return res.status(400).json({
         success: false,
-        message: "Name and slug are required",
+        message: "Workspace name is required",
       });
     }
 
     const workspace = await workspaceService.createWorkspace({
-      name,
-      slug,
+      name: name.trim(),
       avatar,
       about,
       ownerId: req.user.userId,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Workspace created successfully",
       workspace,
     });
+
   } catch (err) {
-    // duplicate slug error
     if (err.code === 11000) {
       return res.status(400).json({
         success: false,
-        message: "Workspace slug already exists",
+        message: "Workspace already exists",
       });
-    } else {
-
-      next(err);
     }
+    console.error(err)
+    return next(err)
   }
 };
 

@@ -101,7 +101,6 @@ export const createUploader = (
 
       try {
         for (const file of files) {
-          // Skip non-images (PDF etc.)
           if (!file.mimetype.startsWith("image/")) continue;
 
           const filename = `${file.fieldname}-${Date.now()}-${Math.round(
@@ -110,7 +109,6 @@ export const createUploader = (
 
           const fullPath = path.join(uploadPath, filename);
 
-          /* ---- Resize Logic (Safe & Flexible) ---- */
           const resizeConfig = { withoutEnlargement: true };
 
           if (resizeOptions.width && resizeOptions.height) {
@@ -124,14 +122,13 @@ export const createUploader = (
           }
 
           await sharp(file.buffer)
-            .rotate() // auto-fix EXIF orientation
+            .rotate()
             .resize(resizeConfig)
             .webp({ quality: resizeOptions.quality ?? 80 })
             .toFile(fullPath);
 
           const stats = await fs.promises.stat(fullPath);
 
-          // Normalize Multer file object
           file.filename = filename;
           file.path = fullPath;
           file.destination = uploadPath;
