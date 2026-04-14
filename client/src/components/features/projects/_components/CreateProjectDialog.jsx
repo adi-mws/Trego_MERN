@@ -14,7 +14,7 @@ import {
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
 import { useForm } from "react-hook-form";
 import { callApi } from "../../../../api/api";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { addProject, setProjects } from "../../../../redux/slices/workspaceSlice";
 
 export default function CreateProjectDialog({
@@ -56,6 +56,8 @@ export default function CreateProjectDialog({
     setFile(null);
     onClose && onClose();
   };
+  const dispatch = useDispatch();
+
 
   const onSubmit = async (data) => {
     const formData = new FormData();
@@ -79,7 +81,7 @@ export default function CreateProjectDialog({
       dispatch(addProject(res.data.project))
       handleClose();
     } else {
-      console.error(err);
+      console.error(res.error);
     }
   };
 

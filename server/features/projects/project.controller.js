@@ -1,10 +1,12 @@
+import { saveFile } from "../../utils/upload.utils.js";
 import { createProject } from "./project.service.js";
 
 export const createProjectController = async (req, res) => {
   try {
     const { name, description, workspaceId } = req.body;
 
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
+    let avatarUrl = await saveFile(req.file, 'projects/avatar');
 
     if (!name || !workspaceId) {
       return res.status(400).json({
@@ -12,21 +14,18 @@ export const createProjectController = async (req, res) => {
         message: "Name and workspaceId are required",
       });
     }
-
     const project = await createProject({
-      name,
-      description,
-      avatar: req.file?.path || null,
-      workspaceId,
-      userId,
-    });
+      name: name,
+      description: description, 
+      avatar: avatarUrl, 
+      workspaceId: workspaceId, 
+      userId: userId
+    })
 
     return res.status(201).json({
       success: true,
       message: "Project created successfully",
-      data: {
-        project,
-      },
+      project: project
     });
   } catch (error) {
     console.error("Create Project Error:", error);

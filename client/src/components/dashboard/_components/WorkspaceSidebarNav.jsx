@@ -8,6 +8,7 @@ import {
     Typography,
     Divider,
     Collapse,
+    Avatar,
 } from '@mui/material'
 import {
     People as PeopleIcon,
@@ -15,11 +16,10 @@ import {
     AccessTime as RolesIcon,
     ExpandMore as ExpandMoreIcon,
     Cabin as AIIcon,
-    Folder as ProjectIcon,
+    FolderOutlined as ProjectIcon,
     Add,
     AutoGraphOutlined,
 } from '@mui/icons-material';
-
 import WorkspaceSwitcher from '../../features/workspaces/_components/WorkspaceSwitcher';
 import { useNavigate } from 'react-router-dom';
 import { callApi } from '../../../api/api';
@@ -27,8 +27,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { PROJECT_ROUTES, WORKSPACE_ROUTES } from '../../../lib/routes';
 import UserMenu from '../../features/account/UserMenu';
 import { setProjects } from '../../../redux/slices/workspaceSlice';
+import CreateProjectDialog from '../../features/projects/_components/CreateProjectDialog';
+import { getImageUrl } from '../../../utils/image.utils';
 export default function WorkspaceSidebarNav() {
-
+    const [openCreateProjectDialog, setOpenCreateProjectDialog] = useState(false);
     const workspace = useSelector((state) => state.workspace);
     const menuGroups = [
         {
@@ -56,14 +58,12 @@ export default function WorkspaceSidebarNav() {
         'ai-agent': false,
         projectsList: true,
     })
-
     const toggleGroup = (groupId) => {
         setExpandedGroups((prev) => ({
             ...prev,
             [groupId]: !prev[groupId],
         }))
     }
-
 
     //  PROJECTS 
     const dispatch = useDispatch();
@@ -81,6 +81,7 @@ export default function WorkspaceSidebarNav() {
     useEffect(() => {
         fetchProjects()
     }, [workspace])
+
 
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: 1 }}>
@@ -119,21 +120,26 @@ export default function WorkspaceSidebarNav() {
 
                 <Collapse in={expandedGroups.projectsList}>
                     <List disablePadding>
-                        {projects.map((project) => (
+                        {workspace.projects?.map((project) => (
                             <ListItemButton
                                 key={project._id}
-                                onClick={() => navigate(`/projects/${project._id}`)}
+                                onClick={() => navigate(PROJECT_ROUTES.overview(workspace.slug, project.slug))}
                                 sx={{ pl: 3 }}
                             >
                                 <ListItemIcon sx={{ minWidth: 28 }}>
-                                    <ProjectIcon fontSize="small" />
+                                    <Avatar sx={{width: 20, height: 20}} src={getImageUrl(project.avatar)} />
                                 </ListItemIcon>
-                                <ListItemText primary={project.name} />
+
+                                <ListItemText primaryTypographyProps={{
+                                    fontSize: 13,
+                                    fontWeight: 500
+                                }}
+                                    primary={project.name} />
                             </ListItemButton>
                         ))}
 
                         <ListItemButton
-                            onClick={() => navigate(PROJECT_ROUTES.overview(workspace?.slug, "pro"))}
+                            onClick={() => setOpenCreateProjectDialog(true)}
                             sx={{
                                 pl: 3,
                                 mt: 0.5,
@@ -200,7 +206,7 @@ export default function WorkspaceSidebarNav() {
                                                 minWidth: 28,
                                                 color: 'text.secondary',
                                                 '& .MuiSvgIcon-root': {
-                                                    fontSize: 17,
+                                                    fontSize: 20,
                                                 },
                                             }}
                                         >
@@ -221,6 +227,7 @@ export default function WorkspaceSidebarNav() {
                 ))}
             </Box>
             <UserMenu />
+            <CreateProjectDialog open={openCreateProjectDialog} onClose={() => setOpenCreateProjectDialog(false)} />
 
         </Box>
     )

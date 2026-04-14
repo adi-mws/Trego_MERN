@@ -68,6 +68,7 @@ const ProjectSidebar = () => {
     },
     {
       label: "Settings",
+      icon: <SettingsOutlined sx={{ fontSize: 20 }} />,
       path: PROJECT_ROUTES.projectSettings(workspaceSlug, projectSlug),
     },
   ];

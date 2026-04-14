@@ -93,14 +93,12 @@ export const getUserWorkspaces = async (userId, search) => {
 
 
 export const getWorkspaceGlobalState = async (workspaceSlug, userId) => {
-  // 1. Get workspace
   const workspace = await Workspace.findOne({ slug: workspaceSlug }).lean();
 
   if (!workspace) {
     throw new Error("Workspace not found");
   }
 
-  // 2. Get all members
   const memberDocs = await WorkspaceMember.find({
     workspaceId: workspace._id,
   })
@@ -116,7 +114,6 @@ export const getWorkspaceGlobalState = async (workspaceSlug, userId) => {
     joinedAt: m.joinedAt,
   }));
 
-  // 3. Get current user's role
   let currentUserRole = null;
 
   if (userId) {
@@ -127,20 +124,27 @@ export const getWorkspaceGlobalState = async (workspaceSlug, userId) => {
     currentUserRole = currentMember?.role || null;
   }
 
-  // 4. Get projects
   const projects = await Project.find({
-    workspaceId: workspace._id,
-  }).lean();
+    workspace: workspace._id,
+  })
+    .select("name slug avatar createdBy createdAt")
+    .lean();
 
-  // 5. Return combined state
   return {
-    ...workspace,
+    _id: workspace._id,
+    name: workspace.name,
+    slug: workspace.slug,
+    avatar: workspace.avatar,
+    description: workspace.description,
+
     members,
     totalMembers: members.length,
     currentUserRole,
     projects,
   };
 };
+
+
 /*  UPDATE  */
 export const updateWorkspace = async (workspaceId, data) => {
   return await Workspace.findByIdAndUpdate(workspaceId, data, {

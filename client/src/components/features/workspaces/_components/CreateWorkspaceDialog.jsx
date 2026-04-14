@@ -15,6 +15,7 @@ import PhotoCamera from "@mui/icons-material/PhotoCamera";
 import { useForm } from "react-hook-form";
 import { callApi } from "../../../../api/api";
 import { useAlert } from "../../../../hooks/useAlert";
+import { useDispatch } from "react-redux";
 
 export default function CreateWorkspaceDialog({
   open,
