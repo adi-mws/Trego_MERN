@@ -9,8 +9,6 @@ import {
     Divider,
     Collapse,
 } from '@mui/material'
-import { setWorkspace } from '../../../redux/slices/workspaceSlice';
-
 import {
     People as PeopleIcon,
     Settings as SettingsIcon,
@@ -19,16 +17,16 @@ import {
     Cabin as AIIcon,
     Folder as ProjectIcon,
     Add,
+    AutoGraphOutlined,
 } from '@mui/icons-material';
 
 import WorkspaceSwitcher from '../../features/workspaces/_components/WorkspaceSwitcher';
 import { useNavigate } from 'react-router-dom';
 import { callApi } from '../../../api/api';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { PROJECT_ROUTES, WORKSPACE_ROUTES } from '../../../lib/routes';
 import UserMenu from '../../features/account/UserMenu';
-
-
+import { setProjects } from '../../../redux/slices/workspaceSlice';
 export default function WorkspaceSidebarNav() {
 
     const workspace = useSelector((state) => state.workspace);
@@ -37,10 +35,8 @@ export default function WorkspaceSidebarNav() {
             id: 'workspace',
             label: 'WORKSPACE',
             items: [
-                { id: 'overview', label: 'Overview', icon: <PeopleIcon />, path: WORKSPACE_ROUTES.workspace(workspace?.slug) },
+                { id: 'overview', label: 'Overview', icon: <AutoGraphOutlined />, path: WORKSPACE_ROUTES.workspace(workspace?.slug) },
                 { id: 'members', label: 'Members', icon: <PeopleIcon />, path: WORKSPACE_ROUTES.workspaceMembers(workspace?.slug) },
-                // { id: 'billings', label: 'Billings', icon: <PeopleIcon />, path: '/billings' },
-                // { id: 'settings', label: 'Settings', icon: <SettingsIcon />, path: WORKSPACE_ROUTES.workspaceSettings(workspace?.slug) },
                 { id: 'roles', label: 'Roles', icon: <RolesIcon />, path: WORKSPACE_ROUTES.workspaceRoles(workspace?.slug) },
             ],
         },
@@ -68,19 +64,15 @@ export default function WorkspaceSidebarNav() {
         }))
     }
 
-    //  WORKSPACE STATE 
-   
-    
 
     //  PROJECTS 
-    const [projects, setProjects] = useState([])
-
+    const dispatch = useDispatch();
     const fetchProjects = async () => {
         if (!workspace) return
 
         try {
             const res = await callApi(`/workspaces/${workspace.slug}/projects`)
-            setProjects(res?.items || [])
+            dispatch((res?.items || []))
         } catch (err) {
             console.error('Failed to fetch projects', err)
         }
@@ -205,10 +197,10 @@ export default function WorkspaceSidebarNav() {
                                     >
                                         <ListItemIcon
                                             sx={{
-                                                minWidth: 26,
+                                                minWidth: 28,
                                                 color: 'text.secondary',
                                                 '& .MuiSvgIcon-root': {
-                                                    fontSize: 16,
+                                                    fontSize: 17,
                                                 },
                                             }}
                                         >

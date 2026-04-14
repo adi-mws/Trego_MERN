@@ -38,6 +38,7 @@ export default function WorkspaceDetailLayout() {
 
       if (res.success) {
         dispatch(setWorkspace(res.data.workspace))
+        console.log(res.data.workspace)
       }
     } catch (err) {
       console.error(err)

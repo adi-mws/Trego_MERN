@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import slugify from "slugify";
 
 const projectSchema = new mongoose.Schema(
   {
@@ -23,6 +24,11 @@ const projectSchema = new mongoose.Schema(
       required: true,
     },
 
+    slug: {
+      type: String,
+      index: true,
+    },
+
     isActive: {
       type: Boolean,
       default: true,
@@ -30,5 +36,31 @@ const projectSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+projectSchema.pre("validate", async function () {
+  if (!this.isModified("name") && this.slug) return;
+
+  const baseSlug = slugify(this.name, {
+    lower: true,
+    strict: true,
+  });
+
+  let slug = baseSlug;
+  let counter = 0;
+
+  while (true) {
+    const existing = await this.constructor.findOne({
+      slug,
+      workspace: this.workspace,
+    });
+
+    if (!existing) break;
+
+    counter += 1;
+    slug = `${baseSlug}-${counter}`;
+  }
+
+  this.slug = slug;
+});
 
 export const Project = mongoose.model("Project", projectSchema);

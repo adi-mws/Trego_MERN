@@ -35,8 +35,6 @@ export default function CreateWorkspaceDialog({
 
   const nameValue = watch("name");
 
-  /* IMAGE */
-
   const handleImageChange = (e) => {
     const selected = e.target.files?.[0];
     if (!selected) return;
@@ -49,12 +47,10 @@ export default function CreateWorkspaceDialog({
 
   // cleanup preview URL 
   useEffect(() => {
-    return () => {
-      if (preview) URL.revokeObjectURL(preview);
-    };
-  }, [preview]);
+    if (!preview) return;
 
-  /* SLUG */
+    return () => URL.revokeObjectURL(preview);
+  }, [preview]);
 
   const generateSlug = (name) => {
     return name
@@ -92,16 +88,14 @@ export default function CreateWorkspaceDialog({
       isFormData: true,
     })
     if (response.success) {
-       onWorkspaceCreation(response.data.workspace);
-       reset();
-       onClose();
+      onWorkspaceCreation(response.data.workspace);
+      reset();
+      onClose();
     } else {
       console.error(response.error);
     }
 
   };
-
-  /* RENDER */
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth>
@@ -110,7 +104,6 @@ export default function CreateWorkspaceDialog({
       <DialogContent>
         <form onSubmit={handleSubmit(onSubmit)}>
           <Stack spacing={3} mt={1}>
-            {/* Avatar Upload */}
             <Stack alignItems="center" spacing={1}>
               <Box position="relative">
                 <Avatar
@@ -142,7 +135,6 @@ export default function CreateWorkspaceDialog({
               </Typography>
             </Stack>
 
-            {/* Name */}
             <TextField
               label="Workspace Name"
               placeholder="Enter workspace name"
@@ -158,7 +150,6 @@ export default function CreateWorkspaceDialog({
               })}
             />
 
-            {/* About */}
             <TextField
               label="About"
               placeholder="Describe your workspace"
@@ -168,28 +159,26 @@ export default function CreateWorkspaceDialog({
               {...register("about")}
             />
 
-            {/* Slug Preview */}
             {nameValue && (
               <Typography variant="caption" color="text.secondary">
                 URL: /workspace/{generateSlug(nameValue)}
               </Typography>
             )}
 
-            {/* Error */}
             {errorMsg && (
               <Typography color="error" variant="caption">
                 {errorMsg}
               </Typography>
             )}
 
-            {/* Submit */}
             <Button
               type="submit"
+              loading={isSubmitting}
               variant="contained"
               disabled={isSubmitting}
               fullWidth
             >
-              {isSubmitting ? "Creating..." : "Create Workspace"}
+              Create Workspace
             </Button>
           </Stack>
         </form>

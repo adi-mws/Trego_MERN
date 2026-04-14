@@ -4,6 +4,7 @@ import { NOTIFICATION_ROUTES, APP_ROUTES } from "../../../lib/routes";
 import { NotificationsOutlined } from "@mui/icons-material";
 import { useLocation } from "react-router-dom"
 import { Link } from "react-router-dom";
+import UserMenu from "../../features/account/UserMenu";
 
 const NAV_ITEMS = [
     {
@@ -26,11 +27,12 @@ const NAV_ITEMS = [
 export default function WorkspacesSidebar() {
     const location = useLocation();
     const pathname = location.pathname;
-    
+
 
     return (
         <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 4 }}>
             <Box component={'img'} src="/images/logo-with-text.png" width={80} />
+            <UserMenu />
 
             <Stack gap={1}>
                 <Typography
@@ -81,6 +83,8 @@ export default function WorkspacesSidebar() {
                         </Box>
                     );
                 })}
-            </Stack></Box>
+
+            </Stack>
+        </Box>
     );
 }

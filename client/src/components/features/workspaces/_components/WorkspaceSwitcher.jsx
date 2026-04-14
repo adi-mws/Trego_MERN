@@ -13,11 +13,14 @@ import {
   TextField,
 } from '@mui/material'
 
+
+
 import {
   SwapHoriz as SwitchIcon,
   Add as AddIcon,
   CheckCircle as CheckIcon,
   Search as SearchIcon,
+  WorkspacesOutline,
 } from '@mui/icons-material'
 
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -44,6 +47,8 @@ export default function WorkspaceSwitcher() {
       url: "/workspaces",
       params: {
         search: workspaceSearch || undefined,
+
+
       }
     })
 
@@ -96,7 +101,7 @@ export default function WorkspaceSwitcher() {
 
   }
   if (loading) {
-    <Loading />
+    return <Loading />
   }
 
   return (
@@ -130,13 +135,15 @@ export default function WorkspaceSwitcher() {
             >
               {currentName}
             </Typography>
-
-            <Typography
-              variant="caption"
-              sx={{ color: 'white' }}
-            >
-              Current workspace
-            </Typography>
+            <Box sx={{ display: "flex", mt: .5, gap: .5 }}>
+              <WorkspacesOutline sx={{ fontSize: 14, color: 'white' }} />
+              <Typography
+                variant="caption"
+                sx={{ color: 'white' }}
+              >
+                Current Workspace
+              </Typography>
+            </Box>
           </Box>
 
           <SwitchIcon sx={{ color: 'white', fontSize: '1.2rem' }} />
@@ -236,7 +243,7 @@ export default function WorkspaceSwitcher() {
               startIcon={<AddIcon />}
               fullWidth
               size="small"
-              onClick={(setOpenCreateWorkspaceDialog(true))}
+              onClick={() => setOpenCreateWorkspaceDialog(true)}
               sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
             >
               New Workspace

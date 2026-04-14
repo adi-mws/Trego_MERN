@@ -14,12 +14,12 @@ import {
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
 import { useForm } from "react-hook-form";
 import { callApi } from "../../../../api/api";
+import { useSelector } from "react-redux";
+import { addProject, setProjects } from "../../../../redux/slices/workspaceSlice";
 
 export default function CreateProjectDialog({
   open,
   onClose,
-  workspaceId,
-  onCreated,
 }) {
   const {
     register,
@@ -33,8 +33,7 @@ export default function CreateProjectDialog({
   const [file, setFile] = useState(null);
 
   const nameValue = watch("name");
-
-  // -------- IMAGE --------
+  const { _id: workspaceId } = useSelector((state) => state.workspace);
   const handleImageChange = (e) => {
     const selected = e.target.files?.[0];
     if (!selected) return;
@@ -45,14 +44,12 @@ export default function CreateProjectDialog({
     setPreview(previewUrl);
   };
 
-  // cleanup preview
   useEffect(() => {
     return () => {
       if (preview) URL.revokeObjectURL(preview);
     };
   }, [preview]);
 
-  // -------- RESET --------
   const handleClose = () => {
     reset();
     setPreview(null);
@@ -60,36 +57,32 @@ export default function CreateProjectDialog({
     onClose && onClose();
   };
 
-  // -------- SUBMIT --------
   const onSubmit = async (data) => {
-    try {
-      const formData = new FormData();
+    const formData = new FormData();
+    formData.append("name", data.name);
+    formData.append("description", data.description || "");
+    formData.append("workspaceId", workspaceId);
 
-      formData.append("name", data.name);
-      formData.append("description", data.description || "");
-      formData.append("workspaceId", workspaceId);
+    if (file) {
+      formData.append("avatar", file);
+    }
 
-      if (file) {
-        formData.append("avatar", file);
-      }
+    const res = await callApi({
+      method: "POST",
+      url: "/projects",
+      data: formData,
+      isFormData: true,
+    });
 
-      const res = await callApi({
-        method: "POST",
-        url: "/projects",
-        data: formData,
-        isFormData: true,
-      });
-
-      if (res.success) {
-        onCreated && onCreated(res.data.project);
-        handleClose();
-      }
-    } catch (err) {
+    if (res.success) {
+      // setting the redux state
+      dispatch(addProject(res.data.project))
+      handleClose();
+    } else {
       console.error(err);
     }
   };
 
-  // -------- RENDER --------
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth>
       <DialogTitle>Create Project</DialogTitle>
@@ -173,7 +166,7 @@ export default function CreateProjectDialog({
               loading={isSubmitting}
               fullWidth
             >
-             Create Project
+              Create Project
             </Button>
 
           </Stack>

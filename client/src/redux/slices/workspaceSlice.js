@@ -8,6 +8,8 @@ const initialState = {
   slug: null,
   avatar: null,
   members: [],
+  projects: [],
+  invites: [],
   totalMembers: 0,
   isLoading: false,
   error: null,
@@ -28,9 +30,11 @@ const workspaceSlice = createSlice({
       state.avatar = ws?.avatar || null
       state._id = ws?._id || null
       state.members = ws?.members || []
+      state.invites = ws?.invites || []
+      state.projects = ws?.projects || []
       state.totalMembers = ws?.totalMembers || 0
       state.isLoading = false
-      state.error = null
+      state.error = null;
     },
 
     setLoading: (state, action) => {
@@ -42,9 +46,13 @@ const workspaceSlice = createSlice({
       state.isLoading = false
     },
 
+
+
     clearWorkspace: (state) => {
       state.currentWorkspace = null
       state.members = []
+      state.projects = []
+      state.invites = []
       state._id = null
       state.role = null
       state.avatar = null
@@ -54,6 +62,62 @@ const workspaceSlice = createSlice({
       state.error = null
       state.totalMembers = 0
     },
+
+    updateMemberRoleGlobal: (state, action) => {
+      const { userId, role } = action.payload;
+
+      state.members = state.members.map((member) =>
+        member.user?._id === userId || member._id === userId
+          ? { ...member, role }
+          : member
+      );
+    },
+
+    addMember: (state, action) => {
+      const newMember = action.payload;
+
+      const exists = state.members.some(
+        (m) => m.user?._id === newMember.user?._id || m._id === newMember._id
+      );
+
+      if (!exists) {
+        state.members.unshift(newMember);
+        state.totalMembers += 1;
+      }
+    },
+
+    removeMember: (state, action) => {
+      const userId = action.payload;
+
+      state.members = state.members.filter(
+        (m) => m.user?._id !== userId && m._id !== userId
+      );
+
+      state.totalMembers = Math.max(0, state.totalMembers - 1);
+    },
+
+ 
+    addProject: (state, action) => {
+      const payload = action.payload;
+
+      if (!payload) return;
+
+      const projectsToAdd = Array.isArray(payload) ? payload : [payload];
+
+      projectsToAdd.forEach((project) => {
+        const exists = state.projects.some(
+          (p) => p._id === project._id
+        );
+
+        if (!exists) {
+          state.projects.unshift(project);
+        }
+      });
+    },
+
+    setProjects: (state, action) => {
+      state.projects = action.payload || [];
+    },
   },
 })
 
@@ -62,6 +126,11 @@ export const {
   setLoading,
   setError,
   clearWorkspace,
+  updatedMemberRoleGlobal,
+  addMember,
+  removeMember,
+  addProject,
+  setProjects,
 } = workspaceSlice.actions
 
 export default workspaceSlice.reducer

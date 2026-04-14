@@ -14,14 +14,9 @@ import {
 
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
-import MenuIcon from "@mui/icons-material/Menu";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import ViewKanbanIcon from "@mui/icons-material/ViewKanban";
-import TaskIcon from "@mui/icons-material/Task";
-import GroupIcon from "@mui/icons-material/Group";
-import SettingsIcon from "@mui/icons-material/Settings";
+import { MenuOutlined, ChevronRightOutlined, ViewKanbanOutlined, TaskOutlined, GroupOutlined, SettingsOutlined } from "@mui/icons-material";
 import { PROJECT_ROUTES } from "../../../../lib/routes";
-import { Analytics, BarChart, ChatRounded, PieChart } from "@mui/icons-material";
+import { Analytics, BarChart, PieChart } from "@mui/icons-material";
 
 const EXPANDED_WIDTH = 240;
 const COLLAPSED_WIDTH = 72;
@@ -44,22 +39,22 @@ const ProjectSidebar = () => {
     },
     {
       label: "Board",
-      icon: <ViewKanbanIcon sx={{ fontSize: 20 }} />,
+      icon: <ViewKanbanOutlined sx={{ fontSize: 20 }} />,
       path: PROJECT_ROUTES.projectTaskBoard(workspaceSlug, projectSlug),
     },
     {
       label: "Tasks",
-      icon: <TaskIcon sx={{ fontSize: 20 }} />,
+      icon: <TaskOutlined sx={{ fontSize: 20 }} />,
       path: PROJECT_ROUTES.projectTasks(workspaceSlug, projectSlug),
     },
 
-      {
+    {
       label: "Workflow",
       icon: <PieChart sx={{ fontSize: 20 }} />,
       path: PROJECT_ROUTES.projectWorkflow(workspaceSlug, projectSlug),
     },
 
-      {
+    {
       label: "Gantt",
       icon: <BarChart sx={{ fontSize: 20 }} />,
       path: PROJECT_ROUTES.projectGantt(workspaceSlug, projectSlug),
@@ -68,12 +63,11 @@ const ProjectSidebar = () => {
 
     {
       label: "Members",
-      icon: <GroupIcon sx={{ fontSize: 20 }} />,
+      icon: <GroupOutlined sx={{ fontSize: 20 }} />,
       path: PROJECT_ROUTES.projectMembers(workspaceSlug, projectSlug),
     },
     {
       label: "Settings",
-      icon: <SettingsIcon sx={{ fontSize: 20 }} />,
       path: PROJECT_ROUTES.projectSettings(workspaceSlug, projectSlug),
     },
   ];
@@ -114,7 +108,7 @@ const ProjectSidebar = () => {
             transition: "transform 0.2s ease",
           }}
         >
-          {collapsed ? <ChevronRightIcon /> : <MenuIcon />}
+          {collapsed ? <ChevronRightOutlined /> : <MenuOutlined />}
         </IconButton>
       </Box>
 

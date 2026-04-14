@@ -9,6 +9,7 @@ import connectDB from "./config/db.js";
 import authRoutes from "./features/auth/auth.route.js";
 import userRoutes from "./features/user/user.routes.js";
 import workspaceRoutes from "./features/workspaces/workspace.routes.js"
+import projectRoutes from "./features/projects/project.routes.js"
 connectDB();
 
 // CRON JOBS
@@ -38,7 +39,8 @@ app.use(cookieParser());
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
-app.use("/api/workspaces", workspaceRoutes)
+app.use("/api/workspaces", workspaceRoutes);
+app.use("/api/projects", projectRoutes)
 
 
 app.use((err, req, res, next) => {
