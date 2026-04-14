@@ -14,15 +14,15 @@ import {
 
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { MenuOutlined, ChevronRightOutlined, ViewKanbanOutlined, TaskOutlined, GroupOutlined, SettingsOutlined } from "@mui/icons-material";
+import { MenuOutlined, ChevronRightOutlined, ViewKanbanOutlined, TaskOutlined, GroupOutlined, SettingsOutlined, History, HistoryOutlined, ShieldOutlined } from "@mui/icons-material";
 import { PROJECT_ROUTES } from "../../../../lib/routes";
-import { Analytics, BarChart, PieChart } from "@mui/icons-material";
+import { Analytics, BarChart, PieChart, AccountTreeOutlined } from "@mui/icons-material";
 
 const EXPANDED_WIDTH = 240;
 const COLLAPSED_WIDTH = 72;
 
 const ProjectSidebar = () => {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -47,10 +47,21 @@ const ProjectSidebar = () => {
       icon: <TaskOutlined sx={{ fontSize: 20 }} />,
       path: PROJECT_ROUTES.projectTasks(workspaceSlug, projectSlug),
     },
+    {
+      label: "Task State History", 
+      icon: <HistoryOutlined sx={{fontSize: 20}} />, 
+      path: PROJECT_ROUTES.projectTaskStateHistory(workspaceSlug, projectSlug) 
+    },
 
     {
-      label: "Workflow",
+      label: "Timeline",
       icon: <PieChart sx={{ fontSize: 20 }} />,
+      path: PROJECT_ROUTES.projectTimeline(workspaceSlug, projectSlug),
+    },
+
+     {
+      label: "Workflow",
+      icon: <AccountTreeOutlined sx={{ fontSize: 20 }} />,
       path: PROJECT_ROUTES.projectWorkflow(workspaceSlug, projectSlug),
     },
 
@@ -59,12 +70,15 @@ const ProjectSidebar = () => {
       icon: <BarChart sx={{ fontSize: 20 }} />,
       path: PROJECT_ROUTES.projectGantt(workspaceSlug, projectSlug),
     },
-
-
     {
       label: "Members",
       icon: <GroupOutlined sx={{ fontSize: 20 }} />,
       path: PROJECT_ROUTES.projectMembers(workspaceSlug, projectSlug),
+    },
+     {
+      label: "Roles",
+      icon: <ShieldOutlined sx={{ fontSize: 20 }} />,
+      path: PROJECT_ROUTES.projectRoles(workspaceSlug, projectSlug),
     },
     {
       label: "Settings",

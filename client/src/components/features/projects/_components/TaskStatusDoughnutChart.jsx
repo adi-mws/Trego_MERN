@@ -26,7 +26,7 @@ function TasksDoughnut({ data }) {
                     cy: 120,
                 },
             ]}
-            hideLegend={{ hidden: true }}
+            slotProps={{ legend: { hidden: true } }}
             height={120}
             width={300}
 
@@ -85,7 +85,7 @@ export default function TasksStatusDoughnutChart({ data }) {
                 return { label: "Loading...", color: "default" };
         }
     };
-    
+
     return (
         <Card
             variant="outlined"
@@ -99,7 +99,7 @@ export default function TasksStatusDoughnutChart({ data }) {
                 Task Status
             </Typography>
             <TasksDoughnut data={data} />
-            <Box sx={{display: 'flex', justifyContent: 'center'}}>
+            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                 <Fade in={fade} timeout={500} key={status}>
                     <Chip {...getChipProps()} sx={{ alignSelf: "center", mx: 2, my: 2 }} />
                 </Fade>

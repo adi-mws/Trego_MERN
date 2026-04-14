@@ -7,7 +7,7 @@ import {
   Stack,
 } from "@mui/material";
 import PersonAddAltIcon from "@mui/icons-material/PersonAddAlt";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+// import {AddCircleOutline} from "@mui/icons-material";
 import { WorkspaceInviteDialog } from "./_components/WorkspaceInviteDialog";
 import CreateProjectDialog from "../projects/_components/CreateProjectDialog";
 
@@ -38,7 +38,7 @@ export default function WorkspaceOverviewPage() {
           <Button
             variant="outlined"
 
-            startIcon={<AddCircleOutlineIcon />}
+            // startIcon={<AddCircleOutlineIcon />}
             sx={{ borderRadius: 2 }}
             onClick={() => setCreateProjectDialogOpen(true)}
           >

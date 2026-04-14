@@ -40,4 +40,6 @@ export const PROJECT_ROUTES = {
     projectTaskBoard: (workspaceSlug, projectSlug) => `${WORKSPACE_ROUTES.workspace(workspaceSlug)}/projects/${projectSlug}/board`,
     projectWorkflow: (workspaceSlug, projectSlug) => `${WORKSPACE_ROUTES.workspace(workspaceSlug)}/projects/${projectSlug}/workflow`,
     projectGantt: (workspaceSlug, projectSlug) => `${WORKSPACE_ROUTES.workspace(workspaceSlug)}/projects/${projectSlug}/gantt`,
+    projectTaskStateHistory: (workspaceSlug, projectSlug) => `${WORKSPACE_ROUTES.workspace(workspaceSlug)}/projects/${projectSlug}/task-state-history`,
+    projectTimeline: (workspaceSlug, projectSlug) => `${WORKSPACE_ROUTES.workspace(workspaceSlug)}/projects/${projectSlug}/timeline`,
 }
