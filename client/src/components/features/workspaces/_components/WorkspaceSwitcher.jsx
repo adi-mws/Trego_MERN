@@ -1,7 +1,7 @@
-import{ useState } from 'react'
+import { useState } from 'react'
 import {
   Box,
-  Popover, 
+  Popover,
   List,
   ListItemButton,
   ListItemText,
@@ -20,17 +20,46 @@ import {
   Search as SearchIcon,
 } from '@mui/icons-material'
 
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
+import { setWorkspace } from '../../../../redux/slices/workspaceSlice'
+import { useEffect } from 'react'
+import { callApi } from '../../../../api/api'
+import { WORKSPACE_ROUTES } from '../../../../lib/routes'
 
-export default function WorkspaceSwitcher({
-  workspaces = [],
-  currentWorkspace = null,
-  search = "",
-  onWorkspaceChange,
-  onSearchChange,
-}) {
+export default function WorkspaceSwitcher() {
+
   const [anchorEl, setAnchorEl] = useState(null)
+  const [workspaces, setWorkspaces] = useState([])
+  const [workspaceSearch, setWorkspaceSearch] = useState("");
+  const [workspaceChanging, setWorkspaceChanging] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate()
+  const { currentWorkspace, isLoading: isWorkspaceChanging } = useSelector((state) => state?.workspace)
+  const fetchWorkspaces = async () => {
+    setLoading(true);
+    const res = await callApi({
+      method: "GET",
+      url: "/workspaces",
+      params: {
+        search: workspaceSearch || undefined,
+      }
+    })
+
+    if (res?.success) {
+      setWorkspaces(res?.data?.workspaces || [])
+    } else {
+      console.error(res?.error)
+    }
+
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    fetchWorkspaces()
+  }, [workspaceSearch]);
+
+
 
   const location = useLocation()
 
@@ -40,13 +69,14 @@ export default function WorkspaceSwitcher({
 
   const handleClose = () => {
     setAnchorEl(null)
-    onSearchChange && onSearchChange("")
+    setWorkspaceSearch("")
+    
   }
 
-  const handleWorkspaceSelect = (workspace) => {
-    onWorkspaceChange && onWorkspaceChange(workspace)
+  const handleWorkspaceSelect = async (workspace) => {
+    navigate(WORKSPACE_ROUTES.workspace(workspace?.slug));
+    setWorkspaceSearch("");
     setAnchorEl(null)
-    onSearchChange && onSearchChange("")
   }
 
   // Extract slug from URL (React Router version)
@@ -119,7 +149,7 @@ export default function WorkspaceSwitcher({
         }}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          
+
           {/* Header */}
           <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
@@ -130,8 +160,8 @@ export default function WorkspaceSwitcher({
               fullWidth
               size="small"
               placeholder="Search..."
-              value={search}
-              onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
+              value={workspaceSearch}
+              onChange={(e) => setWorkspaceSearch(e.target.value)}
               InputProps={{
                 startAdornment: (
                   <SearchIcon sx={{ mr: 1, fontSize: '1rem', color: 'text.secondary' }} />

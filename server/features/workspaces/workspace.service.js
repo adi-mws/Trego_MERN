@@ -70,15 +70,24 @@ export const getWorkspaceBySlug = async (slug) => {
   return await Workspace.findOne({ slug });
 };
 
-export const getUserWorkspaces = async (userId) => {
-  // better than only owner → includes member workspaces
+
+
+export const getUserWorkspaces = async (userId, search) => {
   const memberships = await WorkspaceMember.find({ userId });
 
   const workspaceIds = memberships.map((m) => m.workspaceId);
 
-  return await Workspace.find({
+  const query = {
     _id: { $in: workspaceIds },
-  }).lean();
+  };
+
+  if (search) {
+    query.name = { $regex: search, $options: 'i' };
+  }
+
+  return await Workspace.find(query)
+    .select('_id name avatar slug')
+    .lean();
 };
 
 

@@ -1,6 +1,6 @@
 
 import { AppBar, Toolbar, Box, IconButton } from "@mui/material";
-import { Inbox, InboxOutlined, NotificationsOutlined } from "@mui/icons-material";
+import { AutoAwesomeOutlined, ChatOutlined, Comment, CommentOutlined, ForumOutlined, Inbox, InboxOutlined, NotificationsOutlined } from "@mui/icons-material";
 import GlobalSearchBar from "./GlobalSearchBar";
 import UserMenu from "../../features/account/UserMenu";
 import { useNotificationsDrawer } from "../../../contexts/NotificationDrawerContext";
@@ -40,6 +40,19 @@ export default function Header() {
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <GlobalSearchBar />
           {headerRightActions}
+
+          <IconButton
+            onClick={() => openDrawer()}
+            size="medium"
+            sx={{
+              color: "text.secondary",
+              "&:hover": { color: "text.primary" },
+            }}
+          >
+            <AutoAwesomeOutlined sx={{fontSize: 18}} />
+          </IconButton>
+
+        
           {/* Notifications */}
           <IconButton
             onClick={() => openDrawer()}
@@ -63,7 +76,6 @@ export default function Header() {
           </IconButton>
 
 
-          <UserMenu />
         </Box>
       </Toolbar>
     </AppBar>

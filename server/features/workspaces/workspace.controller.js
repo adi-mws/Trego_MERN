@@ -100,12 +100,16 @@ export const getWorkspaceBySlug = async (req, res) => {
 
 
 /*  GET USER WORKSPACES  */
-export const getUserWorkspaces = async (req, res) => {
+export const getUserWorkspacesController = async (req, res) => {
   try {
+    let searchValue = "";
+    const { search } = req.params;
+    if (search) {
+      searchValue = search;
+    }
     const workspaces = await workspaceService.getUserWorkspaces(
-      req.user._id
+      req.user.userId, searchValue
     );
-
     res.json({
       success: true,
       count: workspaces.length,

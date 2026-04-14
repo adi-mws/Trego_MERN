@@ -21,7 +21,7 @@ import TaskIcon from "@mui/icons-material/Task";
 import GroupIcon from "@mui/icons-material/Group";
 import SettingsIcon from "@mui/icons-material/Settings";
 import { PROJECT_ROUTES } from "../../../../lib/routes";
-import { Analytics, ChatRounded } from "@mui/icons-material";
+import { Analytics, BarChart, ChatRounded, PieChart } from "@mui/icons-material";
 
 const EXPANDED_WIDTH = 240;
 const COLLAPSED_WIDTH = 72;
@@ -53,6 +53,19 @@ const ProjectSidebar = () => {
       path: PROJECT_ROUTES.projectTasks(workspaceSlug, projectSlug),
     },
 
+      {
+      label: "Workflow",
+      icon: <PieChart sx={{ fontSize: 20 }} />,
+      path: PROJECT_ROUTES.projectWorkflow(workspaceSlug, projectSlug),
+    },
+
+      {
+      label: "Gantt",
+      icon: <BarChart sx={{ fontSize: 20 }} />,
+      path: PROJECT_ROUTES.projectGantt(workspaceSlug, projectSlug),
+    },
+
+
     {
       label: "Members",
       icon: <GroupIcon sx={{ fontSize: 20 }} />,
@@ -63,11 +76,6 @@ const ProjectSidebar = () => {
       icon: <SettingsIcon sx={{ fontSize: 20 }} />,
       path: PROJECT_ROUTES.projectSettings(workspaceSlug, projectSlug),
     },
-    {
-      label: "Members",
-      icon: <GroupIcon />,
-      action: "openMembers",
-    }
   ];
 
   return (
@@ -114,9 +122,17 @@ const ProjectSidebar = () => {
 
       <List sx={{ mt: 2, px: 0.5 }}>
         {menuItems.map((item, index) => {
+          const isOverview =
+            index === 0 &&
+            location.pathname === PROJECT_ROUTES.overview(workspaceSlug, projectSlug)
+
           const isActive =
-            location.pathname === item.path ||
-            location.pathname.startsWith(item.path + "/");
+            isOverview ||
+            (index !== 0 &&
+              (
+                location.pathname === item.path ||
+                location.pathname.startsWith(item.path + '/')
+              ))
 
           return (
             <Tooltip
@@ -134,7 +150,7 @@ const ProjectSidebar = () => {
                 }}
                 sx={{
                   borderRadius: 2,
-                  mb: 2,
+                  mb: 1,
                   justifyContent: collapsed ? "center" : "flex-start",
                   px: collapsed ? 1 : 1.5,
 

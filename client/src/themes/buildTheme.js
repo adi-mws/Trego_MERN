@@ -91,7 +91,7 @@ export function buildTheme(mode, primaryColor) {
         styleOverrides: {
           root: {
             textTransform: "none",
-            padding: ".7em 2.5em",
+            padding: ".6em 1.5em",
             borderRadius: 10,
             boxShadow: 'none'
           },

@@ -2,12 +2,15 @@ import mongoose from "mongoose";
 
 const projectSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true },
+    name: {
+      type: String,
+      required: true,
+    },
 
     description: String,
     avatar: String,
 
-    workspaceId: {
+    workspace: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Workspace",
       required: true,
@@ -19,23 +22,6 @@ const projectSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-
-    members: [
-      {
-        userId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-        },
-        roleId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "ProjectRole",
-        },
-        joinedAt: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
 
     isActive: {
       type: Boolean,

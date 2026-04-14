@@ -20,7 +20,7 @@ const uploadAvatar = createUploader(
 router.post("/", ensureAuth, uploadAvatar, workspaceController.createWorkspace);
 
 // Get all workspaces of user (basic list)
-router.get("/", ensureAuth, workspaceController.getUserWorkspaces);
+router.get("/", ensureAuth, workspaceController.getUserWorkspacesController);
 
 // Generate invite link for workspace
 router.post("/invite", ensureAuth, workspaceController.generateWorkspaceInviteController);

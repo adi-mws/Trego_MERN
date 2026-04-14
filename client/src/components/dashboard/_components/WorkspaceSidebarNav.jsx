@@ -9,6 +9,7 @@ import {
     Divider,
     Collapse,
 } from '@mui/material'
+import { setWorkspace } from '../../../redux/slices/workspaceSlice';
 
 import {
     People as PeopleIcon,
@@ -25,6 +26,7 @@ import { useNavigate } from 'react-router-dom';
 import { callApi } from '../../../api/api';
 import { useSelector } from 'react-redux';
 import { PROJECT_ROUTES, WORKSPACE_ROUTES } from '../../../lib/routes';
+import UserMenu from '../../features/account/UserMenu';
 
 
 export default function WorkspaceSidebarNav() {
@@ -35,7 +37,7 @@ export default function WorkspaceSidebarNav() {
             id: 'workspace',
             label: 'WORKSPACE',
             items: [
-                { id: 'members', label: 'Overview', icon: <PeopleIcon />, path: WORKSPACE_ROUTES.workspace(workspace?.slug) },
+                { id: 'overview', label: 'Overview', icon: <PeopleIcon />, path: WORKSPACE_ROUTES.workspace(workspace?.slug) },
                 { id: 'members', label: 'Members', icon: <PeopleIcon />, path: WORKSPACE_ROUTES.workspaceMembers(workspace?.slug) },
                 // { id: 'billings', label: 'Billings', icon: <PeopleIcon />, path: '/billings' },
                 // { id: 'settings', label: 'Settings', icon: <SettingsIcon />, path: WORKSPACE_ROUTES.workspaceSettings(workspace?.slug) },
@@ -67,31 +69,8 @@ export default function WorkspaceSidebarNav() {
     }
 
     //  WORKSPACE STATE 
-    const [workspaces, setWorkspaces] = useState([])
-    const [workspaceSearch, setWorkspaceSearch] = useState("")
-
-    const fetchWorkspaces = async () => {
-        try {
-            const res = await callApi('/workspaces/names', {
-                method: 'GET',
-                params: {
-                    search: workspaceSearch || undefined,
-                }
-            })
-            setWorkspaces(res?.items || [])
-        } catch (err) {
-            console.error('Failed to fetch workspaces', err)
-        }
-    }
-
-    useEffect(() => {
-        fetchWorkspaces()
-    }, [workspaceSearch])
-
-    const handleWorkspaceChange = (workspace) => {
-        setworkspace(workspace)
-        navigate(`/workspaces/${workspace.slug}`)
-    }
+   
+    
 
     //  PROJECTS 
     const [projects, setProjects] = useState([])
@@ -113,17 +92,11 @@ export default function WorkspaceSidebarNav() {
 
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: 1 }}>
-            <Box component={'img'} src="/images/logo-with-text.png" alt="Logo" sx={{ width: 100, m: 2 }} />
+            <Box component={'img'} src="/images/logo-with-text.png" alt="Logo" sx={{ width: 80, m: 1 }} />
 
             {/* Workspace Switcher */}
-            <Box sx={{ flexShrink: 0 }}>
-                <WorkspaceSwitcher
-                    workspaces={workspaces}
-                    search={workspaceSearch}
-                    onSearchChange={setWorkspaceSearch}
-                    workspace={workspace}
-                    onWorkspaceChange={handleWorkspaceChange}
-                />
+            <Box sx={{ flexShrink: 0, mt: 1 }}>
+                <WorkspaceSwitcher />
             </Box>
 
             <Divider sx={{ my: 1 }} />
@@ -255,6 +228,8 @@ export default function WorkspaceSidebarNav() {
                     </Box>
                 ))}
             </Box>
+            <UserMenu />
+
         </Box>
     )
 }

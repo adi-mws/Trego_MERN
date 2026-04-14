@@ -1,0 +1,38 @@
+import mongoose from "mongoose";
+
+const projectMemberSchema = new mongoose.Schema(
+  {
+    project: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Project",
+      required: true,
+      index: true,
+    },
+
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    role: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ProjectRole",
+      required: true,
+    },
+
+    joinedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { timestamps: true }
+);
+
+// prevent duplicate membership
+projectMemberSchema.index({ project: 1, user: 1 }, { unique: true });
+
+export const ProjectMember = mongoose.model(
+  "ProjectMember",
+  projectMemberSchema
+);

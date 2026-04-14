@@ -9,13 +9,12 @@ import {
 import PersonAddAltIcon from "@mui/icons-material/PersonAddAlt";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import { WorkspaceInviteDialog } from "./_components/WorkspaceInviteDialog";
+import CreateProjectDialog from "../projects/_components/CreateProjectDialog";
 
 export default function WorkspaceOverviewPage() {
   const [workspaceInviteOpen, setWorkspaceInviteOpen] = useState(false);
+  const [createProjectDialogOpen, setCreateProjectDialogOpen] = useState(false);
 
-  const handleCreateProject = () => {
-    console.log("Create Project Clicked");
-  };
 
   console.log('hi')
 
@@ -38,9 +37,10 @@ export default function WorkspaceOverviewPage() {
         <Stack direction="row" spacing={1} flexWrap="wrap">
           <Button
             variant="outlined"
+
             startIcon={<AddCircleOutlineIcon />}
             sx={{ borderRadius: 2 }}
-            onClick={handleCreateProject}
+            onClick={() => setCreateProjectDialogOpen(true)}
           >
             New Project
           </Button>
@@ -147,6 +147,8 @@ export default function WorkspaceOverviewPage() {
         open={workspaceInviteOpen}
         onClose={() => setWorkspaceInviteOpen(false)}
       />
+
+      <CreateProjectDialog onClose={() => setCreateProjectDialogOpen(false)} open={createProjectDialogOpen} />
     </Box>
   );
 }

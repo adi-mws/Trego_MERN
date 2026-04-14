@@ -18,7 +18,6 @@ import {
 
 import MenuIcon from "@mui/icons-material/Menu";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-
 import { getImageUrl } from "../../../utils/image.utils";
 
 /* group members by role */
@@ -134,7 +133,7 @@ export default function MembersSidebar({ onBack }) {
       )}
 
       {!collapsed && <Divider />}
-
+    
       {/* MEMBERS */}
       <Box sx={{ flex: 1, overflow: "auto", p: collapsed ? 0.5 : 1 }}>
         {Object.entries(groupedMembers).map(([role, list], index) => (
