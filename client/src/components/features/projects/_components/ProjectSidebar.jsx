@@ -14,7 +14,7 @@ import {
 
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { MenuOutlined, ChevronRightOutlined, ViewKanbanOutlined, TaskOutlined, GroupOutlined, SettingsOutlined, History, HistoryOutlined, ShieldOutlined } from "@mui/icons-material";
+import { MenuOutlined, ChevronRightOutlined, ViewKanbanOutlined, TaskOutlined, GroupOutlined, SettingsOutlined, History, HistoryOutlined, ShieldOutlined, TimelineOutlined, InsightsOutlined } from "@mui/icons-material";
 import { PROJECT_ROUTES } from "../../../../lib/routes";
 import { Analytics, BarChart, PieChart, AccountTreeOutlined } from "@mui/icons-material";
 
@@ -34,7 +34,7 @@ const ProjectSidebar = () => {
   const menuItems = [
     {
       label: "Overview",
-      icon: <Analytics sx={{ fontSize: 20 }} />,
+      icon: <InsightsOutlined sx={{ fontSize: 20 }} />,
       path: PROJECT_ROUTES.overview(workspaceSlug, projectSlug),
     },
     {
@@ -47,17 +47,18 @@ const ProjectSidebar = () => {
       icon: <TaskOutlined sx={{ fontSize: 20 }} />,
       path: PROJECT_ROUTES.projectTasks(workspaceSlug, projectSlug),
     },
+     {
+      label: "Timeline",
+      icon: <TimelineOutlined sx={{ fontSize: 20 }} />,
+      path: PROJECT_ROUTES.projectTimeline(workspaceSlug, projectSlug),
+    },
     {
       label: "Task State History", 
       icon: <HistoryOutlined sx={{fontSize: 20}} />, 
       path: PROJECT_ROUTES.projectTaskStateHistory(workspaceSlug, projectSlug) 
     },
 
-    {
-      label: "Timeline",
-      icon: <PieChart sx={{ fontSize: 20 }} />,
-      path: PROJECT_ROUTES.projectTimeline(workspaceSlug, projectSlug),
-    },
+   
 
      {
       label: "Workflow",

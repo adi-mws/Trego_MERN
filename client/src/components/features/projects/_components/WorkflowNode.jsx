@@ -15,7 +15,6 @@ export default function WorkflowNode({ data }) {
   const open = Boolean(anchorEl);
 
   const handleClick = (e) => {
-    e.stopPropagation(); // prevents drag conflict
     setAnchorEl(e.currentTarget);
   };
 
@@ -24,8 +23,7 @@ export default function WorkflowNode({ data }) {
   };
 
   return (
-    <>
-      {/* 🔥 NODE */}
+    <Box sx={{ position: "relative" }}>
       <Card
         onClick={handleClick}
         variant="outlined"
@@ -36,21 +34,22 @@ export default function WorkflowNode({ data }) {
           textAlign: "center",
           cursor: "pointer",
           position: "relative",
+
+          backgroundColor: "#fff", // 🔥 critical
+          display: "block",
         }}
       >
         {/* Handles */}
-        <Handle type="target" position={Position.Top} />
-        <Handle type="source" position={Position.Bottom} />
-        <Handle type="target" position={Position.Left} />
-        <Handle type="source" position={Position.Right} />
+        <Handle type="target" position={Position.Top} style={{ zIndex: 10 }} />
+        <Handle type="source" position={Position.Bottom} style={{ zIndex: 10 }} />
+        <Handle type="target" position={Position.Left} style={{ zIndex: 10 }} />
+        <Handle type="source" position={Position.Right} style={{ zIndex: 10 }} />
 
-        {/* Label */}
         <Typography fontSize={13} fontWeight={600}>
           {data.label}
         </Typography>
       </Card>
 
-      {/* 🔥 POPOVER */}
       <Popover
         open={open}
         anchorEl={anchorEl}
@@ -59,14 +58,13 @@ export default function WorkflowNode({ data }) {
           vertical: "bottom",
           horizontal: "center",
         }}
-        onClick={(e) => e.stopPropagation()} // 🔥 important
+        onClick={(e) => e.stopPropagation()}
       >
         <Box sx={{ p: 2, minWidth: 220 }}>
-          
-          {/* Allowed Roles */}
           <Typography fontSize={11} color="text.secondary">
             Can Work
           </Typography>
+
           <Stack direction="row" spacing={0.5} flexWrap="wrap" mb={1}>
             {data.allowedRoles?.length ? (
               data.allowedRoles.map((role) => (
@@ -77,10 +75,10 @@ export default function WorkflowNode({ data }) {
             )}
           </Stack>
 
-          {/* Create Roles */}
           <Typography fontSize={11} color="text.secondary">
             Can Create
           </Typography>
+
           <Stack direction="row" spacing={0.5} flexWrap="wrap">
             {data.createRoles?.length ? (
               data.createRoles.map((role) => (
@@ -92,6 +90,6 @@ export default function WorkflowNode({ data }) {
           </Stack>
         </Box>
       </Popover>
-    </>
+    </Box>
   );
 }

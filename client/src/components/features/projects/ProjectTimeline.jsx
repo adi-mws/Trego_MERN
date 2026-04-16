@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -6,8 +6,7 @@ import ReactFlow, {
   MarkerType
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { Card, Typography, Chip, Box } from "@mui/material";
-
+import { Card, Typography, Chip, Box, Tabs, Tab, useTheme } from "@mui/material";
 // DATA
 const tasks = [
   { id: "1", label: "Project Setup", category: "Backend", stage: "DONE", deps: [] },
@@ -48,7 +47,7 @@ import { Handle, Position } from "reactflow";
 
 const TaskNode = ({ data }) => {
   const { color, progress } = getStageMeta(data.stage);
-
+  const [openPopover, setOpenPopover] = useState(false);
   return (
     <Card
       variant="outlined"
@@ -121,6 +120,7 @@ const buildGraph = () => {
       data: task,
     };
   });
+  const theme = useTheme();
 
   const edges = [];
 
@@ -138,12 +138,12 @@ const buildGraph = () => {
 
         markerEnd: {
           type: MarkerType.ArrowClosed,
-          color: "#1976d2",
+          color: theme.palette.primary.main,
         },
 
         style: {
-          stroke: "#1976d2",
-          strokeWidth: 2.5,
+          stroke: theme.palette.primary.main,
+          strokeWidth: 1.5,
         },
       });
     });
@@ -154,15 +154,44 @@ const buildGraph = () => {
 
 export default function ProjectTimeline() {
   const { nodes, edges } = useMemo(() => buildGraph(), []);
+  const [tab, setTab] = useState(0);
+
+  const handleTabChange = () => {
+    if (tab === 0) setTab(1);
+    else setTab(0);
+  }
 
   return (
-    <Box sx={{ height: 600 }}>
+    <Box sx={{ height: '75dvh' }}>
+      <Tabs onChange={handleTabChange} sx={{ background: 'white' }} variant="outlined">
+        {["Task Categories", "Task"].map((item, index) => {
+          return (< Tab
+            sx={{
+              textTransform: "none",
+              ml: 1,
+              fontSize: 13,
+              minHeight: "auto",
+              px: 2,
+              py: 0.75,
+              borderRadius: 2,
+              bgcolor: tab === index ? "background.paper" : "transparent",
+              border: "1px solid",
+              borderColor: tab === index ? "transparent" : "primary.main",
+              color: tab === index ? 'text.primary' : 'primary.main',
+              "&:hover": {
+                bgcolor: "action.hover",
+              },
+            }} label={item} />
+          )
+        })}
+      </Tabs>
       <ReactFlow
         nodes={nodes}
         edges={edges}
         nodeTypes={{ taskNode: TaskNode }}
         fitView
       >
+
         {/* EDGE GLOW */}
         <defs>
           <filter id="edge-glow">

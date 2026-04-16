@@ -72,6 +72,11 @@ const workspaceSlice = createSlice({
           : member
       );
     },
+    updateRole: (state, action) => {
+      const { role, userId } = action.payload;
+      member.role = role;
+    
+    },
 
     addMember: (state, action) => {
       const newMember = action.payload;
@@ -96,7 +101,7 @@ const workspaceSlice = createSlice({
       state.totalMembers = Math.max(0, state.totalMembers - 1);
     },
 
- 
+
     addProject: (state, action) => {
       const payload = action.payload;
 

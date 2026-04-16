@@ -5,11 +5,16 @@ import {
   Skeleton,
   Button,
   Stack,
+  Card, 
+  CardContent, 
+  Typography
 } from "@mui/material";
 import PersonAddAltIcon from "@mui/icons-material/PersonAddAlt";
 // import {AddCircleOutline} from "@mui/icons-material";
 import { WorkspaceInviteDialog } from "./_components/WorkspaceInviteDialog";
 import CreateProjectDialog from "../projects/_components/CreateProjectDialog";
+import { FolderOutlined, AdminPanelSettingsOutlined, SupportAgentOutlined, PersonOutlined, TaskOutlined } from "@mui/icons-material";
+import { PROJECT_ROUTES } from "../../../lib/routes";
 
 export default function WorkspaceOverviewPage() {
   const [workspaceInviteOpen, setWorkspaceInviteOpen] = useState(false);
@@ -20,7 +25,43 @@ export default function WorkspaceOverviewPage() {
 
   return (
     <Box p={{ xs: 2, md: 3 }}>
+      {/* Top level stat cards */}
 
+      <Grid container spacing={2} mb={3}>
+        {[
+          { label: "Projects", value: 10, icon: <FolderOutlined /> },
+          { label: "Tasks", value: 23, icon: <TaskOutlined /> },
+          { label: "Members", value: 56, icon: <PersonOutlined /> },
+          { label: "Online", value: 12, icon: <SupportAgentOutlined /> },
+        ].map((item, i) => (
+          <Grid size={{ xs: 12, sm: 6, md: 3 }} key={i}>
+            <Card
+
+              variant="outlined"
+              sx={{
+                borderRadius: 3,
+                border: "1px solid",
+                borderColor: "divider",
+                transition: "0.2s",
+              }}
+            >
+              <CardContent>
+                <Stack direction="row" justifyContent="space-between">
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      {item.label}
+                    </Typography>
+                    <Typography variant="h5" fontWeight={600}>
+                      {item.value || 0}
+                    </Typography>
+                  </Box>
+                  {item.icon}
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
       {/* HEADER ROW */}
       <Stack
         direction="row"

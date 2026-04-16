@@ -93,138 +93,139 @@ export default function WorkspaceSidebarNav() {
             </Box>
 
             <Divider sx={{ my: 1 }} />
-
-            {/*  PROJECT LIST  */}
-            <Box>
-                <ListItemButton onClick={() => toggleGroup('projectsList')}>
-                    <Typography
-                        variant="caption"
-                        sx={{
-                            flex: 1,
-                            fontWeight: 700,
-                            textTransform: 'uppercase',
-                            fontSize: '0.7rem',
-                            color: 'text.secondary',
-                        }}
-                    >
-                        PROJECTS
-                    </Typography>
-
-                    <ExpandMoreIcon
-                        sx={{
-                            transform: expandedGroups.projectsList ? 'rotate(180deg)' : 'rotate(0deg)',
-                            transition: '0.3s',
-                        }}
-                    />
-                </ListItemButton>
-
-                <Collapse in={expandedGroups.projectsList}>
-                    <List disablePadding>
-                        {workspace.projects?.map((project) => (
-                            <ListItemButton
-                                key={project._id}
-                                onClick={() => navigate(PROJECT_ROUTES.overview(workspace.slug, project.slug))}
-                                sx={{ pl: 3 }}
-                            >
-                                <ListItemIcon sx={{ minWidth: 28 }}>
-                                    <Avatar sx={{width: 20, height: 20}} src={getImageUrl(project.avatar)} />
-                                </ListItemIcon>
-
-                                <ListItemText primaryTypographyProps={{
-                                    fontSize: 13,
-                                    fontWeight: 500
-                                }}
-                                    primary={project.name} />
-                            </ListItemButton>
-                        ))}
-
-                        <ListItemButton
-                            onClick={() => setOpenCreateProjectDialog(true)}
+            <Box sx={{overflowY: 'auto'}}>
+                {/*  PROJECT LIST  */}
+                <Box>
+                    <ListItemButton onClick={() => toggleGroup('projectsList')}>
+                        <Typography
+                            variant="caption"
                             sx={{
-                                pl: 3,
-                                mt: 0.5,
-                                borderRadius: 1,
-                                color: "primary.main",
-                                "&:hover": {
-                                    backgroundColor: "action.hover",
-                                },
+                                flex: 1,
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                fontSize: '0.7rem',
+                                color: 'text.secondary',
                             }}
                         >
-                            <ListItemIcon sx={{ minWidth: 28, color: "primary.main" }}>
-                                <Add fontSize="small" />
-                            </ListItemIcon>
+                            PROJECTS
+                        </Typography>
 
-                            <ListItemText
-                                primary="New Project"
-                                primaryTypographyProps={{
-                                    fontSize: 13,
-                                    fontWeight: 500,
-                                }}
-                            />
-                        </ListItemButton>
-                    </List>
-                </Collapse>
-            </Box>
+                        <ExpandMoreIcon
+                            sx={{
+                                transform: expandedGroups.projectsList ? 'rotate(180deg)' : 'rotate(0deg)',
+                                transition: '0.3s',
+                            }}
+                        />
+                    </ListItemButton>
 
-            <Divider sx={{ my: 1 }} />
+                    <Collapse in={expandedGroups.projectsList}>
+                        <List disablePadding>
+                            {workspace.projects?.map((project) => (
+                                <ListItemButton
+                                    key={project._id}
+                                    onClick={() => navigate(PROJECT_ROUTES.overview(workspace.slug, project.slug))}
+                                    sx={{ pl: 3 }}
+                                >
+                                    <ListItemIcon sx={{ minWidth: 28 }}>
+                                        <Avatar sx={{ width: 20, height: 20 }} src={getImageUrl(project.avatar)} />
+                                    </ListItemIcon>
 
-            {/*  OTHER GROUPS  */}
-            <Box sx={{ flex: 1, overflow: 'auto' }}>
-                {menuGroups.map((group) => (
-                    <Box key={group.id}>
-                        <ListItemButton onClick={() => toggleGroup(group.id)}>
-                            <Typography
-                                variant="caption"
+                                    <ListItemText primaryTypographyProps={{
+                                        fontSize: 13,
+                                        fontWeight: 500
+                                    }}
+                                        primary={project.name} />
+                                </ListItemButton>
+                            ))}
+
+                            <ListItemButton
+                                onClick={() => setOpenCreateProjectDialog(true)}
                                 sx={{
-                                    flex: 1,
-                                    fontWeight: 700,
-                                    textTransform: 'uppercase',
-                                    fontSize: 11,
-                                    color: 'text.secondary',
+                                    pl: 3,
+                                    mt: 0.5,
+                                    borderRadius: 1,
+                                    color: "primary.main",
+                                    "&:hover": {
+                                        backgroundColor: "action.hover",
+                                    },
                                 }}
                             >
-                                {group.label}
-                            </Typography>
+                                <ListItemIcon sx={{ minWidth: 28, color: "primary.main" }}>
+                                    <Add fontSize="small" />
+                                </ListItemIcon>
 
-                            <ExpandMoreIcon
-                                sx={{
-                                    transform: expandedGroups[group.id] ? 'rotate(180deg)' : 'rotate(0deg)',
-                                    transition: '0.3s',
-                                }}
-                            />
-                        </ListItemButton>
+                                <ListItemText
+                                    primary="New Project"
+                                    primaryTypographyProps={{
+                                        fontSize: 13,
+                                        fontWeight: 500,
+                                    }}
+                                />
+                            </ListItemButton>
+                        </List>
+                    </Collapse>
+                </Box>
 
-                        <Collapse in={expandedGroups[group.id]}>
-                            <List disablePadding>
-                                {group.items.map((item) => (
-                                    <ListItemButton
-                                        key={item.id}
-                                        onClick={() => navigate(item.path)}
-                                    >
-                                        <ListItemIcon
-                                            sx={{
-                                                minWidth: 28,
-                                                color: 'text.secondary',
-                                                '& .MuiSvgIcon-root': {
-                                                    fontSize: 20,
-                                                },
-                                            }}
+                <Divider sx={{ my: 1 }} />
+
+                {/*  OTHER GROUPS  */}
+                <Box sx={{ flex: 1 }}>
+                    {menuGroups.map((group) => (
+                        <Box key={group.id}>
+                            <ListItemButton onClick={() => toggleGroup(group.id)}>
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        flex: 1,
+                                        fontWeight: 700,
+                                        textTransform: 'uppercase',
+                                        fontSize: 11,
+                                        color: 'text.secondary',
+                                    }}
+                                >
+                                    {group.label}
+                                </Typography>
+
+                                <ExpandMoreIcon
+                                    sx={{
+                                        transform: expandedGroups[group.id] ? 'rotate(180deg)' : 'rotate(0deg)',
+                                        transition: '0.3s',
+                                    }}
+                                />
+                            </ListItemButton>
+
+                            <Collapse in={expandedGroups[group.id]}>
+                                <List disablePadding>
+                                    {group.items.map((item) => (
+                                        <ListItemButton
+                                            key={item.id}
+                                            onClick={() => navigate(item.path)}
                                         >
-                                            {item.icon}
-                                        </ListItemIcon>
+                                            <ListItemIcon
+                                                sx={{
+                                                    minWidth: 28,
+                                                    color: 'text.secondary',
+                                                    '& .MuiSvgIcon-root': {
+                                                        fontSize: 20,
+                                                    },
+                                                }}
+                                            >
+                                                {item.icon}
+                                            </ListItemIcon>
 
-                                        <ListItemText
-                                            primary={item.label}
-                                            primaryTypographyProps={{
-                                                fontSize: 13,
-                                            }}
-                                        />
-                                    </ListItemButton>
-                                ))}
-                            </List>
-                        </Collapse>
-                    </Box>
-                ))}
+                                            <ListItemText
+                                                primary={item.label}
+                                                primaryTypographyProps={{
+                                                    fontSize: 13,
+                                                }}
+                                            />
+                                        </ListItemButton>
+                                    ))}
+                                </List>
+                            </Collapse>
+                        </Box>
+                    ))}
+                </Box>
             </Box>
             <UserMenu />
             <CreateProjectDialog open={openCreateProjectDialog} onClose={() => setOpenCreateProjectDialog(false)} />

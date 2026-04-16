@@ -163,6 +163,9 @@ export default function WorkspaceMemberPage() {
                     counts: updatedCounts,
                 };
             });
+
+
+
         } else {
             showAlert(res.error.message, "error")
             console.error(res.error);
@@ -199,40 +202,6 @@ export default function WorkspaceMemberPage() {
     return (
         <Box p={{ xs: 2, md: 3 }}>
             <Grid container spacing={2} mb={3}>
-                {[
-                    { label: "Total", value: counts?.total, icon: <GroupsIcon /> },
-                    { label: "Admins", value: counts?.admins, icon: <AdminPanelSettingsIcon /> },
-                    { label: "Members", value: counts?.members, icon: <PersonIcon /> },
-                    { label: "Clients", value: counts?.clients, icon: <SupportAgentIcon /> },
-                ].map((item, i) => (
-                    <Grid size={{ xs: 12, sm: 6, md: 3 }} key={i}>
-                        <Card
-                            variant="outlined"
-                            sx={{
-                                borderRadius: 3,
-                                border: "1px solid",
-                                borderColor: "divider",
-                                transition: "0.2s",
-                                "&:hover": { transform: "translateY(-3px)", boxShadow: 2 },
-                            }}
-                        >
-                            <CardContent>
-                                <Stack direction="row" justifyContent="space-between">
-                                    <Box>
-                                        <Typography variant="body2" color="text.secondary">
-                                            {item.label}
-                                        </Typography>
-                                        <Typography variant="h5" fontWeight={600}>
-                                            {item.value || 0}
-                                        </Typography>
-                                    </Box>
-                                    {item.icon}
-                                </Stack>
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                ))}
-            </Grid>  <Grid container spacing={2} mb={3}>
                 {[
                     { label: "Total", value: counts?.total, icon: <GroupsIcon /> },
                     { label: "Admins", value: counts?.admins, icon: <AdminPanelSettingsIcon /> },

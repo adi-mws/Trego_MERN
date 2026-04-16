@@ -1,4 +1,4 @@
-import React, { useState,useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import ReactFlow, {
   addEdge,
   Background,
@@ -7,14 +7,16 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   MarkerType,
-  Handle,
-  Position,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { Box, Button, Card, Typography } from "@mui/material";
+
+import { Box, Button } from "@mui/material";
+
 import WorkflowNode from "./_components/WorkflowNode";
 import WorkflowSidebar from "./_components/WorkflowSidebar";
 
+// 🔥 Node Types (outside component → stable)
+const nodeTypes = { workflow: WorkflowNode };
 
 // 🔥 Initial Nodes
 const initialNodes = [
@@ -44,7 +46,6 @@ const initialNodes = [
   },
 ];
 
-
 // 🔥 Initial Edges
 const initialEdges = [
   {
@@ -66,13 +67,13 @@ const initialEdges = [
     markerEnd: { type: MarkerType.ArrowClosed },
   },
 ];
-const nodeTypes = { workflow: WorkflowNode }
-
 
 export default function WorkflowBuilder() {
   const [selectedNode, setSelectedNode] = useState(null);
+
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
   // 🔥 Connect nodes
   const onConnect = useCallback(
     (params) =>
@@ -81,12 +82,12 @@ export default function WorkflowBuilder() {
           {
             ...params,
             type: "bezier",
-            markerEnd: { type: MarkerType.Arrow },
+            markerEnd: { type: MarkerType.ArrowClosed },
           },
           eds
         )
       ),
-    []
+    [setEdges]
   );
 
   // 🔥 Add node
@@ -105,39 +106,41 @@ export default function WorkflowBuilder() {
   };
 
   return (
-    <Box sx={{ height: "100vh" }}>
+    <Box sx={{ display: "flex", height: "100vh" }}>
+      
+      <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        
+        {/* Toolbar */}
+        <Box sx={{ p: 1, borderBottom: "1px solid", borderColor: "divider" }}>
+          <Button variant="contained" onClick={addNode}>
+            Add Stage
+          </Button>
+        </Box>
 
-      {/* Toolbar */}
-      <Box sx={{ p: 1 }}>
-        <Button variant="contained" onClick={addNode}>
-          Add Stage
-        </Button>
+        {/* ReactFlow */}
+        <Box sx={{ flex: 1 }}>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            fitView
+            onNodeClick={(e, node) => {
+              setSelectedNode(node);
+            }}
+            onPaneClick={() => setSelectedNode(null)}
+          >
+            <MiniMap />
+            <Controls />
+            <Background gap={20} size={1} />
+          </ReactFlow>
+        </Box>
       </Box>
 
-      {/* Flow */}
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes} // ✅ IMPORTANT
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        fitView
-        onNodeClick={(e, node) => {
-          e.stopPropagation();
-          setSelectedNode(node);
-        }}
-        onPaneClick={() => setSelectedNode(null)}
-      >
-        <MiniMap />
-        <Controls />
-        <Background gap={20} size={1} />
-      </ReactFlow>
-
-       <WorkflowSidebar
-        node={selectedNode}
-        onClose={() => setSelectedNode(null)}
-      />
+      {/* 🔥 RIGHT SIDE (Stable Sidebar) */}
+      <WorkflowSidebar node={selectedNode} />
     </Box>
   );
 }

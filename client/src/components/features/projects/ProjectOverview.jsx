@@ -42,6 +42,7 @@ export default function ProjectOverview() {
   }
   return (
     <Box p={1}>
+      {/* Top level stat cards */}
 
       <Grid container spacing={2} mb={3}>
         {[
@@ -79,7 +80,7 @@ export default function ProjectOverview() {
         ))}
       </Grid>
 
-      {/* 🔹 WORKFLOW / TASK SECTION */}
+      {/*  WORKFLOW / TASK SECTION */}
       <Grid container spacing={1}>
         <Grid size={{ xs: 12, md: 6 }} mt={4}>
           <Card variant="outlined">
@@ -96,6 +97,9 @@ export default function ProjectOverview() {
 
                   <Button startIcon={<AccountTreeOutlined />} variant="contained">
                     Create Workflow
+                  </Button>
+                  <Button startIcon={<AccountTreeOutlined />} variant="contained">
+                    Create Task Categories
                   </Button>
                 </Stack>
               ) : (
