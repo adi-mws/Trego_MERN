@@ -15,10 +15,8 @@ import { Box, Button } from "@mui/material";
 import WorkflowNode from "./_components/WorkflowNode";
 import WorkflowSidebar from "./_components/WorkflowSidebar";
 
-// 🔥 Node Types (outside component → stable)
 const nodeTypes = { workflow: WorkflowNode };
 
-// 🔥 Initial Nodes
 const initialNodes = [
   {
     id: "1",
@@ -46,7 +44,6 @@ const initialNodes = [
   },
 ];
 
-// 🔥 Initial Edges
 const initialEdges = [
   {
     id: "e1-2",
@@ -74,7 +71,6 @@ export default function WorkflowBuilder() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  // 🔥 Connect nodes
   const onConnect = useCallback(
     (params) =>
       setEdges((eds) =>
@@ -90,7 +86,6 @@ export default function WorkflowBuilder() {
     [setEdges]
   );
 
-  // 🔥 Add node
   const addNode = () => {
     const newNode = {
       id: `${nodes.length + 1}`,
@@ -139,7 +134,6 @@ export default function WorkflowBuilder() {
         </Box>
       </Box>
 
-      {/* 🔥 RIGHT SIDE (Stable Sidebar) */}
       <WorkflowSidebar node={selectedNode} />
     </Box>
   );

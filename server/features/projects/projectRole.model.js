@@ -26,11 +26,6 @@ const projectRoleSchema = new mongoose.Schema({
         canViewActivity: { type: Boolean, default: true },
     },
 
-    isSystem: {
-        type: Boolean,
-        default: false,
-    },
-
     priority: {
         type: Number,
         default: 0,
@@ -44,6 +39,4 @@ const projectRoleSchema = new mongoose.Schema({
 // prevent duplicate role names per project
 projectRoleSchema.index({ project: 1, name: 1 }, { unique: true });
 
-const ProjectRole = mongoose.model("ProjectRole", projectRoleSchema);
-
-export default ProjectRole;
+export const ProjectRole = mongoose.model("ProjectRole", projectRoleSchema);

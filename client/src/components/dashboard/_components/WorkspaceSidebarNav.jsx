@@ -39,7 +39,6 @@ export default function WorkspaceSidebarNav() {
             items: [
                 { id: 'overview', label: 'Overview', icon: <AutoGraphOutlined />, path: WORKSPACE_ROUTES.workspace(workspace?.slug) },
                 { id: 'members', label: 'Members', icon: <PeopleIcon />, path: WORKSPACE_ROUTES.workspaceMembers(workspace?.slug) },
-                { id: 'roles', label: 'Roles', icon: <RolesIcon />, path: WORKSPACE_ROUTES.workspaceRoles(workspace?.slug) },
             ],
         },
         {

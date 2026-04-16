@@ -1,5 +1,12 @@
 import express from "express";
-import { createProjectController } from "./project.controller.js";
+import {
+    createProjectController, createProjectMemberController,
+    createProjectRoleController, getProjectMemberController,
+    getProjectMembersController, getProjectRoleController,
+    removeMultipleProjectMemberController, removeProjectMemberController,
+    createMultipleProjectRoleController,
+    getAllProjectRolesController, updateProjectRoleController, deleteProjectRoleController
+} from "./project.controller.js";
 import { createUploader } from "../../middlewares/multer.js";
 import ensureAuth from "../../middlewares/ensureAuth.js"
 const router = express.Router();
@@ -16,5 +23,20 @@ const uploadAvatar = createUploader(
 
 
 router.post("/", ensureAuth, uploadAvatar, createProjectController);
+
+
+router.post("/:projectId/roles", ensureAuth, createProjectRoleController);
+router.post("/:projectId/roles/multiple", ensureAuth, createMultipleProjectRoleController);
+router.get("/:projectId/roles", ensureAuth, getAllProjectRolesController);
+router.get("/:projectId/roles/:roleId", ensureAuth, getProjectRoleController);
+router.put("/:projectId/roles/:roleId", ensureAuth, updateProjectRoleController);
+router.delete("/:projectId/roles/:roleId", ensureAuth, deleteProjectRoleController);
+
+
+router.post("/:projectId/members", ensureAuth, createProjectMemberController);
+router.get("/:projectId/members", ensureAuth, getProjectMembersController);
+router.get("/:projectId/members/:memberId", ensureAuth, getProjectMemberController);
+router.delete("/:projectId/members/:memberId", ensureAuth, removeProjectMemberController);
+router.delete("/:projectId/members", ensureAuth, removeMultipleProjectMemberController);
 
 export default router;
