@@ -1,5 +1,6 @@
 import { Project } from "./project.model.js";
 import { ProjectRole } from "./projectRole.model.js";
+import { ProjectMember } from "./projectMember.model.js"
 export const createProject = async ({
   name,
   description,
@@ -131,10 +132,22 @@ export const createMultipleProjectRole = async ({
 };
 
 
+
 export const deleteProjectRole = async ({ roleId, projectId }) => {
   try {
     if (!roleId || !projectId) {
       throw new Error("Role ID and Project ID are required");
+    }
+
+    const memberUsingRole = await ProjectMember.findOne({
+      project: projectId,
+      role: roleId,
+    });
+
+    if (memberUsingRole) {
+      throw new Error(
+        "Cannot delete role. Members are still assigned to this role"
+      );
     }
 
     const role = await ProjectRole.findOneAndDelete({
@@ -152,7 +165,6 @@ export const deleteProjectRole = async ({ roleId, projectId }) => {
     throw error;
   }
 };
-
 
 
 export const getProjectRole = async ({ roleId, projectId }) => {
