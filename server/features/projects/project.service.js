@@ -23,28 +23,35 @@ export const createProject = async ({
 
 
 // * PROJECT ROLES
-// Create Project Role
+
+/*
+ * Create single role
+ */
 export const createProjectRole = async ({
   name,
   projectId,
   permissions = {},
 }) => {
   try {
+    if (!name || !name.trim()) {
+      throw new Error("Role name is required");
+    }
+
     const systemRoleNames = ["Head Management", "Project Manager"];
 
-    if (systemRoleNames.includes(name)) {
+    if (systemRoleNames.includes(name.trim())) {
       throw new Error("Cannot create system roles manually");
     }
-    //  Check duplicate role name inside project
+
     const existing = await ProjectRole.findOne({
       project: projectId,
       name: name.trim(),
     });
 
     if (existing) {
-      throw new Error("Role with this name already exists in this project");
+      throw new Error("Role already exists in this project");
     }
-    //  Create role
+
     const role = await ProjectRole.create({
       name: name.trim(),
       project: projectId,
@@ -75,14 +82,14 @@ export const createProjectRole = async ({
 
     return role;
   } catch (error) {
-    console.error("Error creating project role:", error);
+    console.error("Create Project Role Error:", error);
     throw error;
   }
 };
 
-
-
-
+/**
+ * Create multiple roles
+ */
 export const createMultipleProjectRole = async ({
   projectId,
   roles = [],
@@ -93,10 +100,10 @@ export const createMultipleProjectRole = async ({
       throw new Error("Roles array is required");
     }
 
-    // sanitize + normalize
     const formattedRoles = roles.map((role) => ({
       name: role.name.trim(),
       project: projectId,
+
       permissions: {
         canManageProject: role?.permissions?.canManageProject || false,
         canManageMembers: role?.permissions?.canManageMembers || false,
@@ -119,20 +126,18 @@ export const createMultipleProjectRole = async ({
             ? role.permissions.canViewActivity
             : true,
       },
-      priority: role.priority ?? 0,
     }));
 
-    const createdRoles = await ProjectRole.insertMany(formattedRoles);
-
-    return createdRoles;
+    return await ProjectRole.insertMany(formattedRoles);
   } catch (error) {
-    console.error("Create Multiple Project Roles Error:", error);
+    console.error("Create Multiple Roles Error:", error);
     throw error;
   }
 };
 
-
-
+/**
+ * Delete role (safe)
+ */
 export const deleteProjectRole = async ({ roleId, projectId }) => {
   try {
     if (!roleId || !projectId) {
@@ -161,12 +166,14 @@ export const deleteProjectRole = async ({ roleId, projectId }) => {
 
     return role;
   } catch (error) {
-    console.error("Delete Project Role Error:", error);
+    console.error("Delete Role Error:", error);
     throw error;
   }
 };
 
-
+/**
+ * Get single role
+ */
 export const getProjectRole = async ({ roleId, projectId }) => {
   try {
     if (!roleId || !projectId) {
@@ -184,34 +191,34 @@ export const getProjectRole = async ({ roleId, projectId }) => {
 
     return role;
   } catch (error) {
-    console.error("Get Project Role Error:", error);
+    console.error("Get Role Error:", error);
     throw error;
   }
 };
-
 /**
- * Get all roles of a project
+ * Get all roles
  */
 export const getAllProjectRoles = async ({ projectId }) => {
   try {
     if (!projectId) throw new Error("Project ID is required");
 
-    const roles = await ProjectRole.find({ project: projectId })
-      .sort({ priority: -1, createdAt: 1 });
-
-    return roles;
+    return await ProjectRole.find({ project: projectId }).sort({
+      createdAt: 1,
+    });
   } catch (error) {
-    console.error("Get All Project Roles Error:", error);
+    console.error("Get All Roles Error:", error);
     throw error;
   }
 };
 
-
+/**
+ * Update role (name + permissions only)
+ */
 export const updateProjectRole = async ({
   roleId,
   projectId,
   name,
-  priority,
+  permissions,
 }) => {
   try {
     if (!roleId || !projectId) {
@@ -222,12 +229,11 @@ export const updateProjectRole = async ({
 
     if (name !== undefined) {
       if (!name.trim()) throw new Error("Role name cannot be empty");
-
       updateData.name = name.trim();
     }
 
-    if (priority !== undefined) {
-      updateData.priority = priority;
+    if (permissions !== undefined) {
+      updateData.permissions = permissions;
     }
 
     if (Object.keys(updateData).length === 0) {
@@ -246,10 +252,13 @@ export const updateProjectRole = async ({
 
     return updatedRole;
   } catch (error) {
-    console.error("Update Project Role Error:", error);
+    console.error("Update Role Error:", error);
     throw error;
   }
 };
+
+
+
 
 
 

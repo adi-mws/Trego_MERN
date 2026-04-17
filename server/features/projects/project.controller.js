@@ -17,9 +17,9 @@ import {
 export const createProjectController = async (req, res, next) => {
   try {
     const { name, description, workspaceId } = req.body;
-
     const userId = req.user?.userId;
-    let avatarUrl = await saveFile(req.file, 'projects/avatar');
+
+    const avatarUrl = await saveFile(req.file, "projects/avatar");
 
     if (!name || !workspaceId) {
       return res.status(400).json({
@@ -27,28 +27,32 @@ export const createProjectController = async (req, res, next) => {
         message: "Name and workspaceId are required",
       });
     }
+
     const project = await createProject({
-      name: name,
-      description: description,
+      name,
+      description,
       avatar: avatarUrl,
-      workspaceId: workspaceId,
-      userId: userId
-    })
+      workspaceId,
+      userId,
+    });
 
     return res.status(201).json({
       success: true,
       message: "Project created successfully",
-      project: project
+      project,
     });
   } catch (error) {
     next(error);
   }
 };
 
+
 // * Project Roles
+
+
 export const createProjectRoleController = async (req, res, next) => {
   try {
-    const { name, permissions, priority } = req.body;
+    const { name, permissions } = req.body;
     const { projectId } = req.params;
 
     if (!name || !name.trim()) {
@@ -57,6 +61,7 @@ export const createProjectRoleController = async (req, res, next) => {
         message: "Role name is required",
       });
     }
+
     const role = await createProjectRole({
       name,
       projectId,
@@ -70,15 +75,9 @@ export const createProjectRoleController = async (req, res, next) => {
     });
   } catch (error) {
     next(error);
-  };
-}
+  }
+};
 
-
-
-
-/**
- * Create multiple roles
- */
 export const createMultipleProjectRoleController = async (req, res, next) => {
   try {
     const { projectId } = req.params;
@@ -96,13 +95,9 @@ export const createMultipleProjectRoleController = async (req, res, next) => {
     });
   } catch (error) {
     next(error);
-
   }
 };
 
-/**
- * Delete role
- */
 export const deleteProjectRoleController = async (req, res, next) => {
   try {
     const { projectId, roleId } = req.params;
@@ -119,13 +114,9 @@ export const deleteProjectRoleController = async (req, res, next) => {
     });
   } catch (error) {
     next(error);
-
   }
 };
 
-/**
- * Get single role
- */
 export const getProjectRoleController = async (req, res, next) => {
   try {
     const { projectId, roleId } = req.params;
@@ -141,20 +132,14 @@ export const getProjectRoleController = async (req, res, next) => {
     });
   } catch (error) {
     next(error);
-
   }
 };
 
-/**
- * Get all roles of a project
- */
 export const getAllProjectRolesController = async (req, res, next) => {
   try {
     const { projectId } = req.params;
 
-    const roles = await getAllProjectRoles({
-      projectId,
-    });
+    const roles = await getAllProjectRoles({ projectId });
 
     return res.status(200).json({
       success: true,
@@ -165,19 +150,16 @@ export const getAllProjectRolesController = async (req, res, next) => {
   }
 };
 
-/**
- * Update role (only name + priority)
- */
 export const updateProjectRoleController = async (req, res, next) => {
   try {
     const { projectId, roleId } = req.params;
-    const { name, priority } = req.body;
+    const { name, permissions } = req.body;
 
     const updatedRole = await updateProjectRole({
       roleId,
       projectId,
       name,
-      priority,
+      permissions,
     });
 
     return res.status(200).json({
@@ -187,7 +169,6 @@ export const updateProjectRoleController = async (req, res, next) => {
     });
   } catch (error) {
     next(error);
-
   }
 };
 
