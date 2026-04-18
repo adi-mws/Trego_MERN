@@ -1,13 +1,33 @@
-import React, { useEffect, useState } from "react";
-import { Box, Typography, Paper, Table, TableHead, TableRow,
-  TableCell, TableBody, IconButton, Button, Dialog, DialogTitle,
-  DialogContent, DialogActions, TextField, Stack, Switch, FormControlLabel,
-  Divider, Chip,
+import { useEffect, useState } from "react";
+import {
+  Box,
+  Typography,
+  Paper,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  IconButton,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Stack,
+  Switch,
+  FormControlLabel,
+  Divider,
+  Chip,
+  TextField,
 } from "@mui/material";
 
 import { Edit, Delete, Add } from "@mui/icons-material";
-import { callApi } from "../../../api/api"
+import { useForm, Controller } from "react-hook-form";
+import { callApi } from "../../../api/api";
 import { useAlert } from "../../../hooks/useAlert";
+import { useSelector } from "react-redux";
+
 const defaultPermissions = {
   canManageProject: false,
   canManageMembers: false,
@@ -18,23 +38,27 @@ const defaultPermissions = {
   canViewActivity: true,
 };
 
-export default function ProjectRoles({ projectId }) {
+export default function ProjectRoles() {
   const alert = useAlert();
-
+  const { _id, isLoading } = useSelector((state) => state.project);
   const [roles, setRoles] = useState([]);
   const [open, setOpen] = useState(false);
   const [editRole, setEditRole] = useState(null);
 
-  const [form, setForm] = useState({
-    name: "",
-    permissions: defaultPermissions,
+  const { control, handleSubmit, reset, watch } = useForm({
+    defaultValues: {
+      name: "",
+      permissions: defaultPermissions,
+    },
   });
 
-  // 🔹 Fetch roles
+  const permissions = watch("permissions");
+
+  //  Fetch roles
   const fetchRoles = async () => {
     const res = await callApi({
       method: "get",
-      url: `/projects/${projectId}/roles`,
+      url: `/projects/${_id}/roles`,
     });
 
     if (res.success) {
@@ -45,43 +69,40 @@ export default function ProjectRoles({ projectId }) {
   };
 
   useEffect(() => {
-    fetchRoles();
-  }, []);
+    if (_id)
+      fetchRoles();
+  }, [_id]);
 
-  //  Open Create
   const handleCreate = () => {
     setEditRole(null);
-    setForm({
+    reset({
       name: "",
       permissions: defaultPermissions,
     });
     setOpen(true);
   };
 
-  //  Open Edit
   const handleEdit = (role) => {
     setEditRole(role);
-    setForm({
+    reset({
       name: role.name,
       permissions: role.permissions || defaultPermissions,
     });
     setOpen(true);
   };
 
-  //  Toggle Permission
-  const handlePermissionChange = (key) => {
-    setForm((prev) => ({
-      ...prev,
+  const togglePermission = (key) => {
+    reset({
+      name: watch("name"),
       permissions: {
-        ...prev.permissions,
-        [key]: !prev.permissions[key],
+        ...permissions,
+        [key]: !permissions[key],
       },
-    }));
+    });
   };
 
-  // 🔹 Save
-  const handleSave = async () => {
-    if (!form.name.trim()) {
+  const onSubmit = async (data) => {
+    if (!data.name.trim()) {
       return alert("Role name is required", "warning");
     }
 
@@ -90,14 +111,15 @@ export default function ProjectRoles({ projectId }) {
     if (editRole) {
       res = await callApi({
         method: "put",
-        url: `/projects/${projectId}/roles/${editRole._id}`,
-        data: form,
+        url: `/projects/${_id}/roles/${editRole._id}`,
+        data,
       });
     } else {
+      console.log("Value of the project id", _id)
       res = await callApi({
         method: "post",
-        url: `/projects/${projectId}/roles`,
-        data: form,
+        url: `/projects/${_id}/roles`,
+        data,
       });
     }
 
@@ -113,11 +135,10 @@ export default function ProjectRoles({ projectId }) {
     }
   };
 
-  //  Delete
   const handleDelete = async (roleId) => {
     const res = await callApi({
       method: "delete",
-      url: `/projects/${projectId}/roles/${roleId}`,
+      url: `/projects/${_id}/roles/${roleId}`,
     });
 
     if (res.success) {
@@ -128,11 +149,15 @@ export default function ProjectRoles({ projectId }) {
     }
   };
 
+  if (!_id || isLoading) {
+    return null; 
+  }
+
   return (
     <Box>
-      {/* 🔷 Header */}
+      {/*  Header */}
       <Stack direction="row" justifyContent="space-between" mb={2}>
-        <Typography variant="h5" fontWeight={600}>
+        <Typography variant="h6" fontWeight={600}>
           Project Roles
         </Typography>
 
@@ -142,7 +167,7 @@ export default function ProjectRoles({ projectId }) {
       </Stack>
 
       {/*  Table */}
-      <Paper variant="outlined" sx={{ borderRadius: 3 }}>
+      <Paper sx={{ borderRadius: 3, boxShadow: 'none' }}>
         <Table>
           <TableHead>
             <TableRow>
@@ -206,13 +231,20 @@ export default function ProjectRoles({ projectId }) {
 
         <DialogContent>
           <Stack spacing={2} mt={1}>
-            <TextField
-              label="Role Name"
-              value={form.name}
-              onChange={(e) =>
-                setForm({ ...form, name: e.target.value })
-              }
-              fullWidth
+            {/* Name */}
+            <Controller
+              name="name"
+              control={control}
+              rules={{ required: "Role name is required" }}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  label="Role Name"
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                  fullWidth
+                />
+              )}
             />
 
             <Divider />
@@ -225,8 +257,8 @@ export default function ProjectRoles({ projectId }) {
                   key={key}
                   control={
                     <Switch
-                      checked={form.permissions[key]}
-                      onChange={() => handlePermissionChange(key)}
+                      checked={permissions?.[key] || false}
+                      onChange={() => togglePermission(key)}
                     />
                   }
                   label={key.replace("can", "")}
@@ -238,7 +270,7 @@ export default function ProjectRoles({ projectId }) {
 
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleSave}>
+          <Button variant="contained" onClick={handleSubmit(onSubmit)}>
             Save
           </Button>
         </DialogActions>

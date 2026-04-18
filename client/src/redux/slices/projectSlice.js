@@ -1,67 +1,100 @@
-import { createSlice } from '@reduxjs/toolkit'
+import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-  currentWorkspace: null,
-  name: null,
+  currentProject: null,
+
   _id: null,
-  role: null,
+  name: null,
   slug: null,
   avatar: null,
-  members: [],
+  role: null,
+  description: null,
+
+  memberships: [],
   totalMembers: 0,
+
   isLoading: false,
   error: null,
-}
+};
 
-const workspaceSlice = createSlice({
-  name: 'workspace',
+const projectSlice = createSlice({
+  name: "project",
   initialState,
 
   reducers: {
-    setWorkspace: (state, action) => {
-      const ws = action.payload
+    setProject: (state, action) => {
+      const payload = action.payload;
 
-      state.currentWorkspace = ws
-      state.name = ws?.name || null
-      state.slug = ws?.slug || null
-      state.role = ws?.currentUserRole || null
-      state.avatar = ws?.avatar || null
-      state._id = ws?._id || null
-      state.members = ws?.members || []
-      state.totalMembers = ws?.totalMembers || 0
-      state.isLoading = false
-      state.error = null
+      state.currentProject = project;
+
+      state._id = payload?.project?._id || null;
+      state.name = payload?.project?.name || null;
+      state.slug = payload?.project?.slug || null;
+      state.avatar = payload?.project?.avatar || null;
+      state.description = payload?.project?.description || null
+      // TODO: to check that whether the data is setting correctly or not
+      state.role = payload?.currentUserRole || null;
+
+      state.memberships = project?.memberships || [];
+      state.totalMembers = project?.totalMembers || 0;
+
+      state.isLoading = false;
+      state.error = null;
+    },
+
+    setMemberships: (state, action) => {
+      state.memberships = action.payload || [];
+      state.totalMembers = action.payload?.length || 0;
+    },
+
+    addMembership: (state, action) => {
+      state.memberships.unshift(action.payload);
+      state.totalMembers += 1;
+    },
+
+    removeMembership: (state, action) => {
+      state.memberships = state.memberships.filter(
+        (m) => m.user !== action.payload // userId
+      );
+      state.totalMembers -= 1;
+    },
+
+    updateMembershipRole: (state, action) => {
+      const { userId, role } = action.payload;
+
+      const member = state.memberships.find(
+        (m) => m.user === userId
+      );
+
+      if (member) {
+        member.role = role;
+      }
     },
 
     setLoading: (state, action) => {
-      state.isLoading = action.payload
+      state.isLoading = action.payload;
     },
 
     setError: (state, action) => {
-      state.error = action.payload
-      state.isLoading = false
+      state.error = action.payload;
+      state.isLoading = false;
     },
 
-    clearWorkspace: (state) => {
-      state.currentWorkspace = null
-      state.members = []
-      state._id = null
-      state.role = null
-      state.avatar = null
-      state.name = null
-      state.slug = null
-      state.isLoading = false
-      state.error = null
-      state.totalMembers = 0
+    clearProject: (state) => {
+      Object.assign(state, initialState);
     },
   },
-})
+});
 
 export const {
-  setWorkspace,
+  setProject,
+  setMemberships,
+  addMembership,
+  removeMembership,
+  updateMembershipRole,
   setLoading,
   setError,
-  clearWorkspace,
-} = workspaceSlice.actions
+  clearProject,
+} = projectSlice.actions;
 
-export default workspaceSlice.reducer
+export default projectSlice.reducer;

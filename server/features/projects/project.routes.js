@@ -5,7 +5,8 @@ import {
     getProjectMembersController, getProjectRoleController,
     removeMultipleProjectMemberController, removeProjectMemberController,
     createMultipleProjectRoleController,
-    getAllProjectRolesController, updateProjectRoleController, deleteProjectRoleController
+    getAllProjectRolesController, updateProjectRoleController, deleteProjectRoleController,
+    getProjectGlobalStateBySlugController
 } from "./project.controller.js";
 import { createUploader } from "../../middlewares/multer.js";
 import ensureAuth from "../../middlewares/ensureAuth.js"
@@ -24,14 +25,13 @@ const uploadAvatar = createUploader(
 
 router.post("/", ensureAuth, uploadAvatar, createProjectController);
 
-
+router.get("/global/:slug", ensureAuth, getProjectGlobalStateBySlugController);
 router.post("/:projectId/roles", ensureAuth, createProjectRoleController);
 router.post("/:projectId/roles/multiple", ensureAuth, createMultipleProjectRoleController);
 router.get("/:projectId/roles", ensureAuth, getAllProjectRolesController);
 router.get("/:projectId/roles/:roleId", ensureAuth, getProjectRoleController);
 router.put("/:projectId/roles/:roleId", ensureAuth, updateProjectRoleController);
 router.delete("/:projectId/roles/:roleId", ensureAuth, deleteProjectRoleController);
-
 
 router.post("/:projectId/members", ensureAuth, createProjectMemberController);
 router.get("/:projectId/members", ensureAuth, getProjectMembersController);

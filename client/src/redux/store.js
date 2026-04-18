@@ -7,6 +7,7 @@ import confirmReducer from "./slices/confirmSlice";
 import alertReducer from './slices/alertSlice';
 import notificationReducer from "./slices/notificationSlice";
 import workspaceReducer from "./slices/workspaceSlice";
+import projectReducer from "./slices/projectSlice";
 export const store = configureStore({
   reducer: {
     auth: authReducer,           // handles role, isAuthenticated, data
@@ -17,6 +18,7 @@ export const store = configureStore({
     alerts: alertReducer,           // alert box to inform through the tost of the event
     notifications: notificationReducer, // notifications data and status
     workspace: workspaceReducer,   // current workspace data
+    project: projectReducer,   // current project data
   }
 });
 

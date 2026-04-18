@@ -12,6 +12,7 @@ import {
   getProjectMember,
   removeProjectMember,
   removeMultipleProjectMember,
+  getProjectGlobalStateBySlug,
 } from "./project.service.js";
 
 export const createProjectController = async (req, res, next) => {
@@ -46,6 +47,25 @@ export const createProjectController = async (req, res, next) => {
   }
 };
 
+// * Project Global State
+
+export const getProjectGlobalStateBySlugController = async (req, res, next) => {
+  try {
+    const { slug } = req.params;
+    const userId = req.user?.userId;
+
+    const data = await getProjectGlobalStateBySlug({
+      slug,
+      userId,
+    });
+
+    return res.status(200).json({
+      ...data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 // * Project Roles
 
@@ -54,6 +74,7 @@ export const createProjectRoleController = async (req, res, next) => {
   try {
     const { name, permissions } = req.body;
     const { projectId } = req.params;
+    console.log(projectId);
 
     if (!name || !name.trim()) {
       return res.status(400).json({

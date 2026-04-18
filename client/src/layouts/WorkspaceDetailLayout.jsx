@@ -14,6 +14,7 @@ import {
   clearWorkspace,
 } from '../redux/slices/workspaceSlice'
 import { useDispatch, useSelector } from 'react-redux'
+import { clearProject, setProject } from '../redux/slices/projectSlice'
 
 const AVATAR_COLORS = ['#FF6B6B', '#4ECDC4', '#ebbc00', '#6C5CE7']
 
@@ -52,8 +53,39 @@ export default function WorkspaceDetailLayout() {
     return () => dispatch(clearWorkspace())
   }, [workspaceSlug])
 
+
+  const fetchProject = async () => {
+    try {
+      dispatch(setLoading(true));
+
+      const res = await callApi({
+        url: `/projects/global/${projectSlug}`,
+      });
+
+      if (res.success) {
+        console.log(res.data)
+        dispatch(setProject(res.data));
+
+        console.log(res.data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+
+useEffect(() => {
+  if (!projectSlug) return;
+
+  fetchProject();
+
+  return () => dispatch(clearProject());
+}, [projectSlug]);
+
   useEffect(() => {
     if (!workspace) return
+    if (location.pathname.includes('projects') && !projectSlug) return 
 
     setHeaderTitle(workspace.name || workspaceSlug || 'Workspace')
 

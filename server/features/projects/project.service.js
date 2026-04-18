@@ -1,6 +1,7 @@
 import { Project } from "./project.model.js";
 import { ProjectRole } from "./projectRole.model.js";
 import { ProjectMember } from "./projectMember.model.js"
+import { WorkspaceMember } from "../workspaces/workspaceMember.model.js";
 export const createProject = async ({
   name,
   description,
@@ -21,6 +22,63 @@ export const createProject = async ({
 
 
 
+// * Project Global State
+
+export const getProjectGlobalStateBySlug = async ({
+  slug,
+  userId,
+}) => {
+  try {
+    if (!slug || !userId) {
+      throw new Error("Slug and User ID are required");
+    }
+
+    const project = await Project.findOne({ slug }).lean();
+
+    if (!project) {
+      throw new Error("Project not found");
+    }
+
+    // ✅ FIXED HERE
+    const workspaceMember = await WorkspaceMember.findOne({
+      workspaceId: project.workspace,
+      userId: userId,
+    });
+
+    if (!workspaceMember) {
+      throw new Error("Access denied");
+    }
+
+    const isWorkspaceAdmin = ["OWNER", "ADMIN"].includes(
+      workspaceMember.role
+    );
+
+    const memberships = await ProjectMember.find({
+      project: project._id,
+    })
+      .populate("role", "name permissions")
+      .lean();
+
+    const currentMembership = memberships.find(
+      (m) => m.user.toString() === userId.toString()
+    );
+
+    if (!currentMembership && !isWorkspaceAdmin) {
+      throw new Error("Access denied");
+    }
+
+    return {
+      project,
+      memberships,
+      currentUserRole: currentMembership?.role || null,
+      workspaceRole: workspaceMember.role,
+      totalMembers: memberships.length,
+    };
+  } catch (error) {
+    console.error("Get Project Global State Error:", error);
+    throw error;
+  }
+};
 
 // * PROJECT ROLES
 

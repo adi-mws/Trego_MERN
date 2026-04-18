@@ -40,7 +40,7 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/workspaces", workspaceRoutes);
-app.use("/api/projects", projectRoutes)
+app.use("/api/projects", projectRoutes);
 
 
 app.use((err, req, res, next) => {

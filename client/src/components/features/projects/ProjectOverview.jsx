@@ -23,8 +23,10 @@ import {
   BarChart,
 } from "@mui/x-charts/BarChart";
 import TasksStatusDoughnutChart from "./_components/TaskStatusDoughnutChart";
+import { useSelector } from "react-redux";
 
 export default function ProjectOverview() {
+  // const { totalMembers } = useSelector((state) => state.project)
   const hasWorkflow = false; // later from API
 
   const chartData = [
@@ -46,37 +48,37 @@ export default function ProjectOverview() {
 
       <Grid container spacing={2} mb={3}>
         {[
-          { label: "Members", value: 123, icon: <Groups /> },
-          { label: "Roles", value: 23, icon: <AdminPanelSettings /> },
-          { label: "Members", value: 56, icon: <PersonOutlined /> },
-          { label: "Tasks", value: 12, icon: <SupportAgentOutlined /> },
+          { label: "Members", value: 0, icon: <Groups /> },
+        {label: "Roles", value: 23, icon: <AdminPanelSettings /> },
+        {label: "Members", value: 56, icon: <PersonOutlined /> },
+        {label: "Tasks", value: 12, icon: <SupportAgentOutlined /> },
         ].map((item, i) => (
-          <Grid size={{ xs: 12, sm: 6, md: 3 }} key={i}>
-            <Card
-              variant="outlined"
-              sx={{
-                borderRadius: 3,
-                border: "1px solid",
-                borderColor: "divider",
-                transition: "0.2s",
-                "&:hover": { transform: "translateY(-3px)", boxShadow: 2 },
-              }}
-            >
-              <CardContent>
-                <Stack direction="row" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      {item.label}
-                    </Typography>
-                    <Typography variant="h5" fontWeight={600}>
-                      {item.value || 0}
-                    </Typography>
-                  </Box>
-                  {item.icon}
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }} key={i}>
+          <Card
+            variant="outlined"
+            sx={{
+              borderRadius: 3,
+              border: "1px solid",
+              borderColor: "divider",
+              transition: "0.2s",
+              "&:hover": { transform: "translateY(-3px)", boxShadow: 2 },
+            }}
+          >
+            <CardContent>
+              <Stack direction="row" justifyContent="space-between">
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    {item.label}
+                  </Typography>
+                  <Typography variant="h5" fontWeight={600}>
+                    {item.value || 0}
+                  </Typography>
+                </Box>
+                {item.icon}
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
         ))}
       </Grid>
 
