@@ -150,7 +150,7 @@ export default function ProjectRoles() {
   };
 
   if (!_id || isLoading) {
-    return null; 
+    return null;
   }
 
   return (
@@ -224,56 +224,81 @@ export default function ProjectRoles() {
       </Paper>
 
       {/*  Dialog */}
-      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
         <DialogTitle>
           {editRole ? "Edit Role" : "Create Role"}
         </DialogTitle>
 
-        <DialogContent>
-          <Stack spacing={2} mt={1}>
-            {/* Name */}
-            <Controller
-              name="name"
-              control={control}
-              rules={{ required: "Role name is required" }}
-              render={({ field, fieldState }) => (
-                <TextField
-                  {...field}
-                  label="Role Name"
-                  error={!!fieldState.error}
-                  helperText={fieldState.error?.message}
-                  fullWidth
-                />
-              )}
-            />
+        <Box
+          component="form"
+          onSubmit={handleSubmit(onSubmit)}
+          noValidate
+        >
+          <DialogContent>
+            <Stack spacing={2} mt={1}>
+              {/* Role Name */}
+              <Controller
+                name="name"
+                control={control}
+                rules={{ required: "Role name is required" }}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    {...field}
+                    label="Role Name"
+                    fullWidth
+                    autoFocus
+                    error={!!fieldState.error}
+                    helperText={fieldState.error?.message}
+                  />
+                )}
+              />
 
-            <Divider />
+              <Divider />
 
-            <Typography fontWeight={600}>Permissions</Typography>
+              <Typography fontWeight={600}>
+                Permissions
+              </Typography>
 
-            <Stack>
-              {Object.keys(defaultPermissions).map((key) => (
-                <FormControlLabel
-                  key={key}
-                  control={
-                    <Switch
-                      checked={permissions?.[key] || false}
-                      onChange={() => togglePermission(key)}
-                    />
-                  }
-                  label={key.replace("can", "")}
-                />
-              ))}
+              <Stack>
+                {Object.keys(defaultPermissions).map((key) => (
+                  <Controller
+                    key={key}
+                    name={`permissions.${key}`}
+                    control={control}
+                    render={({ field }) => (
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={field.value || false}
+                            onChange={(e) =>
+                              field.onChange(e.target.checked)
+                            }
+                          />
+                        }
+                        label={key.replace("can", "")}
+                      />
+                    )}
+                  />
+                ))}
+              </Stack>
             </Stack>
-          </Stack>
-        </DialogContent>
+          </DialogContent>
 
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleSubmit(onSubmit)}>
-            Save
-          </Button>
-        </DialogActions>
+          <DialogActions>
+            <Button onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+
+            <Button variant="contained" type="submit">
+              Save
+            </Button>
+          </DialogActions>
+        </Box>
       </Dialog>
     </Box>
   );
