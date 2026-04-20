@@ -17,39 +17,48 @@ import {
   FormControl,
   IconButton,
   Chip,
+  Button,
 } from "@mui/material";
-
-import { Delete } from "@mui/icons-material";
+import { getImageUrl } from "../../../utils/image.utils";
+import { Delete, Edit } from "@mui/icons-material";
 import { useSelector } from "react-redux";
 import { callApi } from "../../../api/api";
 import { useAlert } from "../../../hooks/useAlert";
+import { ProjectInviteDialog } from "./_components/ProjectInviteDialog";
 
 export default function ProjectMembers() {
   const alert = useAlert();
-  const { _id: projectId } = useSelector((state) => state.project);
+
+  const { _id: projectId, workspaceId } = useSelector(
+    (state) => state.project
+  );
 
   const [members, setMembers] = useState([]);
   const [roles, setRoles] = useState([]);
 
-  // Filters
+  const [open, setOpen] = useState(false);
+  const [editMember, setEditMember] = useState(null);
+
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
 
-  // Fetch Members
+
   const fetchMembers = async () => {
+    const query = search ? `?search=${encodeURIComponent(search)}` : "";
+
     const res = await callApi({
       method: "get",
-      url: `/projects/${projectId}/members`,
+      url: `/projects/${projectId}/members${query}`,
     });
 
     if (res.success) {
       setMembers(res.data.members || []);
-    } else {
+    }
+    else {
       alert("Failed to fetch members", "error");
     }
   };
 
-  // Fetch Roles (for filter)
   const fetchRoles = async () => {
     const res = await callApi({
       method: "get",
@@ -63,30 +72,33 @@ export default function ProjectMembers() {
 
   useEffect(() => {
     if (projectId) {
-      fetchMembers();
       fetchRoles();
     }
   }, [projectId]);
 
-  // Filtering logic
+  useEffect(() => {
+    if (projectId) {
+      fetchMembers();
+    }
+  }, [search, projectId])
+
+
+  /* ---------------- FILTER ---------------- */
+
   const filteredMembers = useMemo(() => {
     return members.filter((m) => {
-      const name = m.user?.name?.toLowerCase() || "";
-      const email = m.user?.email?.toLowerCase() || "";
-
-      const matchesSearch =
-        name.includes(search.toLowerCase()) ||
-        email.includes(search.toLowerCase());
+     
 
       const matchesRole = roleFilter
-        ? m.role?._id === roleFilter
+        ? m.roles?.some((r) => r._id === roleFilter)
         : true;
 
-      return matchesSearch && matchesRole;
+      return matchesRole;
     });
-  }, [members, search, roleFilter]);
+  }, [members, roleFilter]);
 
-  // Remove Member
+  /* ---------------- ACTIONS ---------------- */
+
   const handleRemove = async (memberId) => {
     const res = await callApi({
       method: "delete",
@@ -101,25 +113,45 @@ export default function ProjectMembers() {
     }
   };
 
+  const handleEdit = (member) => {
+    setEditMember(member);
+    setOpen(true);
+  };
+
+  const handleAdd = () => {
+    setEditMember(null);
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    setEditMember(null);
+  };
+
+  /* ---------------- UI ---------------- */
+
   return (
     <Box>
       {/* Header */}
-      <Typography variant="h6" fontWeight={600} mb={2}>
-        Project Members
-      </Typography>
+      <Stack direction="row" justifyContent="space-between" mb={2}>
+        <Typography variant="h6">Project Members</Typography>
+
+        <Button variant="contained" onClick={handleAdd}>
+          Add Member
+        </Button>
+      </Stack>
 
       {/* Filters */}
-      <Paper sx={{ p: 2, mb: 2, borderRadius: 3 }}>
+      <Paper sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          {/* Search */}
           <TextField
             label="Search by name or email"
+            placeholder="Search for members..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             fullWidth
           />
 
-          {/* Role Filter */}
           <FormControl sx={{ minWidth: 180 }}>
             <InputLabel>Role</InputLabel>
             <Select
@@ -139,65 +171,73 @@ export default function ProjectMembers() {
       </Paper>
 
       {/* Table */}
-      <Paper sx={{ borderRadius: 3 }}>
+      <Paper>
         <Table>
           <TableHead>
             <TableRow>
               <TableCell>Member</TableCell>
               <TableCell>Email</TableCell>
-              <TableCell>Role</TableCell>
-              <TableCell>Joined</TableCell>
+              <TableCell>Roles</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
 
           <TableBody>
-            {filteredMembers.map((member) => (
-              <TableRow key={member._id} hover>
+            {filteredMembers.map((m) => (
+              <TableRow key={m._id} hover>
                 {/* User */}
                 <TableCell>
                   <Stack direction="row" spacing={1} alignItems="center">
-                    <Avatar src={member.user?.pfp} />
+                    <Avatar src={getImageUrl(m?.user.avatar)}>
+                      {m?.user.name.slice(0, 1)}
+                    </Avatar>
                     <Typography fontSize={14}>
-                      {member.user?.name}
+                      {m.user?.name}
                     </Typography>
                   </Stack>
                 </TableCell>
 
                 {/* Email */}
-                <TableCell>
-                  {member.user?.email}
-                </TableCell>
+                <TableCell>{m.user?.email}</TableCell>
 
-                {/* Role */}
+                {/* Roles */}
                 <TableCell>
-                  <Chip
-                    label={member.role?.name}
-                    size="small"
-                    variant="outlined"
-                  />
-                </TableCell>
-
-                {/* Joined */}
-                <TableCell>
-                  {new Date(member.joinedAt).toLocaleDateString()}
+                  <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                    {m.roles?.map((role) => (
+                      <Chip
+                        key={role._id}
+                        label={role.name}
+                        size="small"
+                        variant="outlined"
+                      />
+                    ))}
+                  </Stack>
                 </TableCell>
 
                 {/* Actions */}
                 <TableCell align="right">
-                  <IconButton
-                    color="error"
-                    onClick={() => handleRemove(member._id)}
-                  >
-                    <Delete fontSize="small" />
-                  </IconButton>
+                  <Stack direction="row" spacing={1} justifyContent="flex-end">
+                    <IconButton
+                      color="primary"
+                      onClick={() => handleEdit(m)}
+                    >
+                      <Edit fontSize="small" />
+                    </IconButton>
+
+                    <IconButton
+                      color="error"
+                      onClick={() => handleRemove(m._id)}
+                    >
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  </Stack>
                 </TableCell>
               </TableRow>
             ))}
 
             {!filteredMembers.length && (
               <TableRow>
-                <TableCell colSpan={5} align="center">
+                <TableCell colSpan={4} align="center">
                   No members found
                 </TableCell>
               </TableRow>
@@ -205,6 +245,17 @@ export default function ProjectMembers() {
           </TableBody>
         </Table>
       </Paper>
+
+      {/* Dialog (Add + Edit) */}
+      <ProjectInviteDialog
+        open={open}
+        onClose={handleClose}
+        projectId={projectId}
+        workspaceId={workspaceId}
+        onSuccess={fetchMembers}
+        member={editMember}
+        mode={editMember ? "edit" : "create"}
+      />
     </Box>
   );
 }

@@ -15,11 +15,13 @@ const projectMemberSchema = new mongoose.Schema(
       required: true,
     },
 
-    role: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "ProjectRole",
-      required: true,
-    },
+    roles: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ProjectRole",
+        required: true,
+      }
+    ],
 
     joinedAt: {
       type: Date,

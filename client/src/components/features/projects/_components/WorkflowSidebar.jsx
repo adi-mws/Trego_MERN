@@ -1,61 +1,112 @@
-import { Box, Typography, Chip, Stack } from "@mui/material";
+import { Box, TextField, Typography, Button, Switch } from "@mui/material";
+import { useState, useEffect } from "react";
 
-export default function WorkflowSidebar({ node }) {
+export default function WorkflowSidebar({
+  node,
+  edge,
+  onUpdateNode,
+  onUpdateEdge,
+  onDeleteNode,
+  onDeleteEdge,
+}) {
+  const [label, setLabel] = useState("");
+  const [requireComment, setRequireComment] = useState(false);
+
+  useEffect(() => {
+    if (node) {
+      setLabel(node.data.label);
+    } else if (edge) {
+      setLabel(edge.label || "");
+      setRequireComment(edge.data?.requireComment || false);
+    }
+  }, [node, edge]);
+
+  if (!node && !edge) {
+    return (
+      <Box sx={{ width: 250, p: 2, borderLeft: "1px solid #ddd" }}>
+        Select a node or edge
+      </Box>
+    );
+  }
+
   return (
-    <Box
-      sx={{
-        width: 300,
-        borderLeft: "1px solid",
-        borderColor: "divider",
-        p: 2,
-        height: "100vh",
-        position: "relative",
-        backgroundColor: "background.paper",
-      }}
-    >
-      {!node ? (
-        <Typography color="text.secondary">
-          Select a stage
-        </Typography>
-      ) : (
+    <Box sx={{ width: 250, p: 2, borderLeft: "1px solid #ddd" }}>
+      {node && (
         <>
-          <Typography fontWeight={600} mb={2}>
-            Stage Settings
-          </Typography>
+          <Typography variant="h6">Stage</Typography>
 
-          {/* Stage Name */}
-          <Typography fontSize={12} color="text.secondary">
-            Stage
-          </Typography>
-          <Typography mb={2}>{node.data.label}</Typography>
+          <TextField
+            fullWidth
+            label="Stage Name"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            sx={{ mt: 2 }}
+          />
 
-          {/* Allowed Roles */}
-          <Typography fontSize={12} color="text.secondary">
-            Can Work
-          </Typography>
-          <Stack direction="row" spacing={1} flexWrap="wrap" mb={2}>
-            {node.data.allowedRoles?.length ? (
-              node.data.allowedRoles.map((r) => (
-                <Chip key={r} label={r} size="small" />
-              ))
-            ) : (
-              <Typography fontSize={11}>No roles</Typography>
-            )}
-          </Stack>
+          <Button
+            sx={{ mt: 2 }}
+            variant="contained"
+            onClick={() =>
+              onUpdateNode({
+                ...node,
+                data: { ...node.data, label },
+              })
+            }
+          >
+            Save
+          </Button>
 
-          {/* Create Roles */}
-          <Typography fontSize={12} color="text.secondary">
-            Can Create
-          </Typography>
-          <Stack direction="row" spacing={1} flexWrap="wrap">
-            {node.data.createRoles?.length ? (
-              node.data.createRoles.map((r) => (
-                <Chip key={r} label={r} size="small" color="primary" />
-              ))
-            ) : (
-              <Typography fontSize={11}>No roles</Typography>
-            )}
-          </Stack>
+          <Button
+            sx={{ mt: 1 }}
+            color="error"
+            onClick={() => onDeleteNode(node.id)}
+          >
+            Delete
+          </Button>
+        </>
+      )}
+
+      {edge && (
+        <>
+          <Typography variant="h6">Transition</Typography>
+
+          <TextField
+            fullWidth
+            label="Label"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            sx={{ mt: 2 }}
+          />
+
+          <Box sx={{ mt: 2 }}>
+            Require Comment
+            <Switch
+              checked={requireComment}
+              onChange={(e) => setRequireComment(e.target.checked)}
+            />
+          </Box>
+
+          <Button
+            sx={{ mt: 2 }}
+            variant="contained"
+            onClick={() =>
+              onUpdateEdge({
+                ...edge,
+                label,
+                data: { ...edge.data, requireComment },
+              })
+            }
+          >
+            Save
+          </Button>
+
+          <Button
+            sx={{ mt: 1 }}
+            color="error"
+            onClick={() => onDeleteEdge(edge.id)}
+          >
+            Delete
+          </Button>
         </>
       )}
     </Box>

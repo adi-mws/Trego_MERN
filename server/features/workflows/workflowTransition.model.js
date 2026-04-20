@@ -1,27 +1,34 @@
+import mongoose from "mongoose";
+
 const workflowTransitionSchema = new mongoose.Schema(
   {
-    workflowTemplateId: {
+    workflowId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "WorkflowTemplate",
       required: true,
-      index: true,
     },
 
-    fromStageId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "WorkflowStage",
-      default: null,
-    },
-
-    toStageId: {
+    fromStage: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "WorkflowStage",
       required: true,
     },
 
-    name: String,
+    toStage: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "WorkflowStage",
+      required: true,
+    },
 
-    // Who can perform transition
+    action: {
+      type: String,
+      required: true,
+    },
+
+    label: {
+      type: String,
+    },
+
     allowedRoles: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -29,33 +36,14 @@ const workflowTransitionSchema = new mongoose.Schema(
       },
     ],
 
-    // Conditions (flexible engine)
-    conditions: [
-      {
-        field: String, // "isBlocked", "priority"
-        operator: String, // "EQUAL", "NOT_NULL"
-        value: mongoose.Schema.Types.Mixed,
-      },
-    ],
-
-    // Validators
-    validators: [
-      {
-        type: {
-          type: String, // OBJECTIVE_COMPLETED, REQUIRED_FIELD
-        },
-        config: mongoose.Schema.Types.Mixed,
-      },
-    ],
-
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
-
-    isAuto: {
+    requireComment: {
       type: Boolean,
       default: false,
+    },
+
+    meta: {
+      color: String,
+      icon: String,
     },
   },
   { timestamps: true }

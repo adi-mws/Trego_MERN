@@ -2,6 +2,7 @@ import { Project } from "./project.model.js";
 import { ProjectRole } from "./projectRole.model.js";
 import { ProjectMember } from "./projectMember.model.js"
 import { WorkspaceMember } from "../workspaces/workspaceMember.model.js";
+import mongoose from "mongoose";
 export const createProject = async ({
   name,
   description,
@@ -56,7 +57,7 @@ export const getProjectGlobalStateBySlug = async ({
     const memberships = await ProjectMember.find({
       project: project._id,
     })
-      .populate("role", "name permissions")
+      .populate("roles", "name permissions")
       .lean();
 
     const currentMembership = memberships.find(
@@ -323,27 +324,29 @@ export const updateProjectRole = async ({
 // * Project Members
 
 /**
- * Add a single member to project
+ * Add a single member to project (multi-role)
  */
 export const createProjectMember = async ({
   projectId,
   userId,
-  roleId,
+  roleIds = [],
 }) => {
   try {
-    if (!projectId || !userId || !roleId) {
-      throw new Error("Project, User and Role are required");
+    if (!projectId || !userId || !Array.isArray(roleIds) || roleIds.length === 0) {
+      throw new Error("Project, User and at least one Role are required");
     }
 
-    const role = await ProjectRole.findOne({
-      _id: roleId,
+    // Validate roles belong to project
+    const validRoles = await ProjectRole.find({
+      _id: { $in: roleIds },
       project: projectId,
     });
 
-    if (!role) {
-      throw new Error("Invalid role for this project");
+    if (validRoles.length !== roleIds.length) {
+      throw new Error("One or more roles are invalid for this project");
     }
 
+    // Check existing member
     const existing = await ProjectMember.findOne({
       project: projectId,
       user: userId,
@@ -356,7 +359,7 @@ export const createProjectMember = async ({
     const member = await ProjectMember.create({
       project: projectId,
       user: userId,
-      role: roleId,
+      roles: roleIds,
     });
 
     return member;
@@ -367,16 +370,78 @@ export const createProjectMember = async ({
 };
 
 /**
- * Get all members of a project
+ * Get all members
  */
-export const getProjectMembers = async ({ projectId }) => {
+
+export const getProjectMembers = async ({ projectId, search }) => {
   try {
     if (!projectId) throw new Error("Project ID is required");
 
-    const members = await ProjectMember.find({ project: projectId })
-      .populate("user", "name email pfp")
-      .populate("role", "name priority")
-      .sort({ createdAt: 1 });
+    const pipeline = [
+      {
+        $match: {
+          project: new mongoose.Types.ObjectId(projectId),
+        },
+      },
+
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+
+      ...(search
+        ? [
+          {
+            $match: {
+              $or: [
+                {
+                  "user.name": {
+                    $regex: search,
+                    $options: "i",
+                  },
+                },
+                {
+                  "user.email": {
+                    $regex: search,
+                    $options: "i",
+                  },
+                },
+              ],
+            },
+          },
+        ]
+        : []),
+
+      {
+        $lookup: {
+          from: "projectroles",
+          localField: "roles",
+          foreignField: "_id",
+          as: "roles",
+        },
+      },
+
+      {
+        $project: {
+          _id: 1,
+          createdAt: 1,
+          "user._id": 1,
+          "user.name": 1,
+          "user.email": 1,
+          "user.avatar": 1,
+          roles: { _id: 1, name: 1 },
+        },
+      },
+
+      { $sort: { createdAt: 1 } },
+    ];
+
+    const members = await ProjectMember.aggregate(pipeline);
 
     return members;
   } catch (error) {
@@ -384,13 +449,13 @@ export const getProjectMembers = async ({ projectId }) => {
     throw error;
   }
 };
-
 /**
  * Get single member
  */
 export const getProjectMember = async ({
   projectId,
   memberId,
+  search
 }) => {
   try {
     if (!projectId || !memberId) {
@@ -401,8 +466,8 @@ export const getProjectMember = async ({
       _id: memberId,
       project: projectId,
     })
-      .populate("user", "name email pfp")
-      .populate("role", "name priority");
+      .populate("user", "name email avatar")
+      .populate("roles", "name");
 
     if (!member) {
       throw new Error("Member not found");
@@ -411,6 +476,48 @@ export const getProjectMember = async ({
     return member;
   } catch (error) {
     console.error("Get Project Member Error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Update member roles (🔥 IMPORTANT NEW)
+ */
+export const updateProjectMemberRoles = async ({
+  projectId,
+  memberId,
+  roleIds = [],
+}) => {
+  try {
+    if (!projectId || !memberId || !Array.isArray(roleIds)) {
+      throw new Error("Project, Member and roleIds are required");
+    }
+
+    // Validate roles
+    const validRoles = await ProjectRole.find({
+      _id: { $in: roleIds },
+      project: projectId,
+    });
+
+    if (validRoles.length !== roleIds.length) {
+      throw new Error("Invalid roles provided");
+    }
+
+    const member = await ProjectMember.findOneAndUpdate(
+      { _id: memberId, project: projectId },
+      { roles: roleIds },
+      { new: true }
+    )
+      .populate("user", "name email avatar")
+      .populate("roles", "name");
+
+    if (!member) {
+      throw new Error("Member not found");
+    }
+
+    return member;
+  } catch (error) {
+    console.error("Update Member Roles Error:", error);
     throw error;
   }
 };
@@ -460,11 +567,9 @@ export const removeMultipleProjectMember = async ({
       _id: { $in: memberIds },
     });
 
-    return result; // contains deletedCount
+    return result;
   } catch (error) {
     console.error("Remove Multiple Members Error:", error);
     throw error;
   }
 };
-
-

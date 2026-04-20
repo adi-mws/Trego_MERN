@@ -3,7 +3,7 @@ import path from "path";
 import fs from "fs";
 import sharp from "sharp";
 
-/* -------------------- Helpers -------------------- */
+/* Helpers */
 
 const ensureFolderExists = (folderPath) => {
   if (!fs.existsSync(folderPath)) {
@@ -35,7 +35,7 @@ const getDiskStorage = (folder) =>
     },
   });
 
-/* -------------------- Main Uploader -------------------- */
+/* Main Uploader */
 
 /**
  * createUploader

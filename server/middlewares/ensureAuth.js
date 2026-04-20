@@ -14,7 +14,7 @@ const authMiddleware = async (req, res, next) => {
       });
     }
 
-    // 2. Verify JWT
+    // Verify JWT
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const { userId, sessionId } = decoded;

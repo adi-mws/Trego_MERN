@@ -1,33 +1,32 @@
-const workflowStageSchema = new mongoose.Schema(
-  {
-    workflowTemplateId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "WorkflowTemplate",
-      required: true,
-      index: true,
-    },
-
-    name: { type: String, required: true },
-
-    key: String,
-
-    order: { type: Number, required: true },
-
-    isInitial: { type: Boolean, default: false },
-    isTerminal: { type: Boolean, default: false },
-
-    //  Who can work in this stage
-    allowedRoles: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "ProjectRole",
-      },
-    ],
-
-    color: String,
+const workflowStageSchema = new mongoose.Schema({
+  workflowId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "WorkflowTemplate",
+    required: true,
+    index: true,
   },
-  { timestamps: true }
-);
+
+  name: { type: String, required: true },
+
+  order: Number, // for linear fallback
+
+  isStart: { type: Boolean, default: false },
+  isEnd: { type: Boolean, default: false },
+
+  allowedRoles: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ProjectRole",
+    },
+  ],
+
+  // actions allowed
+  actions: [
+    {
+      type: String, // e.g. "approve", "reject", "submit"
+    },
+  ],
+}, { timestamps: true });
 
 export const WorkflowStage = mongoose.model(
   "WorkflowStage",

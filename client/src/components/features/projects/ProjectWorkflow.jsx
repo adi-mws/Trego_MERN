@@ -7,6 +7,8 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   MarkerType,
+  useReactFlow,
+  ReactFlowProvider,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -19,57 +21,74 @@ const nodeTypes = { workflow: WorkflowNode };
 
 const initialNodes = [
   {
-    id: "1",
+    id: "start",
     type: "workflow",
-    position: { x: 100, y: 100 },
+    position: { x: 100, y: 150 },
     data: { label: "Start" },
   },
   {
-    id: "2",
+    id: "dev",
     type: "workflow",
-    position: { x: 300, y: 100 },
-    data: { label: "In Progress" },
+    position: { x: 320, y: 150 },
+    data: { label: "Development" },
   },
   {
-    id: "3",
+    id: "test",
     type: "workflow",
-    position: { x: 500, y: 100 },
-    data: { label: "Review" },
+    position: { x: 540, y: 150 },
+    data: { label: "Testing" },
   },
   {
-    id: "4",
+    id: "done",
     type: "workflow",
-    position: { x: 700, y: 100 },
+    position: { x: 760, y: 150 },
     data: { label: "Done" },
   },
 ];
 
 const initialEdges = [
   {
-    id: "e1-2",
-    source: "1",
-    target: "2",
+    id: "start-dev",
+    source: "start",
+    target: "dev",
+    label: "Start Work",
+    data: { requireComment: false },
     markerEnd: { type: MarkerType.ArrowClosed },
   },
   {
-    id: "e2-3",
-    source: "2",
-    target: "3",
+    id: "dev-test",
+    source: "dev",
+    target: "test",
+    label: "Send to Testing",
+    data: { requireComment: false },
     markerEnd: { type: MarkerType.ArrowClosed },
   },
   {
-    id: "e3-4",
-    source: "3",
-    target: "4",
+    id: "test-dev",
+    source: "test",
+    target: "dev",
+    label: "Send Back",
+    data: { requireComment: true },
+    markerEnd: { type: MarkerType.ArrowClosed },
+  },
+  {
+    id: "test-done",
+    source: "test",
+    target: "done",
+    label: "Approve",
+    data: { requireComment: false },
     markerEnd: { type: MarkerType.ArrowClosed },
   },
 ];
 
-export default function WorkflowBuilder() {
+function WorkflowBuilderInner() {
   const [selectedNode, setSelectedNode] = useState(null);
+  const [selectedEdge, setSelectedEdge] = useState(null);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  const { fitView } = useReactFlow();
 
   const onConnect = useCallback(
     (params) =>
@@ -77,42 +96,73 @@ export default function WorkflowBuilder() {
         addEdge(
           {
             ...params,
-            type: "bezier",
+            id: `${params.source}-${params.target}-${Date.now()}`,
+            label: "New Transition",
+            data: { requireComment: false },
             markerEnd: { type: MarkerType.ArrowClosed },
           },
           eds
         )
       ),
-    [setEdges]
+    []
   );
 
   const addNode = () => {
+    const gapX = 240;
+    const gapY = 160;
+    const perRow = 4;
+
+    const index = nodes.length;
+
     const newNode = {
-      id: `${nodes.length + 1}`,
+      id: `stage-${Date.now()}`,
       type: "workflow",
       position: {
-        x: Math.random() * 400 + 150,
-        y: Math.random() * 300 + 100,
+        x: 100 + (index % perRow) * gapX,
+        y: 120 + Math.floor(index / perRow) * gapY,
       },
-      data: { label: `Stage ${nodes.length + 1}` },
+      data: { label: `Stage ${index + 1}` },
     };
 
     setNodes((nds) => [...nds, newNode]);
+
+    setTimeout(() => fitView(), 100);
+  };
+
+  const updateNode = (updated) => {
+    setNodes((nds) =>
+      nds.map((n) => (n.id === updated.id ? updated : n))
+    );
+  };
+
+  const updateEdge = (updated) => {
+    setEdges((eds) =>
+      eds.map((e) => (e.id === updated.id ? updated : e))
+    );
+  };
+
+  const deleteNode = (id) => {
+    setNodes((nds) => nds.filter((n) => n.id !== id));
+    setEdges((eds) =>
+      eds.filter((e) => e.source !== id && e.target !== id)
+    );
+    setSelectedNode(null);
+  };
+
+  const deleteEdge = (id) => {
+    setEdges((eds) => eds.filter((e) => e.id !== id));
+    setSelectedEdge(null);
   };
 
   return (
     <Box sx={{ display: "flex", height: "100vh" }}>
-      
       <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        
-        {/* Toolbar */}
         <Box sx={{ p: 1, borderBottom: "1px solid", borderColor: "divider" }}>
           <Button variant="contained" onClick={addNode}>
             Add Stage
           </Button>
         </Box>
 
-        {/* ReactFlow */}
         <Box sx={{ flex: 1 }}>
           <ReactFlow
             nodes={nodes}
@@ -124,8 +174,16 @@ export default function WorkflowBuilder() {
             fitView
             onNodeClick={(e, node) => {
               setSelectedNode(node);
+              setSelectedEdge(null);
             }}
-            onPaneClick={() => setSelectedNode(null)}
+            onEdgeClick={(e, edge) => {
+              setSelectedEdge(edge);
+              setSelectedNode(null);
+            }}
+            onPaneClick={() => {
+              setSelectedNode(null);
+              setSelectedEdge(null);
+            }}
           >
             <MiniMap />
             <Controls />
@@ -134,7 +192,22 @@ export default function WorkflowBuilder() {
         </Box>
       </Box>
 
-      <WorkflowSidebar node={selectedNode} />
+      <WorkflowSidebar
+        node={selectedNode}
+        edge={selectedEdge}
+        onUpdateNode={updateNode}
+        onUpdateEdge={updateEdge}
+        onDeleteNode={deleteNode}
+        onDeleteEdge={deleteEdge}
+      />
     </Box>
+  );
+}
+
+export default function WorkflowBuilder() {
+  return (
+    <ReactFlowProvider>
+      <WorkflowBuilderInner />
+    </ReactFlowProvider>
   );
 }

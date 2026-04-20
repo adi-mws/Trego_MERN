@@ -12,6 +12,7 @@ import {
   removeProjectMember,
   removeMultipleProjectMember,
   getProjectGlobalStateBySlug,
+  updateProjectMemberRoles,
 } from "./project.service.js";
 
 export const createProjectController = async (req, res, next) => {
@@ -197,24 +198,24 @@ export const updateProjectRoleController = async (req, res, next) => {
 // * PROJECT MEMBERS
 
 /**
- * Add member to project
+ * Add member to project (multi-role)
  */
 export const createProjectMemberController = async (req, res, next) => {
   try {
     const { projectId } = req.params;
-    const { userId, roleId } = req.body;
+    const { userId, roleIds } = req.body;
 
-    if (!userId || !roleId) {
+    if (!userId || !Array.isArray(roleIds) || roleIds.length === 0) {
       return res.status(400).json({
         success: false,
-        message: "User ID and Role ID are required",
+        message: "User ID and roleIds array are required",
       });
     }
 
     const member = await createProjectMember({
       projectId,
       userId,
-      roleId,
+      roleIds,
     });
 
     return res.status(201).json({
@@ -233,15 +234,15 @@ export const createProjectMemberController = async (req, res, next) => {
 export const getProjectMembersController = async (req, res, next) => {
   try {
     const { projectId } = req.params;
-
-    const members = await getProjectMembers({ projectId });
+    const { search } = req.query;
+    const members = await getProjectMembers({ projectId, search: search});
 
     return res.status(200).json({
       success: true,
       members,
     });
   } catch (error) {
-    next(error)
+    next(error);
   }
 };
 
@@ -256,10 +257,40 @@ export const getProjectMemberController = async (req, res, next) => {
       projectId,
       memberId,
     });
-    
 
     return res.status(200).json({
       success: true,
+      member,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Update member roles (🔥 NEW)
+ */
+export const updateProjectMemberRolesController = async (req, res, next) => {
+  try {
+    const { projectId, memberId } = req.params;
+    const { roleIds } = req.body;
+
+    if (!Array.isArray(roleIds)) {
+      return res.status(400).json({
+        success: false,
+        message: "roleIds array is required",
+      });
+    }
+
+    const member = await updateProjectMemberRoles({
+      projectId,
+      memberId,
+      roleIds,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Member roles updated",
       member,
     });
   } catch (error) {
@@ -315,9 +346,6 @@ export const removeMultipleProjectMemberController = async (req, res, next) => {
       deletedCount: result.deletedCount,
     });
   } catch (error) {
-    next(error)
+    next(error);
   }
 };
-
-
-

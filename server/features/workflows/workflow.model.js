@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const workflowTemplateSchema = new mongoose.Schema(
+const workflowSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
 
@@ -37,5 +37,5 @@ const workflowTemplateSchema = new mongoose.Schema(
 
 export const WorkflowTemplate = mongoose.model(
   "WorkflowTemplate",
-  workflowTemplateSchema
+  workflowSchema
 );
