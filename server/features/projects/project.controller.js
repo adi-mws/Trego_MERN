@@ -6,7 +6,6 @@ import {
   getProjectRole,
   getAllProjectRoles,
   updateProjectRole,
-
   createProjectMember,
   getProjectMembers,
   getProjectMember,
@@ -257,6 +256,7 @@ export const getProjectMemberController = async (req, res, next) => {
       projectId,
       memberId,
     });
+    
 
     return res.status(200).json({
       success: true,
