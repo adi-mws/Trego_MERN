@@ -66,7 +66,6 @@ export default function WorkspaceDetailLayout() {
         console.log(res.data)
         dispatch(setProject(res.data));
 
-        console.log(res.data);
       }
     } catch (err) {
       console.error(err);

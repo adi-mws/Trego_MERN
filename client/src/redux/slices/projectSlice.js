@@ -25,7 +25,7 @@ const projectSlice = createSlice({
     setProject: (state, action) => {
       const payload = action.payload;
 
-      state.currentProject = project;
+      state.currentProject = payload?.project;
 
       state._id = payload?.project?._id || null;
       state.name = payload?.project?.name || null;
@@ -35,8 +35,8 @@ const projectSlice = createSlice({
       // TODO: to check that whether the data is setting correctly or not
       state.role = payload?.currentUserRole || null;
 
-      state.memberships = project?.memberships || [];
-      state.totalMembers = project?.totalMembers || 0;
+      state.memberships = payload?.project?.memberships || [];
+      state.totalMembers = payload?.project?.totalMembers || 0;
 
       state.isLoading = false;
       state.error = null;

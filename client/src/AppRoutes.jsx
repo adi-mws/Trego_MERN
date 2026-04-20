@@ -38,8 +38,7 @@ import ProjectTimeline from "./components/features/projects/ProjectTimeline";
 
 export default function AppRoutes() {
   useVerifyAuth();
-
-  return (
+return (
     <>
       <AlertContainer />
       <Router>

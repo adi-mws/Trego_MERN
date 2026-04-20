@@ -81,6 +81,9 @@ export default function WorkspaceSidebarNav() {
         fetchProjects()
     }, [workspace])
 
+    const { _id: projectId } = useSelector((state) => state.project)
+
+
 
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: 1 }}>
@@ -92,7 +95,7 @@ export default function WorkspaceSidebarNav() {
             </Box>
 
             <Divider sx={{ my: 1 }} />
-            <Box sx={{overflowY: 'auto'}}>
+            <Box sx={{ overflowY: 'auto' }}>
                 {/*  PROJECT LIST  */}
                 <Box>
                     <ListItemButton onClick={() => toggleGroup('projectsList')}>
@@ -122,18 +125,26 @@ export default function WorkspaceSidebarNav() {
                             {workspace.projects?.map((project) => (
                                 <ListItemButton
                                     key={project._id}
-                                    onClick={() => navigate(PROJECT_ROUTES.overview(workspace.slug, project.slug))}
+                                    selected={project._id === projectId}
+                                    onClick={() =>
+                                        navigate(PROJECT_ROUTES.overview(workspace.slug, project.slug))
+                                    }
                                     sx={{ pl: 3 }}
                                 >
                                     <ListItemIcon sx={{ minWidth: 28 }}>
-                                        <Avatar sx={{ width: 20, height: 20 }} src={getImageUrl(project.avatar)} />
+                                        <Avatar
+                                            sx={{ width: 20, height: 20 }}
+                                            src={getImageUrl(project.avatar)}
+                                        />
                                     </ListItemIcon>
 
-                                    <ListItemText primaryTypographyProps={{
-                                        fontSize: 13,
-                                        fontWeight: 500
-                                    }}
-                                        primary={project.name} />
+                                    <ListItemText
+                                        primaryTypographyProps={{
+                                            fontSize: 13,
+                                            fontWeight: 500,
+                                        }}
+                                        primary={project.name}
+                                    />
                                 </ListItemButton>
                             ))}
 
