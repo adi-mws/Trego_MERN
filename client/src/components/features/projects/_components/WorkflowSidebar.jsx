@@ -2,17 +2,17 @@ import { Box, TextField, Typography, MenuItem, Popover, Chip, Divider, Tooltip, 
 import { useState, useEffect } from "react";
 
 import DeleteIcon from "@mui/icons-material/Delete";
-import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import VerticalAlignTopIcon from "@mui/icons-material/VerticalAlignTop";
 import HorizontalRuleIcon from "@mui/icons-material/HorizontalRule";
 import CenterFocusStrongIcon from "@mui/icons-material/CenterFocusStrong";
-import ZoomOutMapIcon from "@mui/icons-material/ZoomOutMap";
 import AddIcon from "@mui/icons-material/AddOutlined"
-import { FormControlLabel } from "@mui/material";
 import { useSelector } from "react-redux"
 import { callApi } from "../../../../api/api"
 import WorkflowNodesNotSelected from "./WorkflowNodesNotSelected";
+import WorkflowSidebarHeader from "./WorkflowSIdebarHeader";
+import WorkflowEdgeEditor from "./WorkflowEdgeEditor";
+import WorkflowNodeEditor from "./WorkflowNodeEditor";
 export default function WorkflowSidebar({
   node,
   nodes,
@@ -114,11 +114,12 @@ export default function WorkflowSidebar({
     >
 
       {/* Controls */}
-      <Typography variant="caption">Workflow Controls</Typography>
+
+      <WorkflowSidebarHeader workflowName={"Development Workflow"} />
 
 
       {/* Workflow Controls */}
-      <Stack spacing={1} direction={"row"}>
+      <Stack spacing={1} px={1} direction={"row"}>
 
         {/* Row 1 */}
         <Stack direction="row" spacing={2} justifyContent={"center"} alignItems="center">
@@ -152,7 +153,7 @@ export default function WorkflowSidebar({
       </Stack>
 
 
-      <Divider sx={{ mb: 3, mt: 1 }} />
+      <Divider sx={{ my: 1 }} />
 
       {/* Workflow Sidebar Main Content */}
       <Box
@@ -168,342 +169,48 @@ export default function WorkflowSidebar({
           ) :
 
           node && (
-            <>
-              <Typography variant="h6">Stage</Typography>
-
-              {/* Stage Name */}
-              <TextField
-                fullWidth
-                label="Stage Name"
-                value={label}
-                onChange={(e) => setLabel(e.target.value)}
-                sx={{ mt: 2 }}
-              />
-
-              {/* Actions */}
-              <Button
-                variant="outlined"
-                sx={{ mt: 2 }}
-                onClick={(e) => setAnchorEl(e.currentTarget)}
-              >
-                Configure Actions
-              </Button>
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="body2">Connected Stages</Typography>
-
-                <Stack spacing={1} sx={{ mt: 1 }}>
-                  {connectedNodes.map((n, i) => {
-                    const edge = connectedEdges[i];
-
-                    return (
-                      <Chip
-                        key={n.id}
-                        label={`${edge?.data?.action || "No Action"} → ${n?.data?.label}`}
-                        onClick={() => {
-                          // optional: open popover prefilled
-                          setTargetStage(n.id);
-                          setNewAction(edge?.data?.action || "");
-                          setAnchorEl(true);
-                        }}
-                        onDelete={() => {
-                          workflowActions.deleteEdge(edge.id);
-                        }}
-                      />
-                    );
-                  })}
-                </Stack>
-              </Box>
-
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="body2">Connect New Stage</Typography>
-
-                <TextField
-                  select
-                  fullWidth
-                  label="Select Stage"
-                  value={targetStage}
-                  onChange={(e) => setTargetStage(e.target.value)}
-                  sx={{ mt: 1 }}
-                >
-                  {nodes
-                    ?.filter((n) => n.id !== node.id)
-                    .map((n) => (
-                      <MenuItem key={n.id} value={n.id}>
-                        {n.data.label}
-                      </MenuItem>
-                    ))}
-                </TextField>
-
-                <Button
-                  fullWidth
-                  variant="contained"
-                  sx={{ mt: 1 }}
-                  onClick={() => {
-                    if (!targetStage) return;
-
-                    workflowActions.createEdge({
-                      source: node.id,
-                      target: targetStage,
-                    });
-
-                    setTargetStage("");
-                  }}
-                >
-                  Connect
-                </Button>
-              </Box>
-              {/* Allowed Roles */}
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="body2">Allowed Roles</Typography>
-
-                {/* Selected Chips */}
-                <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 1, rowGap: 1 }}>
-                  {allowedRoles.map((roleId) => {
-                    const role = projectRoles.find(r => r._id === roleId);
-                    return (
-                      <Chip
-                        key={roleId}
-                        label={role?.name || roleId}
-                        onDelete={() =>
-                          setAllowedRoles((prev) =>
-                            prev.filter((r) => r !== roleId)
-                          )
-                        }
-                      />
-                    );
-                  })}
-                </Stack>
-
-                {/* Dropdown Add */}
-                <TextField
-                  select
-                  fullWidth
-                  label="Add Role"
-                  sx={{ mt: 1 }}
-                  SelectProps={{
-                    native: false,
-                  }}
-                  value=""
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (!allowedRoles.includes(value)) {
-                      setAllowedRoles((prev) => [...prev, value]);
-                    }
-                  }}
-                >
-                  <MenuItem disabled value="">
-                    {loadingRoles ? "Loading..." : "Select Role"}
-                  </MenuItem>
-
-                  {projectRoles.map((role) => (
-                    <MenuItem key={role._id} value={role._id}>
-                      {role.name}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Box>
-
-              {/* Flags */}
-              <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={isStart}
-                      onChange={(e) => setIsStart(e.target.checked)}
-                    />
-                  }
-                  label="Start"
-                />
-
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={isEnd}
-                      onChange={(e) => setIsEnd(e.target.checked)}
-                    />
-                  }
-                  label="End"
-                />
-              </Stack>
-
-              {/* Save */}
-              <Button
-                sx={{ mt: 2 }}
-                variant="contained"
-                onClick={() =>
-                  onUpdateNode({
-                    ...node,
-                    data: {
-                      ...node.data,
-                      label,
-                      actions: stageActions,
-                      allowedRoles,
-                      isStart,
-                      isEnd,
-                    },
-                  })
-                }
-              >
-                Save
-              </Button>
-
-              <Button
-                sx={{ mt: 1 }}
-                color="error"
-                onClick={() => onDeleteNode(node.id)}
-              >
-                Delete
-              </Button>
-            </>
+            <WorkflowNodeEditor
+              node={node}
+              nodes={nodes}
+              label={label}
+              setLabel={setLabel}
+              allowedRoles={allowedRoles}
+              setAllowedRoles={setAllowedRoles}
+              projectRoles={projectRoles}
+              loadingRoles={loadingRoles}
+              isStart={isStart}
+              setIsStart={setIsStart}
+              isEnd={isEnd}
+              setIsEnd={setIsEnd}
+              stageActions={stageActions}
+              connectedNodes={connectedNodes}
+              connectedEdges={connectedEdges}
+              targetStage={targetStage}
+              setTargetStage={setTargetStage}
+              setAnchorEl={setAnchorEl}
+              setNewAction={setNewAction}
+              workflowActions={workflowActions}
+              onUpdateNode={onUpdateNode}
+              onDeleteNode={onDeleteNode}
+            />
           )}
 
         {edge && (
-          <>
-            <Typography variant="h6">Transition</Typography>
-
-            {/* Label */}
-            <TextField
-              fullWidth
-              label="Label"
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-              sx={{ mt: 2 }}
-            />
-
-            {/* Action */}
-            <TextField
-              fullWidth
-              label="Action (approve / reject)"
-              value={action}
-              onChange={(e) => setAction(e.target.value)}
-              sx={{ mt: 2 }}
-            />
-
-            {/* Allowed Roles */}
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="body2">Transition Color</Typography>
-
-              <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 1 }}>
-                {[
-                  "#21ce21", "#1890ff", "#faad14",
-                  "#722ed1", "#13c2c2", "#eb2f96", "#fa541c",
-                  "#2f54eb",
-                ].map((color) => (
-                  <Box
-                    key={color}
-                    onClick={() =>
-                      setMeta((prev) => ({ ...prev, color }))
-                    }
-                    sx={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: "50%",
-                      backgroundColor: color,
-                      cursor: "pointer",
-                      border: meta.color === color ? "2px solid #000" : "2px solid transparent",
-                    }}
-                  />
-                ))}
-
-                {/* Custom Color */}
-                <Box
-                  sx={{
-                    width: 24,
-                    height: 24,
-                    borderRadius: "50%",
-                    border: "2px dashed #999",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                >
-                  <input
-                    type="color"
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: "100%",
-                      height: "100%",
-                      cursor: "pointer",
-                    }}
-                    onChange={(e) =>
-                      setMeta((prev) => ({
-                        ...prev,
-                        color: e.target.value,
-                      }))
-                    }
-                  />
-                </Box>
-              </Stack>
-            </Box>
-
-            {/* Require Comment */}
-            <Box sx={{ mt: 2 }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={requireComment}
-                    onChange={(e) => setRequireComment(e.target.checked)}
-                  />
-                }
-                label="Require Comment"
-              />
-            </Box>
-
-            {/* Meta */}
-            <TextField
-              fullWidth
-              label="Color"
-              value={meta.color || ""}
-              onChange={(e) =>
-                setMeta((prev) => ({ ...prev, color: e.target.value }))
-              }
-              sx={{ mt: 2 }}
-            />
-
-            <TextField
-              fullWidth
-              label="Icon"
-              value={meta.icon || ""}
-              onChange={(e) =>
-                setMeta((prev) => ({ ...prev, icon: e.target.value }))
-              }
-              sx={{ mt: 2 }}
-            />
-
-            {/* Save */}
-            <Button
-              sx={{ mt: 2 }}
-              variant="contained"
-              onClick={() =>
-                onUpdateEdge({
-                  ...edge,
-                  label,
-                  data: {
-                    ...edge.data,
-                    action,
-                    allowedRoles,
-                    requireComment,
-                    meta,
-                  },
-                })
-              }
-            >
-              Save
-            </Button>
-
-            <Button
-              sx={{ mt: 1 }}
-              color="error"
-              onClick={() => onDeleteEdge(edge.id)}
-            >
-              Delete
-            </Button>
-          </>
+          <WorkflowEdgeEditor
+            edge={edge}
+            label={label}
+            setLabel={setLabel}
+            action={action}
+            setAction={setAction}
+            meta={meta}
+            setMeta={setMeta}
+            requireComment={requireComment}
+            setRequireComment={setRequireComment}
+            allowedRoles={allowedRoles}
+            onUpdateEdge={onUpdateEdge}
+            onDeleteEdge={onDeleteEdge}
+          />
         )}
-
 
 
         <Popover
