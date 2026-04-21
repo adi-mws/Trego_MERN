@@ -45,7 +45,7 @@ export default function AppLayout() {
                             <AccountDialog />
                             <ConfirmDialog />
                             <NotificationsDrawer />
-                            <Outlet />;
+                            <Outlet />
                         </AccountDialogProvider>
                     </NotificationsDrawerProvider>
                 </HeaderProvider>

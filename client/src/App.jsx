@@ -10,7 +10,7 @@ function App() {
       {/* Global Components (should be shown in all of the components) */}
       <AppRoutes />
     </Provider>
-  );
+  )
 }
 
 export default App;

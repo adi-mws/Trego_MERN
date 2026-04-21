@@ -74,17 +74,17 @@ export default function WorkspaceDetailLayout() {
     }
   };
 
-useEffect(() => {
-  if (!projectSlug) return;
+  useEffect(() => {
+    if (!projectSlug) return
 
-  fetchProject();
+    fetchProject();
 
-  return () => dispatch(clearProject());
-}, [projectSlug]);
+    return () => dispatch(clearProject());
+  }, [projectSlug]);
 
   useEffect(() => {
     if (!workspace) return
-    if (location.pathname.includes('projects') && !projectSlug) return 
+    if (location.pathname.includes('projects') && !projectSlug) return
 
     setHeaderTitle(workspace.name || workspaceSlug || 'Workspace')
 
@@ -170,7 +170,11 @@ useEffect(() => {
         sx={{
           gridColumn: '2',
           gridRow: '2',
-          overflow: 'auto',
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          minHeight: 0,
+          overflow: "hidden",
           p: 2,
         }}
       >

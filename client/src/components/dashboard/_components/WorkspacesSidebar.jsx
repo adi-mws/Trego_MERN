@@ -81,10 +81,10 @@ export default function WorkspacesSidebar() {
                             {item.icon}
                             {item.label}
                         </Box>
-                    );
+                    )
                 })}
 
             </Stack>
         </Box>
-    );
+    )
 }

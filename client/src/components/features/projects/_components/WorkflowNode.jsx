@@ -3,17 +3,14 @@ import { Handle, Position } from "reactflow";
 import {
   Card,
   Typography,
-  Popover,
   Box,
-  Chip,
-  Stack,
 } from "@mui/material";
 
 const connectionNodeStyle = {
   background: '#21ce21',
-  width: '12px',          // Larger footprint
+  width: '12px',         
   height: '12px',
-  borderRadius: '50%',    // Perfect circle
+  borderRadius: '50%',    
   border: '2px solid #ffffff',
 
 };

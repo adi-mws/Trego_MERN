@@ -7,7 +7,7 @@ const ProtectedRoute = () => {
   // Optional: handle loading state (important for refresh cases)
   if (loading) return null; // or a spinner
 
-  return isAuthenticated ? <Outlet /> : <Navigate to="/sign-in" replace />;
+  return isAuthenticated ? <Outlet /> : <Navigate to="/sign-in" replace />
 };
 
 export default ProtectedRoute;

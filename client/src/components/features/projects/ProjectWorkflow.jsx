@@ -70,7 +70,6 @@ const initialNodes = [
 ];
 
 const initialEdges = [
-  // 🔥 Main forward flow
   {
     id: "start-dev",
     source: "start",
@@ -120,7 +119,6 @@ const initialEdges = [
     style: { stroke: "#21ce21", strokeWidth: 2 },
   },
 
-  // 🔁 Backflows (important for clarity)
   {
     id: "test-dev-back",
     source: "test",
@@ -235,7 +233,7 @@ function WorkflowBuilderInner() {
     const newNode = {
       id: `stage-${Date.now()}`,
       type: "workflow",
-      position: { x: 0, y: 0 }, // dagre will handle
+      position: { x: 0, y: 0 },
       data: { label: `Stage ${nodes.length + 1}` },
     };
 
@@ -278,7 +276,7 @@ function WorkflowBuilderInner() {
     const layoutedNodes = getLayoutedElements(
       nodes.map((n) => ({ ...n })),
       edges,
-      layoutDir // 👈 use current direction
+      layoutDir
     );
 
     setNodes([...layoutedNodes]);
@@ -352,11 +350,9 @@ function WorkflowBuilderInner() {
   }
 
   return (
-    <Box sx={{ display: "flex", height: "85dvh" }}>
+    <Box sx={{ display: "flex", height: "100%", overflow: 'hidden', minHeight: 0 }}>
       <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
-
-
-        <Box sx={{ flex: 1 }}>
+        <Box sx={{ flex: 1, minHeight: 0 }}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -391,6 +387,8 @@ function WorkflowBuilderInner() {
         onUpdateEdge={updateEdge}
         onDeleteNode={deleteNode}
         onDeleteEdge={deleteEdge}
+        nodes={nodes}
+        edges={edges}
         workflowActions={actions}
       />
     </Box>
