@@ -28,6 +28,15 @@ const workflowStageSchema = new mongoose.Schema({
   ],
 }, { timestamps: true });
 
+
+workflowStageSchema.index(
+  { workflowId: 1, isStart: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { isStart: true },
+  }
+);
+
 export const WorkflowStage = mongoose.model(
   "WorkflowStage",
   workflowStageSchema
