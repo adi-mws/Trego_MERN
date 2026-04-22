@@ -1,36 +1,28 @@
 import { Box, TextField, Typography, MenuItem, Popover, Chip, Divider, Tooltip, Button, Switch, Stack, IconButton } from "@mui/material";
 import { useState, useEffect } from "react";
 
-import DeleteIcon from "@mui/icons-material/Delete";
-import AccountTreeIcon from "@mui/icons-material/AccountTree";
-import VerticalAlignTopIcon from "@mui/icons-material/VerticalAlignTop";
-import HorizontalRuleIcon from "@mui/icons-material/HorizontalRule";
-import CenterFocusStrongIcon from "@mui/icons-material/CenterFocusStrong";
-import AddIcon from "@mui/icons-material/AddOutlined"
-import { useSelector } from "react-redux"
+
+import { useDispatch, useSelector } from "react-redux"
 import { callApi } from "../../../../api/api"
 import WorkflowNodesNotSelected from "./WorkflowNodesNotSelected";
 import WorkflowSidebarHeader from "./WorkflowSIdebarHeader";
 import WorkflowEdgeEditor from "./WorkflowEdgeEditor";
 import WorkflowNodeEditor from "./WorkflowNodeEditor";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
+import { updateEdge, updateNode, deleteEdge, deleteNode, setEdges, setNodes } from "../../../../redux/slices/workflowSlice";
 export default function WorkflowSidebar({
-  node,
-  nodes,
-  edge,
-  edges,
-  onUpdateNode,
-  onUpdateEdge,
-  onDeleteNode,
-  onDeleteEdge,
   workflowActions
 }) {
+  const { node, edges, selectedEdge, selectedNode } = useSelector((state) => state.workflow);
+
   const [label, setLabel] = useState("");
   const [requireComment, setRequireComment] = useState(false);
   const [stageActions, setStageActions] = useState([]);
   const [allowedRoles, setAllowedRoles] = useState([]);
   const [isStart, setIsStart] = useState(false);
   const [isEnd, setIsEnd] = useState(false);
-
+  const dispatch = useDispatch();
   const [action, setAction] = useState(""); // for edge
   const [meta, setMeta] = useState({ color: "", icon: "" });
 
@@ -41,20 +33,20 @@ export default function WorkflowSidebar({
   const open = Boolean(anchorEl);
 
   useEffect(() => {
-    if (node) {
-      setLabel(node.data.label || "");
-      setStageActions(node.data.actions || []);
-      setAllowedRoles(node.data.allowedRoles || []);
-      setIsStart(node.data.isStart || false);
-      setIsEnd(node.data.isEnd || false);
-    } else if (edge) {
-      setLabel(edge.label || "");
-      setRequireComment(edge.data?.requireComment || false);
-      setAction(edge.data?.action || "");
-      setAllowedRoles(edge.data?.allowedRoles || []);
-      setMeta(edge.data?.meta || {});
+    if (selectedNode) {
+      setLabel(selectedNode.data.label || "");
+      setStageActions(selectedNode.data.actions || []);
+      setAllowedRoles(selectedNode.data.allowedRoles || []);
+      setIsStart(selectedNode.data.isStart || false);
+      setIsEnd(selectedNode.data.isEnd || false);
+    } else if (selectedEdge) {
+      setLabel(selectedEdge.label || "");
+      setRequireComment(selectedEdge.data?.requireComment || false);
+      setAction(selectedEdge.data?.action || "");
+      setAllowedRoles(selectedEdge.data?.allowedRoles || []);
+      setMeta(selectedEdge.data?.meta || {});
     }
-  }, [node, edge]);
+  }, [selectedEdge, selectedNode]);
 
 
 
@@ -88,11 +80,11 @@ export default function WorkflowSidebar({
 
 
   const connectedTargetIds = edges
-    ?.filter((e) => e.source === node?.id)
+    ?.filter((e) => e.source === selectedNode?.id)
     .map((e) => e.target);
 
   const connectedEdges = edges?.filter(
-    (e) => e.source === node?.id
+    (e) => e.source === selectedNode?.id
   );
 
   const connectedNodes = connectedEdges.map((e) =>
@@ -119,38 +111,7 @@ export default function WorkflowSidebar({
 
 
       {/* Workflow Controls */}
-      <Stack spacing={1} px={1} direction={"row"}>
 
-        {/* Row 1 */}
-        <Stack direction="row" spacing={2} justifyContent={"center"} alignItems="center">
-          <Tooltip title="Add Stage">
-            <span><IconButton disabled><AddIcon sx={{ fontSize: 20 }} /></IconButton></span>
-          </Tooltip>
-
-          <Tooltip title="Delete Selected">
-            <span><IconButton disabled><DeleteIcon sx={{ fontSize: 20 }} /></IconButton></span>
-          </Tooltip>
-
-          <Tooltip title="Recalculate Flow">
-            <span><IconButton onClick={workflowActions.recalculateFlow}><AccountTreeIcon sx={{ fontSize: 20 }} /></IconButton></span>
-          </Tooltip>
-
-          <Tooltip title="Vertical Layout">
-            <span><IconButton onClick={workflowActions.verticalView}><VerticalAlignTopIcon sx={{ fontSize: 20 }} /></IconButton></span>
-          </Tooltip>
-
-          <Tooltip title="Horizontal Layout">
-            <span><IconButton onClick={workflowActions.horizontalView}><HorizontalRuleIcon sx={{ fontSize: 20 }} /></IconButton></span>
-          </Tooltip>
-
-          <Tooltip title="Center View">
-            <span><IconButton onClick={workflowActions.centerView}><CenterFocusStrongIcon sx={{ fontSize: 20 }} /></IconButton></span>
-          </Tooltip>
-
-
-        </Stack>
-
-      </Stack>
 
 
       <Divider sx={{ my: 1 }} />
@@ -212,92 +173,148 @@ export default function WorkflowSidebar({
           />
         )}
 
-
         <Popover
           open={open}
-          anchorEl={anchorEl}
           onClose={() => setAnchorEl(null)}
-          anchorOrigin={{
-            vertical: "bottom",
-            horizontal: "left",
+          anchorReference="anchorPosition"
+          anchorPosition={{
+            top: window.innerHeight / 2,
+            left: window.innerWidth / 2,
+          }}
+          transformOrigin={{
+            vertical: "center",
+            horizontal: "center",
+          }}
+          PaperProps={{
+            sx: {
+              borderRadius: 2,
+              boxShadow: 3,
+              width: 400,
+            },
           }}
         >
-          <Box sx={{ p: 2, width: 300 }}>
-            <Typography variant="subtitle2">
-              Configure Actions
+          <Box sx={{ p: 2.5 }}>
+
+            {/* HEADER */}
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Actions
             </Typography>
 
-            {/* FROM STAGE */}
+            {/* FROM STAGE (clean like before) */}
             <TextField
               fullWidth
+              size="small"
               label="From Stage"
+              onChange={() => {
+
+              }}
               value={node?.data?.label || ""}
               disabled
-              sx={{ mt: 2 }}
             />
 
-            {/* ACTION INPUT */}
-            <TextField
-              fullWidth
-              label="Action"
-              value={newAction}
-              onChange={(e) => setNewAction(e.target.value)}
-              sx={{ mt: 2 }}
-            />
+            {/* ACTION LIST */}
+            <Box sx={{ mt: 3 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                Configure Transition Action
+              </Typography>
 
-            {/* TO STAGE */}
-            <TextField
-              select
-              fullWidth
-              label="To Stage"
-              value={targetStage}
-              onChange={(e) => setTargetStage(e.target.value)}
-              sx={{ mt: 2 }}
-            >
-              {nodes
-                ?.filter((n) => connectedTargetIds.includes(n.id))
-                .map((n) => (
-                  <MenuItem key={n.id} value={n.id}>
-                    {n.data.label}
-                  </MenuItem>
-                ))}
-            </TextField>
-            {/* ADD BUTTON */}
-            <Button
-              fullWidth
-              sx={{ mt: 2 }}
-              variant="contained"
-              onClick={() => {
-                if (!newAction || !targetStage) return;
+              <Stack spacing={1.5}>
+                {nodes
+                  ?.filter((n) => connectedTargetIds.includes(n.id))
+                  .map((n) => {
+                    const existing = stageActions.find(
+                      (a) => a.target === n.id
+                    );
 
-                // add to stage actions (temporary logic)
-                if (!stageActions.includes(newAction)) {
-                  setStageActions((prev) => [...prev, newAction]);
-                }
+                    return (
+                      <Box
+                        key={n.id}
+                        sx={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr auto 1fr auto",
+                          alignItems: "center",
+                          gap: 1,
+                        }}
+                      >
+                        {/* ACTION INPUT */}
+                        <TextField
+                          size="small"
+                          placeholder="action name"
+                          value={existing?.name || ""}
+                          onChange={(e) => {
+                            const value = e.target.value;
 
-                // later: create transition here
+                            setStageActions((prev) => {
+                              const others = prev.filter(
+                                (a) => a.target !== n.id
+                              );
 
-                setNewAction("");
-                setTargetStage("");
-              }}
-            >
-              Add Action
-            </Button>
+                              setEdges((prev) => prev.map((item) => {
+                                if (item.source === node.id) {
+                                  return {
+                                    ...item,
+                                    data: {
+                                      ...item.data,
+                                      action: value,
+                                    }
+                                  }
+                                } else {
+                                  return item;
+                                }
+                              }))
 
-            {/* EXISTING ACTIONS */}
-            <Stack spacing={1} sx={{ mt: 2 }}>
-              {stageActions.map((act) => (
-                <Chip
-                  key={act}
-                  label={act}
-                  onDelete={() =>
-                    setStageActions((prev) =>
-                      prev.filter((a) => a !== act)
-                    )
-                  }
-                />
-              ))}
-            </Stack>
+                              setNode((prev) => ({ ...prev, data: { ...prev.data, actions: [...prev.data.actions, value] } }))
+
+                              setNodes((prev) => prev.map((item) => {
+                                if (item.id === node.id) {
+                                  return {
+                                    ...item,
+                                    data: {
+                                      ...item.data,
+                                      actions: [...item.data.actions, value],
+                                    }
+                                  }
+                                } else {
+                                  return node;
+                                }
+                              }))
+
+
+
+                              return [
+                                ...others,
+                                { name: value, target: n.id },
+                              ];
+                            });
+                          }}
+                        />
+
+                        {/* ARROW */}
+                        <Typography variant="body2">→</Typography>
+
+                        {/* TARGET */}
+                        <Typography
+                          variant="body2"
+                          sx={{ color: "text.secondary" }}
+                        >
+                          {n.data.label}
+                        </Typography>
+
+                        {/* STATUS ICON */}
+                        {existing?.name ? (
+                          <CheckCircleIcon
+                            sx={{ fontSize: 18, color: "success.main" }}
+                          />
+                        ) : (
+                          <RadioButtonUncheckedIcon
+                            sx={{ fontSize: 18, color: "text.disabled" }}
+                          />
+                        )}
+                      </Box>
+                    );
+                  })}
+              </Stack>
+            </Box>
           </Box>
         </Popover>
       </Box>

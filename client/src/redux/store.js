@@ -8,7 +8,9 @@ import alertReducer from './slices/alertSlice';
 import notificationReducer from "./slices/notificationSlice";
 import workspaceReducer from "./slices/workspaceSlice";
 import projectReducer from "./slices/projectSlice";
+import workflowReducer from "./slices/workflowSlice";
 export const store = configureStore({
+
   reducer: {
     auth: authReducer,           // handles role, isAuthenticated, data
     // adminGlobal: adminGlobalReducer,  // admin personalDetails, settings, analytics
@@ -19,6 +21,7 @@ export const store = configureStore({
     notifications: notificationReducer, // notifications data and status
     workspace: workspaceReducer,   // current workspace data
     project: projectReducer,   // current project data
+    workflow: workflowReducer
   }
 });
 

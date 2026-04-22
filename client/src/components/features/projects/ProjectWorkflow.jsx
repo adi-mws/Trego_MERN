@@ -17,6 +17,9 @@ import { Box, Button } from "@mui/material";
 
 import WorkflowNode from "./_components/WorkflowNode";
 import WorkflowSidebar from "./_components/WorkflowSidebar";
+import WorkflowControls from "./_components/WorkflowControls";
+import { useDispatch, useSelector } from "react-redux";
+import { setNodes, setEdges, selectEdge, selectNode, setLayoutDir } from "../../../redux/slices/workflowSlice";
 
 const nodeTypes = { workflow: WorkflowNode };
 
@@ -58,114 +61,30 @@ const getLayoutedElements = (nodes, edges, direction = "TB") => {
   });
 };
 
-const initialNodes = [
-  { id: "start", type: "workflow", position: { x: 0, y: 0 }, data: { label: "Start" } },
-  { id: "dev", type: "workflow", position: { x: 0, y: 0 }, data: { label: "Development" } },
-  { id: "test", type: "workflow", position: { x: 0, y: 0 }, data: { label: "Testing" } },
-  { id: "qa", type: "workflow", position: { x: 0, y: 0 }, data: { label: "QA Review" } },
-  { id: "bug", type: "workflow", position: { x: 0, y: 0 }, data: { label: "Bug Fix" } },
-  { id: "staging", type: "workflow", position: { x: 0, y: 0 }, data: { label: "Staging" } },
-  { id: "prod", type: "workflow", position: { x: 0, y: 0 }, data: { label: "Production" } },
-  { id: "done", type: "workflow", position: { x: 0, y: 0 }, data: { label: "Done" } },
-];
-
-const initialEdges = [
-  {
-    id: "start-dev",
-    source: "start",
-    target: "dev",
-    type: "smoothstep",
-    curvature: 0.2,
-    style: { stroke: "#21ce21", strokeWidth: 2 },
-  },
-  {
-    id: "dev-test",
-    source: "dev",
-    target: "test",
-    type: "smoothstep",
-    curvature: 0.2,
-    style: { stroke: "#21ce21", strokeWidth: 2 },
-  },
-  {
-    id: "test-qa",
-    source: "test",
-    target: "qa",
-    type: "smoothstep",
-    curvature: 0.2,
-    style: { stroke: "#218fce", strokeWidth: 2 },
-  },
-  {
-    id: "qa-staging",
-    source: "qa",
-    target: "staging",
-    type: "smoothstep",
-    curvature: 0.2,
-    style: { stroke: "#9ace21", strokeWidth: 2 },
-  },
-  {
-    id: "staging-prod",
-    source: "staging",
-    target: "prod",
-    type: "smoothstep",
-    curvature: 0.2,
-    style: { stroke: "#21ce21", strokeWidth: 2 },
-  },
-  {
-    id: "prod-done",
-    source: "prod",
-    target: "done",
-    type: "smoothstep",
-    curvature: 0.2,
-    style: { stroke: "#21ce21", strokeWidth: 2 },
-  },
-
-  {
-    id: "test-dev-back",
-    source: "test",
-    target: "dev",
-    type: "smoothstep",
-    curvature: -0.5,
-    label: "Fail",
-    style: { stroke: "#ff4d4f", strokeWidth: 2 },
-  },
-  {
-    id: "qa-bug",
-    source: "qa",
-    target: "bug",
-    type: "smoothstep",
-    curvature: 0.4,
-    label: "Issues Found",
-    style: { stroke: "#ff4d4f", strokeWidth: 2 },
-  },
-  {
-    id: "bug-dev",
-    source: "bug",
-    target: "dev",
-    type: "smoothstep",
-    curvature: -0.4,
-    label: "Fix & Retry",
-    style: { stroke: "#ff4d4f", strokeWidth: 2 },
-  },
-  {
-    id: "staging-qa-back",
-    source: "staging",
-    target: "qa",
-    type: "smoothstep",
-    curvature: -0.5,
-    label: "Recheck",
-    style: { stroke: "#c420d3", strokeWidth: 2 },
-  },
-];
-
-
 function WorkflowBuilderInner() {
-  const [selectedNode, setSelectedNode] = useState(null);
-  const [selectedEdge, setSelectedEdge] = useState(null);
-  const [layoutDir, setLayoutDir] = useState("TB"); // default vertical
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  const { nodes, edges, selectedNode, selectedEdge, layoutDir, isLoading, isSaving, isDirty, error } = useSelector((state) => state.workflow);
+
+
+  const dispatch = useDispatch();
+  const onNodesChange = useCallback(
+    (changes) => {
+      const updatedNodes = applyNodeChanges(changes, nodes);
+      dispatch(setNodes(updatedNodes));
+    },
+    [nodes, dispatch]
+  );
+
+  const onEdgesChange = useCallback(
+    (changes) => {
+      const updatedEdges = applyEdgeChanges(changes, edges);
+      dispatch(setEdges(updatedEdges));
+    },
+    [edges, dispatch]
+  );
 
   const { fitView, getNodes } = useReactFlow();
+
 
   const layoutGraph = useCallback(
     (nds = nodes, eds = edges) => {
@@ -187,7 +106,7 @@ function WorkflowBuilderInner() {
 
   const onConnect = useCallback(
     (params) =>
-      setEdges((eds) => {
+      dispatch(setEdges((eds) => {
         const newEdges = addEdge(
           {
             ...params,
@@ -212,7 +131,7 @@ function WorkflowBuilderInner() {
         layoutGraph(nodes, newEdges);
 
         return newEdges;
-      }),
+      })),
     [nodes, layoutGraph]
   );
 
@@ -229,47 +148,9 @@ function WorkflowBuilderInner() {
       duration: 600,
     });
   };
-  const addNode = () => {
-    const newNode = {
-      id: `stage-${Date.now()}`,
-      type: "workflow",
-      position: { x: 0, y: 0 },
-      data: { label: `Stage ${nodes.length + 1}` },
-    };
 
-    setNodes((nds) => [...nds, newNode]);
-  };
 
-  const updateNode = (updated) => {
-    setNodes((nds) => nds.map((n) => (n.id === updated.id ? updated : n)));
-  };
 
-  const updateEdge = (updated) => {
-    setEdges((eds) => eds.map((e) => (e.id === updated.id ? updated : e)));
-  };
-
-  const deleteNode = (id) => {
-    const filteredNodes = nodes.filter((n) => n.id !== id);
-    const filteredEdges = edges.filter(
-      (e) => e.source !== id && e.target !== id
-    );
-
-    setNodes(filteredNodes);
-    setEdges(filteredEdges);
-
-    layoutGraph(filteredNodes, filteredEdges);
-
-    setSelectedNode(null);
-  };
-
-  const deleteEdge = (id) => {
-    const filteredEdges = edges.filter((e) => e.id !== id);
-    setEdges(filteredEdges);
-
-    layoutGraph(nodes, filteredEdges);
-
-    setSelectedEdge(null);
-  };
   const handleAutoLayout = () => {
     if (!nodes.length) return;
 
@@ -289,7 +170,7 @@ function WorkflowBuilderInner() {
 
   const handleHorizontalView = () => {
     if (!nodes.length) return;
-    setLayoutDir("LR");
+    dispatch(setLayoutDir("LR"));
     const layoutedNodes = getLayoutedElements(nodes, edges, "LR");
 
     setNodes([...layoutedNodes]);
@@ -302,7 +183,7 @@ function WorkflowBuilderInner() {
 
   const handleVerticalView = () => {
     if (!nodes.length) return;
-    setLayoutDir("TB");
+    dispatch(setLayoutDir("TB"));
 
     const layoutedNodes = getLayoutedElements(nodes, edges, "TB");
 
@@ -336,7 +217,7 @@ function WorkflowBuilderInner() {
   const handleFitToScreen = () => {
     fitView({
       padding: 0.2,
-      duration: 500, // smooth zoom
+      duration: 500,
     });
   };
 
@@ -362,16 +243,16 @@ function WorkflowBuilderInner() {
             onConnect={onConnect}
             fitView
             onNodeClick={(e, node) => {
-              setSelectedNode(node);
-              setSelectedEdge(null);
+              dispatch(selectNode((node)));
+              selectEdge(null);
             }}
             onEdgeClick={(e, edge) => {
-              setSelectedEdge(edge);
-              setSelectedNode(null);
+              selectEdge(edge);
+              dispatch(selectNode((null)));
             }}
             onPaneClick={() => {
-              setSelectedNode(null);
-              setSelectedEdge(null);
+              dispatch(selectNode((null)));
+              selectEdge(null);
             }}
           >
             <Controls />
@@ -380,15 +261,9 @@ function WorkflowBuilderInner() {
         </Box>
       </Box>
 
+      <WorkflowControls workflowActions={actions} />
+
       <WorkflowSidebar
-        node={selectedNode}
-        edge={selectedEdge}
-        onUpdateNode={updateNode}
-        onUpdateEdge={updateEdge}
-        onDeleteNode={deleteNode}
-        onDeleteEdge={deleteEdge}
-        nodes={nodes}
-        edges={edges}
         workflowActions={actions}
       />
     </Box>

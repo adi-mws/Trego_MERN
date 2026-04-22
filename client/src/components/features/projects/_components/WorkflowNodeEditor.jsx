@@ -9,7 +9,7 @@ import {
   Switch,
   FormControlLabel,
 } from "@mui/material";
-
+import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggestOutlined';
 export default function WorkflowNodeEditor({
   node,
   nodes,
@@ -47,7 +47,9 @@ export default function WorkflowNodeEditor({
       />
 
       <Button
+      startIcon={<SettingsSuggestIcon />}
         variant="outlined"
+        fullWidth
         sx={{ mt: 2 }}
         onClick={(e) => setAnchorEl(e.currentTarget)}
       >
