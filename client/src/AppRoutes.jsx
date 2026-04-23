@@ -34,6 +34,7 @@ import ProjectWorkflow from "./components/features/projects/ProjectWorkflow";
 import ProjectRoles from "./components/features/projects/ProjectRoles";
 import ProjectTaskStateHistory from "./components/features/projects/ProjectTaskStateHistory";
 import ProjectTimeline from "./components/features/projects/ProjectTimeline";
+import ProjectWorkflowsList from "./components/features/projects/ProjectWorkflowsList";
 
 
 export default function AppRoutes() {
@@ -77,7 +78,8 @@ return (
                   <Route path="board" element={<ProjectTaskBoard />} />
                   <Route path="members" element={<ProjectMembers />} />
                   <Route path="gantt" element={<ProjectGantt />} />
-                  <Route path="workflow" element={<ProjectWorkflow />} />
+                  <Route path="workflows" element={<ProjectWorkflowsList />} />
+                  <Route path="workflows/:workflowId" element={<ProjectWorkflow />} />
                   <Route path="settings" element={<ProjectSettings />} />
                   <Route path="timeline" element={<ProjectTimeline />} />
                   <Route path="task-state-history" element={<ProjectTaskStateHistory />} />

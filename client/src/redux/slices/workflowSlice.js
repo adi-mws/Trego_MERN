@@ -1,145 +1,121 @@
 // store/workflowSlice.js
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { v4 as uuidv4 } from 'uuid';
+import { callApi } from "../../api/api";
+
+export const fetchWorkflowDetails = createAsyncThunk(
+    "workflow/fetchDetails",
+    async (workflowId, { rejectWithValue }) => {
+        const res = await callApi({
+            method: "get",
+            url: `/workflows/${workflowId}`
+        });
+        if (!res.success) return rejectWithValue(res.message);
+
+        const { workflow, stages, transitions } = res.data.data;
+
+        const nodes = stages.map(s => ({
+            id: s._id,
+            _id: s._id,
+            type: "workflow",
+            position: s.position || { x: 0, y: 0 },
+            data: {
+                label: s.name,
+                isStart: s.isStart,
+                isEnd: s.isEnd,
+                allowedRoles: s.allowedRoles || [],
+                actions: s.actions || [],
+            }
+        }));
+
+        const edges = transitions.map(t => ({
+            id: t._id,
+            _id: t._id,
+            source: t.fromStage.toString(),
+            target: t.toStage.toString(),
+            type: "smoothstep",
+            curvature: 0.2,
+            data: {
+                action: t.action,
+                label: t.label || "",
+                allowedRoles: t.allowedRoles || [],
+                requireComment: t.requireComment || false,
+                meta: t.meta || {},
+            }
+        }));
+
+        return { workflow, nodes, edges };
+    }
+);
+
+export const saveWorkflowTemplate = createAsyncThunk(
+    "workflow/saveTemplate",
+    async (workflowId, { getState, rejectWithValue }) => {
+        const { workflow } = getState();
+        console.log("hiii")
+        // A valid MongoDB ObjectId is a 24-char hex string
+        const isMongoId = (id) => /^[a-f\d]{24}$/i.test(id);
+
+        const payload = {
+            name: workflow.name,
+            description: workflow.description || "",
+            isActive: workflow.isActive,
+            stages: workflow.nodes.map(n => ({
+                id: n.id,
+                _id: n.id,
+                isNew: !isMongoId(n.id),
+                name: n.data.label,
+                isStart: n.data.isStart || false,
+                isEnd: n.data.isEnd || false,
+                position: n.position,
+                allowedRoles: n.data.allowedRoles || [],
+                actions: n.data.actions || [],
+            })),
+            transitions: workflow.edges.map(e => ({
+                id: e.id,
+                _id: e.id,
+                isNew: !isMongoId(e.id),
+                fromStage: e.source,
+                toStage: e.target,
+                action: e.data?.action || "",
+                label: e.data?.label || "",
+                allowedRoles: e.data?.allowedRoles || [],
+                requireComment: e.data?.requireComment || false,
+                meta: e.data?.meta || {},
+            }))
+        };
+
+        console.log("[SAVE] Sending payload:", JSON.stringify(payload, null, 2));
+        const res = await callApi({
+            method: "put",
+            url: `/workflows/${workflowId}`,
+            data: payload
+        });
+
+        console.log("[SAVE] Response:", res);
+        if (!res.success) {
+            console.error("[SAVE] Failed:", res.error);
+            return rejectWithValue(res.error?.message || res.error || "Save failed");
+        }
+        return res.data.data;
+    }
+);
+
+export const cloneWorkflowVersion = createAsyncThunk(
+    "workflow/cloneVersion",
+    async (workflowId, { rejectWithValue }) => {
+        const res = await callApi({
+            method: "post",
+            url: `/workflows/${workflowId}/clone`
+        });
+        if (!res.success) return rejectWithValue(res.message);
+        return res.data.data;
+    }
+);
 
 const initialState = {
-    nodes: [
-        {
-            id: "start",
-            _id: "start",
-            type: "workflow",
-            position: { x: 0, y: 0 },
-            data: {
-                label: "Start",
-                isStart: true,
-                allowedRoles: ["admin"],  
-                stageActions: [
-                    {
-                        id: "begin",
-                        name: "Begin",
-                    },
-                ],
-            },
-        },
-        {
-            id: "dev",
-            _id: "dev",
-            type: "workflow",
-            position: { x: 0, y: 0 },
-            data: {
-                label: "Development",
-                allowedRoles: ["developer"], 
-            },
-        },
-        {
-            id: "test",
-            _id: "test",
-            type: "workflow",
-            position: { x: 0, y: 0 },
-            data: {
-                label: "Testing",
-                allowedRoles: ["tester"],
-            },
-        },
-        {
-            id: "qa",
-            _id: "qa",
-            type: "workflow",
-            position: { x: 0, y: 0 },
-            data: {
-                label: "QA Review",
-                allowedRoles: ["qa"],
-            },
-        },
-        {
-            id: "prod",
-            _id: "prod",
-            type: "workflow",
-            position: { x: 0, y: 0 },
-            data: {
-                label: "Production",
-                isEnd: true,
-                allowedRoles: ["admin"],
-            },
-        },
-    ],
-
-    edges: [
-        {
-            id: "start-dev",
-            _id: "start-dev",
-            source: "start",
-            target: "dev",
-            type: "smoothstep",
-            curvature: 0.2,
-            data: {
-                action: { id: "begin", name: "Begin" },
-                allowedRoles: ["admin"], 
-                requireComment: false,
-                meta: { color: "#21ce21" },
-            },
-            style: { stroke: "#21ce21", strokeWidth: 2 },
-        },
-        {
-            id: "dev-test",
-            _id: "dev-test",
-            source: "dev",
-            target: "test",
-            type: "smoothstep",
-            curvature: 0.2,
-            data: {
-                action: { id: "submit", name: "Submit" },
-                allowedRoles: ["developer"],
-                requireComment: false,
-                meta: { color: "#1890ff" },
-            },
-            style: { stroke: "#1890ff", strokeWidth: 2 },
-        },
-        {
-            id: "test-qa",
-            _id: "test-qa",
-            source: "test",
-            target: "qa",
-            type: "smoothstep",
-            curvature: 0.2,
-            data: {
-                action: { id: "approve", name: "Approve" },
-                allowedRoles: ["tester"],
-                requireComment: true,
-                meta: { color: "#faad14" },
-            },
-            style: { stroke: "#faad14", strokeWidth: 2 },
-        },
-        {
-            id: "qa-prod",
-            _id: "qa-prod",
-            source: "qa",
-            target: "prod",
-            type: "smoothstep",
-            curvature: 0.2,
-            data: {
-                action: { id: "release", name: "Release" },
-                allowedRoles: ["qa", "admin"],
-                requireComment: false,
-                meta: { color: "#52c41a" },
-            },
-            style: { stroke: "#52c41a", strokeWidth: 2 },
-        },
-        {
-            id: "test-dev-reject",
-            _id: "test-dev-reject",
-            source: "test",
-            target: "dev",
-            type: "smoothstep",
-            curvature: -0.4,
-            data: {
-                action: { id: "reject", name: "Reject" },
-                allowedRoles: ["tester"],
-                requireComment: true,
-                meta: { color: "#ff4d4f" },
-            },
-            style: { stroke: "#ff4d4f", strokeWidth: 2 },
-        },
-    ],
+    nodes: [],
+    edges: [],
 
     selectedNode: null,
     selectedEdge: null,
@@ -148,6 +124,14 @@ const initialState = {
     isSaving: false,
     isDirty: false,
     error: null,
+    
+    name: "Untitled Workflow",
+    description: "",
+    isActive: false, 
+    isWorking: false, 
+    version: 1,
+    isEditable: true,
+    _id: null,
 };
 
 
@@ -168,14 +152,49 @@ const workflowSlice = createSlice({
         setWorkflow(state, action) {
             state.nodes = action.payload.nodes;
             state.edges = action.payload.edges;
+            if (action.payload.name) state.name = action.payload.name;
+            if (action.payload.description) state.description = action.payload.description;
+            if (action.payload.isActive !== undefined) state.isActive = action.payload.isActive;
+            if (action.payload.isWorking !== undefined) state.isWorking = action.payload.isWorking;
+            if (action.payload.version !== undefined) state.version = action.payload.version;
+            if (action.payload.isEditable !== undefined) state.isEditable = action.payload.isEditable;
+        },
+
+        setName(state, action) {
+            state.name = action.payload;
+            state.isDirty = true;
+        },
+
+        setDescription(state, action) {
+            state.description = action.payload;
+            state.isDirty = true;
+        },
+
+        setIsActive(state, action) {
+            state.isActive = action.payload;
+            state.isDirty = true;
+        },
+
+        setVersion(state, action) {
+            state.version = action.payload;
+        },
+
+        setIsEditable(state, action) {
+            state.isEditable = action.payload;
         },
 
         setNodes(state, action) {
             state.nodes = action.payload;
+            if (state.selectedNode) {
+                state.selectedNode = state.nodes.find((n) => n.id === state.selectedNode.id) || null;
+            }
         },
 
         setEdges(state, action) {
             state.edges = action.payload;
+            if (state.selectedEdge) {
+                state.selectedEdge = state.edges.find((e) => e.id === state.selectedEdge.id) || null;
+            }
         },
 
         setLayoutDir(state, action) {
@@ -183,11 +202,13 @@ const workflowSlice = createSlice({
         },
 
         selectNode(state, action) {
+            // console.log('selectNode called with', action.payload);
             state.selectedNode = action.payload;
             state.selectedEdge = null;
         },
 
         selectEdge(state, action) {
+            // console.log('selectEdge called with', action.payload);
             state.selectedEdge = action.payload;
             state.selectedNode = null;
         },
@@ -198,13 +219,16 @@ const workflowSlice = createSlice({
         },
         addNode(state) {
             const newNode = {
-                id: `stage-${Date.now()}`,
+                id: uuidv4(),
                 type: "workflow",
                 position: { x: 0, y: 0 },
                 data: { label: `Stage ${state.nodes.length + 1}` },
             };
 
             state.nodes.push(newNode);
+            state.selectedNode = newNode;
+            state.selectedEdge = null;
+            state.isDirty = true;
         },
 
         updateNode(state, action) {
@@ -213,6 +237,10 @@ const workflowSlice = createSlice({
             state.nodes = state.nodes.map((n) =>
                 n.id === updated.id ? updated : n
             );
+            if (state.selectedNode?.id === updated.id) {
+                state.selectedNode = updated;
+            }
+            state.isDirty = true;
         },
 
         deleteNode(state, action) {
@@ -222,6 +250,10 @@ const workflowSlice = createSlice({
             state.edges = state.edges.filter(
                 (e) => e.source !== id && e.target !== id
             );
+            if (state.selectedNode?.id === id) {
+                state.selectedNode = null;
+            }
+            state.isDirty = true;
         },
         createEdge(state, action) {
             const { source, target } = action.payload;
@@ -233,7 +265,7 @@ const workflowSlice = createSlice({
             if (exists) return;
 
             state.edges.push({
-                id: `${source}-${target}-${Date.now()}`,
+                id: uuidv4(),
                 source,
                 target,
                 type: "smoothstep",
@@ -243,8 +275,9 @@ const workflowSlice = createSlice({
                     requireComment: false,
                     meta: {},
                 },
-                style: { stroke: "#21ce21", strokeWidth: 2 },
+
             });
+            state.isDirty = true;
         },
 
         updateEdge(state, action) {
@@ -253,6 +286,10 @@ const workflowSlice = createSlice({
             state.edges = state.edges.map((e) =>
                 e.id === updated.id ? updated : e
             );
+            if (state.selectedEdge?.id === updated.id) {
+                state.selectedEdge = updated;
+            }
+            state.isDirty = true;
         },
 
         updateEdgeAction(state, action) {
@@ -270,15 +307,106 @@ const workflowSlice = createSlice({
                 }
                 return e;
             });
+            state.isDirty = true;
         },
 
         deleteEdge(state, action) {
             const id = action.payload;
             state.edges = state.edges.filter((e) => e.id !== id);
+            if (state.selectedEdge?.id === id) {
+                state.selectedEdge = null;
+            }
+            state.isDirty = true;
         },
 
     },
+    extraReducers: (builder) => {
+        builder
+            // Fetch Workflow
+            .addCase(fetchWorkflowDetails.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(fetchWorkflowDetails.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.nodes = action.payload.nodes;
+                state.edges = action.payload.edges;
+                const { workflow } = action.payload;
+                state._id = workflow._id;
+                state.name = workflow.name;
+                state.description = workflow.description;
+                state.isActive = workflow.isActive;
+                state.version = workflow.version;
+                state.isEditable = workflow.isEditable;
+                state.isWorking = workflow.categoryIds?.length > 0;
+                state.isDirty = false;
+            })
+            .addCase(fetchWorkflowDetails.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload;
+            })
+            // Save Workflow
+            .addCase(saveWorkflowTemplate.pending, (state) => {
+                state.isSaving = true;
+                state.error = null;
+            })
+            .addCase(saveWorkflowTemplate.fulfilled, (state, action) => {
+                state.isSaving = false;
+                state.isDirty = false;
+                const { workflow, stages, transitions } = action.payload;
+                // Sync all metadata back from DB response
+                if (workflow) {
+                    state._id = workflow._id;
+                    state.name = workflow.name;
+                    state.description = workflow.description;
+                    state.isActive = workflow.isActive;
+                    state.version = workflow.version;
+                    state.isEditable = workflow.isEditable;
+                }
+                state.nodes = stages.map(s => ({
+                    id: s._id,
+                    _id: s._id,
+                    type: "workflow",
+                    position: s.position || { x: 0, y: 0 },
+                    data: {
+                        label: s.name,
+                        isStart: s.isStart,
+                        isEnd: s.isEnd,
+                        allowedRoles: s.allowedRoles || [],
+                        actions: s.actions || [],
+                    }
+                }));
+                state.edges = transitions.map(t => ({
+                    id: t._id,
+                    _id: t._id,
+                    source: t.fromStage.toString(),
+                    target: t.toStage.toString(),
+                    type: "smoothstep",
+                    curvature: 0.2,
+                    data: {
+                        action: t.action,
+                        label: t.label || "",
+                        allowedRoles: t.allowedRoles || [],
+                        requireComment: t.requireComment || false,
+                        meta: t.meta || {},
+                    }
+                }));
+            })
+            .addCase(saveWorkflowTemplate.rejected, (state, action) => {
+                state.isSaving = false;
+                state.error = action.payload;
+            })
+            // Clone Workflow
+            .addCase(cloneWorkflowVersion.pending, (state) => {
+                state.isLoading = true;
+            })
+            .addCase(cloneWorkflowVersion.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload;
+            });
+    }
 });
+
 
 export const {
     setWorkflow,
@@ -295,8 +423,14 @@ export const {
     updateEdge,
     updateEdgeAction,
     deleteEdge,
+    setIsDirty,
     setIsSaving,
     setIsLoading,
+    setName,
+    setDescription,
+    setIsActive,
+    setVersion,
+    setIsEditable,
 } = workflowSlice.actions;
 
 export default workflowSlice.reducer;

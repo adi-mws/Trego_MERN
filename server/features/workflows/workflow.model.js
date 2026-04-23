@@ -10,10 +10,12 @@ const workflowSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-
     description: String,
 
-    // Which categories use this workflow
+    version: { type: Number, default: 1 },
+    originalWorkflowId: { type: mongoose.Schema.Types.ObjectId, ref: "WorkflowTemplate" },
+    isEditable: { type: Boolean, default: true },
+
     categoryIds: [
       {
         type: mongoose.Schema.Types.ObjectId,

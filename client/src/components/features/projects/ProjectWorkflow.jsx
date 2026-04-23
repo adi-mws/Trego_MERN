@@ -1,25 +1,25 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import ReactFlow, {
   addEdge,
+  applyEdgeChanges,
+  applyNodeChanges,
   Background,
   Controls,
-  useNodesState,
-  useEdgesState,
-  MarkerType,
   useReactFlow,
   ReactFlowProvider,
 } from "reactflow";
 import "reactflow/dist/style.css";
-
+import { selectStyledEdges } from "../../../redux/selectors/workflowSelectors";
 import dagre from "dagre";
-
-import { Box, Button } from "@mui/material";
+import { Box } from "@mui/material";
 
 import WorkflowNode from "./_components/WorkflowNode";
 import WorkflowSidebar from "./_components/WorkflowSidebar";
 import WorkflowControls from "./_components/WorkflowControls";
 import { useDispatch, useSelector } from "react-redux";
-import { setNodes, setEdges, selectEdge, selectNode, setLayoutDir } from "../../../redux/slices/workflowSlice";
+import { useParams, useNavigate } from "react-router-dom";
+import { PROJECT_ROUTES } from "../../../lib/routes";
+import { fetchWorkflowDetails, setEdges, setIsDirty, setLayoutDir, selectEdge, selectNode, setNodes, clearSelection } from "../../../redux/slices/workflowSlice";
 
 const nodeTypes = { workflow: WorkflowNode };
 
@@ -62,25 +62,69 @@ const getLayoutedElements = (nodes, edges, direction = "TB") => {
 };
 
 function WorkflowBuilderInner() {
-
-  const { nodes, edges, selectedNode, selectedEdge, layoutDir, isLoading, isSaving, isDirty, error } = useSelector((state) => state.workflow);
-
+  const { workspaceSlug, projectSlug, workflowId } = useParams();
+  const navigate = useNavigate();
+  const { _id: reduxWorkflowId, nodes, edges: rawEdges, selectedNode, selectedEdge, layoutDir, isLoading, isSaving, isDirty, error, isEditable } = useSelector((state) => state.workflow);
+  const edges = useSelector(selectStyledEdges)
 
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (workflowId) {
+      dispatch(fetchWorkflowDetails(workflowId));
+    }
+  }, [dispatch, workflowId]);
+
+  useEffect(() => {
+    // If the backend auto-cloned the workflow to a V2 during a save, redirect seamlessly!
+    if (reduxWorkflowId && workflowId && reduxWorkflowId !== workflowId) {
+      navigate(PROJECT_ROUTES.projectWorkflowDetail(workspaceSlug, projectSlug, reduxWorkflowId), { replace: true });
+    }
+  }, [reduxWorkflowId, workflowId, navigate, workspaceSlug, projectSlug]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (event) => {
+      if (isDirty) {
+        event.preventDefault();
+        event.returnValue = "";
+        return "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isDirty]);
+
   const onNodesChange = useCallback(
     (changes) => {
       const updatedNodes = applyNodeChanges(changes, nodes);
       dispatch(setNodes(updatedNodes));
+
+      const dirtyTypes = ["remove", "add", "reset", "position"];
+      const hasDirtyChange = changes.some((change) => dirtyTypes.includes(change.type) && (!change.dragging));
+      if (hasDirtyChange) {
+        dispatch(setIsDirty(true));
+      }
     },
     [nodes, dispatch]
   );
 
   const onEdgesChange = useCallback(
     (changes) => {
-      const updatedEdges = applyEdgeChanges(changes, edges);
+      // Operate on RAW edges (not styled) so we don't persist visual decorations to state
+      const updatedEdges = applyEdgeChanges(changes, rawEdges);
       dispatch(setEdges(updatedEdges));
+
+      const dirtyTypes = ["add", "remove", "reset"];
+      const hasDirtyChange = changes.some((change) => dirtyTypes.includes(change.type));
+      if (hasDirtyChange) {
+        dispatch(setIsDirty(true));
+      }
     },
-    [edges, dispatch]
+    [rawEdges, dispatch]
   );
 
   const { fitView, getNodes } = useReactFlow();
@@ -88,51 +132,52 @@ function WorkflowBuilderInner() {
 
   const layoutGraph = useCallback(
     (nds = nodes, eds = edges) => {
-      const layoutedNodes = getLayoutedElements(nodes, edges, "TB");
-      setNodes([...layoutedNodes]);
+      const layoutedNodes = getLayoutedElements(nds, eds, "TB");
+      dispatch(setNodes(layoutedNodes));
 
       setTimeout(() => {
         fitView({ padding: 0.2 });
       }, 50);
     },
-    [nodes, edges, fitView]
+    [nodes, edges, dispatch, fitView]
   );
 
   useEffect(() => {
-    if (nodes.length > 0) {
+    if (nodes.length === 0) return;
+    const allAtOrigin = nodes.every(n => n.position.x === 0 && n.position.y === 0);
+    if (allAtOrigin) {
       layoutGraph();
+    } else {
+      setTimeout(() => fitView({ padding: 0.2 }), 50);
     }
-  }, [nodes.length, edges.length]);
+  }, [nodes.length]);
 
   const onConnect = useCallback(
-    (params) =>
-      dispatch(setEdges((eds) => {
-        const newEdges = addEdge(
-          {
-            ...params,
-            id: `${params.source}-${params.target}-${Date.now()}`,
-            type: "smoothstep",
-            label: "New Transition",
-            data: { requireComment: false },
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-              width: 20,
-              height: 20,
-              color: "#21ce21",
-            },
-            curvature: 0.5,
-            style: { stroke: "#21ce21", strokeWidth: 2 },
-            labelStyle: { fill: "#fff", fontWeight: 700 },
-            labelBgStyle: { fill: "#222", fillOpacity: 0.7 },
-          },
-          eds
-        );
+    (params) => {
+      // Store ONLY data fields — visual styles come from the selector, not state
+      const newEdge = {
+        id: `${params.source}-${params.target}-${Date.now()}`,
+        source: params.source,
+        target: params.target,
+        sourceHandle: params.sourceHandle,
+        targetHandle: params.targetHandle,
+        type: "smoothstep",
+        curvature: 0.2,
+        data: {
+          action: "",
+          label: "",
+          requireComment: false,
+          allowedRoles: [],
+          meta: { color: "#21ce21" },
+        },
+      };
 
-        layoutGraph(nodes, newEdges);
-
-        return newEdges;
-      })),
-    [nodes, layoutGraph]
+      const newEdges = addEdge(newEdge, rawEdges);
+      dispatch(setEdges(newEdges));
+      dispatch(setIsDirty(true));
+      layoutGraph(nodes, newEdges);
+    },
+    [rawEdges, nodes, dispatch, layoutGraph]
   );
 
 
@@ -160,7 +205,7 @@ function WorkflowBuilderInner() {
       layoutDir
     );
 
-    setNodes([...layoutedNodes]);
+    dispatch(setNodes(layoutedNodes));
 
     fitView({
       padding: 0.2,
@@ -173,7 +218,7 @@ function WorkflowBuilderInner() {
     dispatch(setLayoutDir("LR"));
     const layoutedNodes = getLayoutedElements(nodes, edges, "LR");
 
-    setNodes([...layoutedNodes]);
+    dispatch(setNodes(layoutedNodes));
 
     fitView({
       padding: 0.2,
@@ -187,7 +232,7 @@ function WorkflowBuilderInner() {
 
     const layoutedNodes = getLayoutedElements(nodes, edges, "TB");
 
-    setNodes([...layoutedNodes]);
+    dispatch(setNodes(layoutedNodes));
 
     fitView({
       padding: 0.2,
@@ -207,7 +252,7 @@ function WorkflowBuilderInner() {
       direction
     );
 
-    setNodes(layoutedNodes);
+    dispatch(setNodes(layoutedNodes));
 
     setTimeout(() => {
       fitView({ padding: 0.25, duration: 600 });
@@ -238,21 +283,28 @@ function WorkflowBuilderInner() {
             nodes={nodes}
             edges={edges}
             nodeTypes={nodeTypes}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
+            onNodesChange={isEditable ? onNodesChange : undefined}
+            onEdgesChange={isEditable ? onEdgesChange : undefined}
+            onConnect={isEditable ? onConnect : undefined}
+            nodesDraggable={isEditable}
+            nodesConnectable={isEditable}
+            elementsSelectable={true}
             fitView
             onNodeClick={(e, node) => {
-              dispatch(selectNode((node)));
-              selectEdge(null);
+              e.stopPropagation();
+              // console.log('onNodeClick fired', node);
+              dispatch(selectNode(node));
             }}
             onEdgeClick={(e, edge) => {
-              selectEdge(edge);
-              dispatch(selectNode((null)));
+              e.stopPropagation();
+              // console.log('onEdgeClick fired', edge);
+              dispatch(selectEdge(edge));
             }}
-            onPaneClick={() => {
-              dispatch(selectNode((null)));
-              selectEdge(null);
+            onPaneClick={(event) => {
+              const target = event.target;
+              const insideNode = target.closest?.(".react-flow__node") || target.closest?.(".react-flow__handle");
+              if (insideNode) return;
+              dispatch(clearSelection());
             }}
           >
             <Controls />
@@ -261,11 +313,9 @@ function WorkflowBuilderInner() {
         </Box>
       </Box>
 
-      <WorkflowControls workflowActions={actions} />
+      {isEditable && <WorkflowControls workflowActions={actions} />}
 
-      <WorkflowSidebar
-        workflowActions={actions}
-      />
+      <WorkflowSidebar />
     </Box>
   );
 }

@@ -10,6 +10,7 @@ import authRoutes from "./features/auth/auth.route.js";
 import userRoutes from "./features/user/user.routes.js";
 import workspaceRoutes from "./features/workspaces/workspace.routes.js"
 import projectRoutes from "./features/projects/project.routes.js"
+import workflowRoutes from "./features/workflows/workflow.route.js"
 connectDB();
 
 // CRON JOBS
@@ -41,6 +42,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/workspaces", workspaceRoutes);
 app.use("/api/projects", projectRoutes);
+app.use("/api/workflows", workflowRoutes);
 
 
 app.use((err, req, res, next) => {

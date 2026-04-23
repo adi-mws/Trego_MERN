@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 const workflowStageSchema = new mongoose.Schema({
   workflowId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -12,6 +13,11 @@ const workflowStageSchema = new mongoose.Schema({
 
   isStart: { type: Boolean, default: false },
   isEnd: { type: Boolean, default: false },
+
+  position: {
+    x: { type: Number, default: 0 },
+    y: { type: Number, default: 0 }
+  },
 
   allowedRoles: [
     {

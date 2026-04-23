@@ -22,7 +22,7 @@ const workflowTransitionSchema = new mongoose.Schema(
 
     action: {
       type: String,
-      required: true,
+      default: "",
     },
 
     label: {
@@ -43,8 +43,12 @@ const workflowTransitionSchema = new mongoose.Schema(
 
     meta: {
       color: String,
-      icon: String,
     },
+
+    style: {
+      strokeColor: String,
+      strokeWidth: Number,
+    }
   },
   { timestamps: true }
 );

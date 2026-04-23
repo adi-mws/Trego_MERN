@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Box,
   Typography,
@@ -8,32 +10,71 @@ import {
   MenuItem,
   Switch,
   FormControlLabel,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  IconButton,
 } from "@mui/material";
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggestOutlined';
-export default function WorkflowNodeEditor({
-  node,
-  nodes,
-  label,
-  setLabel,
-  allowedRoles,
-  setAllowedRoles,
-  projectRoles,
-  loadingRoles,
-  isStart,
-  setIsStart,
-  isEnd,
-  setIsEnd,
-  stageActions,
-  connectedNodes,
-  connectedEdges,
-  targetStage,
-  setTargetStage,
-  setAnchorEl,
-  setNewAction,
-  workflowActions,
-  onUpdateNode,
-  onDeleteNode,
-}) {
+import CloseIcon from '@mui/icons-material/Close';
+import ArrowRightAltIcon from '@mui/icons-material/ArrowRightAlt';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
+import { createEdge, deleteEdge, deleteNode, updateNode, updateEdge } from "../../../../redux/slices/workflowSlice";
+import { callApi } from "../../../../api/api";
+
+export default function WorkflowNodeEditor() {
+  const dispatch = useDispatch();
+  const { nodes, edges, selectedNode, isEditable } = useSelector((state) => state.workflow);
+  const { _id: projectId } = useSelector((state) => state.project);
+
+  const [label, setLabel] = useState("");
+  const [allowedRoles, setAllowedRoles] = useState([]);
+  const [isStart, setIsStart] = useState(false);
+  const [isEnd, setIsEnd] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [targetStage, setTargetStage] = useState("");
+  const [projectRoles, setProjectRoles] = useState([]);
+  const [loadingRoles, setLoadingRoles] = useState(false);
+
+  useEffect(() => {
+    if (!selectedNode) return;
+
+    setLabel(selectedNode.data.label || "");
+    setAllowedRoles(selectedNode.data.allowedRoles || []);
+    setIsStart(selectedNode.data.isStart || false);
+    setIsEnd(selectedNode.data.isEnd || false);
+  }, [selectedNode]);
+
+  useEffect(() => {
+    const fetchRoles = async () => {
+      setLoadingRoles(true);
+      if (projectId) {
+        const res = await callApi({
+          method: "get",
+          url: `/projects/${projectId}/roles`,
+        });
+        if (res.success) {
+          setProjectRoles(res.data.roles || []);
+        } else {
+          console.error("Failed to fetch roles");
+        }
+      }
+      setLoadingRoles(false);
+    };
+
+    fetchRoles();
+  }, [projectId]);
+
+  if (!selectedNode) return null;
+
+  const open = Boolean(anchorEl);
+  const connectedEdges = edges.filter((e) => e.source === selectedNode.id);
+  const connectedNodes = connectedEdges.map((e) => nodes.find((n) => n.id === e.target));
+
+  const handleUpdate = (updates) => {
+    dispatch(updateNode({ ...selectedNode, data: { ...selectedNode.data, ...updates } }));
+  };
   return (
     <>
       <Typography variant="body2">Workflow Stage</Typography>
@@ -41,20 +82,84 @@ export default function WorkflowNodeEditor({
       <TextField
         fullWidth
         label="Stage Name"
+        disabled={!isEditable}
         value={label}
-        onChange={(e) => setLabel(e.target.value)}
+        onChange={(e) => {
+          const value = e.target.value;
+          setLabel(value);
+          handleUpdate({ label: value });
+        }}
         sx={{ mt: 2 }}
       />
 
       <Button
-      startIcon={<SettingsSuggestIcon />}
-        variant="outlined"
+        startIcon={<SettingsSuggestIcon />}
+        variant="contained"
         fullWidth
+        disabled={!isEditable}
         sx={{ mt: 2 }}
         onClick={(e) => setAnchorEl(e.currentTarget)}
       >
         Configure Actions
       </Button>
+
+      <Dialog
+        open={open}
+        onClose={() => setAnchorEl(null)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="subtitle2">Configure Edge Actions</Typography>
+          <IconButton
+            onClick={() => setAnchorEl(null)}
+            size="small"
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: 2 }}>
+          <Stack spacing={2}>
+            {connectedEdges.map((edge) => {
+              const targetNode = nodes.find((n) => n.id === edge.target);
+              const actionValue = edge.data?.action || "";
+              const hasAction = actionValue.trim().length > 0;
+              
+              return (
+                <Stack key={edge.id} direction="row" alignItems="center" spacing={1.5}>
+                  <TextField
+                    size="small"
+                    placeholder="Action"
+                    disabled={!isEditable}
+                    value={actionValue}
+                    onChange={(e) => {
+                      dispatch(updateEdge({
+                        ...edge,
+                        data: {
+                          ...edge.data,
+                          action: e.target.value
+                        }
+                      }));
+                    }}
+                    sx={{ width: 110 }}
+                    inputProps={{ style: { fontSize: '0.8rem', padding: '6px 8px' } }}
+                  />
+                  <ArrowRightAltIcon color="action" fontSize="small" />
+                  <Typography sx={{ flex: 1, fontWeight: 500, fontSize: '0.85rem' }}>{targetNode?.data?.label}</Typography>
+                  {hasAction ? (
+                    <CheckCircleIcon color="success" fontSize="small" />
+                  ) : (
+                    <RadioButtonUncheckedIcon color="action" fontSize="small" />
+                  )}
+                </Stack>
+              );
+            })}
+            {connectedEdges.length === 0 && (
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>No connected stages found.</Typography>
+            )}
+          </Stack>
+        </DialogContent>
+      </Dialog>
 
       {/* Connected Stages */}
       <Box sx={{ mt: 2 }}>
@@ -68,74 +173,76 @@ export default function WorkflowNodeEditor({
               <Chip
                 key={n.id}
                 label={`${edge?.data?.action || "No Action"} → ${n?.data?.label}`}
-                onClick={() => {
+                onClick={(e) => {
                   setTargetStage(n.id);
-                  setNewAction(edge?.data?.action || "");
-                  setAnchorEl(true);
+                  setAnchorEl(e.currentTarget);
                 }}
-                onDelete={() => {
-                  workflowActions.deleteEdge(edge.id);
-                }}
+                onDelete={isEditable ? () => {
+                  dispatch(deleteEdge(edge.id));
+                } : undefined}
               />
             );
           })}
         </Stack>
       </Box>
 
-      <Box sx={{ mt: 2 }}>
-        <Typography variant="body2">Connect New Stage</Typography>
+      {isEditable && (
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="body2">Connect New Stage</Typography>
 
-        <TextField
-          select
-          fullWidth
-          label="Select Stage"
-          value={targetStage}
-          onChange={(e) => setTargetStage(e.target.value)}
-          sx={{ mt: 1 }}
-        >
-          {nodes
-            ?.filter((n) => n.id !== node.id)
-            .map((n) => (
-              <MenuItem key={n.id} value={n.id}>
-                {n.data.label}
-              </MenuItem>
-            ))}
-        </TextField>
+          <TextField
+            select
+            fullWidth
+            label="Select Stage"
+            value={targetStage}
+            onChange={(e) => setTargetStage(e.target.value)}
+            sx={{ mt: 1 }}
+          >
+            <MenuItem value="" disabled>
+              Select a stage to connect...
+            </MenuItem>
+            {nodes
+              ?.filter((n) => n.id !== selectedNode.id && !connectedEdges.some((e) => e.target === n.id))
+              .map((n) => (
+                <MenuItem key={n.id} value={n.id}>
+                  {n.data.label}
+                </MenuItem>
+              ))}
+          </TextField>
 
-        <Button
-          fullWidth
-          variant="contained"
-          sx={{ mt: 1 }}
-          onClick={() => {
-            if (!targetStage) return;
-
-            workflowActions.createEdge({
-              source: node.id,
-              target: targetStage,
-            });
-
-            setTargetStage("");
-          }}
-        >
-          Connect
-        </Button>
-      </Box>
+          <Button
+            fullWidth
+            variant="contained"
+            sx={{ mt: 1 }}
+            onClick={() => {
+              if (!targetStage) return;
+              dispatch(createEdge({ source: selectedNode.id, target: targetStage }));
+              setTargetStage("");
+            }}
+          >
+            Connect
+          </Button>
+        </Box>
+      )}
 
       <Box sx={{ mt: 2 }}>
         <Typography variant="body2">Allowed Roles</Typography>
 
         <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 1, rowGap: 1 }}>
+          {allowedRoles.length === 0 && (
+            <Chip label="All Roles Allowed" color="success" variant="outlined" />
+          )}
           {allowedRoles.map((roleId) => {
             const role = projectRoles.find((r) => r._id === roleId);
             return (
               <Chip
                 key={roleId}
                 label={role?.name || roleId}
-                onDelete={() =>
-                  setAllowedRoles((prev) =>
-                    prev.filter((r) => r !== roleId)
-                  )
-                }
+                onDelete={isEditable ? () => {
+                  const newRoles = allowedRoles.filter((r) => r !== roleId);
+                  setAllowedRoles(newRoles);
+                  handleUpdate({ allowedRoles: newRoles });
+                } : undefined}
               />
             );
           })}
@@ -145,12 +252,15 @@ export default function WorkflowNodeEditor({
           select
           fullWidth
           label="Add Role"
+          disabled={!isEditable}
           sx={{ mt: 1 }}
           value=""
           onChange={(e) => {
             const value = e.target.value;
             if (!allowedRoles.includes(value)) {
-              setAllowedRoles((prev) => [...prev, value]);
+              const newRoles = [...allowedRoles, value];
+              setAllowedRoles(newRoles);
+              handleUpdate({ allowedRoles: newRoles });
             }
           }}
         >
@@ -172,7 +282,11 @@ export default function WorkflowNodeEditor({
           control={
             <Switch
               checked={isStart}
-              onChange={(e) => setIsStart(e.target.checked)}
+              disabled={!isEditable}
+              onChange={(e) => {
+                setIsStart(e.target.checked);
+                handleUpdate({ isStart: e.target.checked });
+              }}
             />
           }
           label="Start"
@@ -182,41 +296,28 @@ export default function WorkflowNodeEditor({
           control={
             <Switch
               checked={isEnd}
-              onChange={(e) => setIsEnd(e.target.checked)}
+              disabled={!isEditable}
+              onChange={(e) => {
+                setIsEnd(e.target.checked);
+                handleUpdate({ isEnd: e.target.checked });
+              }}
             />
           }
           label="End"
         />
       </Stack>
 
-      {/* Save */}
-      <Button
-        sx={{ mt: 2 }}
-        variant="contained"
-        onClick={() =>
-          onUpdateNode({
-            ...node,
-            data: {
-              ...node.data,
-              label,
-              actions: stageActions,
-              allowedRoles,
-              isStart,
-              isEnd,
-            },
-          })
-        }
-      >
-        Save
-      </Button>
 
-      <Button
-        sx={{ mt: 1 }}
-        color="error"
-        onClick={() => onDeleteNode(node.id)}
-      >
-        Delete
-      </Button>
+
+      {isEditable && (
+        <Button
+          sx={{ mt: 1 }}
+          color="error"
+          onClick={() => dispatch(deleteNode(selectedNode.id))}
+        >
+          Delete
+        </Button>
+      )}
     </>
   );
 }

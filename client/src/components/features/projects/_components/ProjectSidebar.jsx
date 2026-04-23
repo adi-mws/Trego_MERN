@@ -61,9 +61,9 @@ const ProjectSidebar = () => {
    
 
      {
-      label: "Workflow",
+      label: "Workflows",
       icon: <AccountTreeOutlined sx={{ fontSize: 20 }} />,
-      path: PROJECT_ROUTES.projectWorkflow(workspaceSlug, projectSlug),
+      path: PROJECT_ROUTES.projectWorkflows(workspaceSlug, projectSlug),
     },
 
     {

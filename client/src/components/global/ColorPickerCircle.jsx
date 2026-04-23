@@ -2,7 +2,7 @@ import { Box, Popover } from "@mui/material";
 import { HexColorPicker } from "react-colorful";
 import { useState } from "react";
 
-export default function ColorCirclePicker({ setMeta }) {
+export default function ColorCirclePicker({ color, onChange }) {
   const [anchorEl, setAnchorEl] = useState(null);
   const [customColor, setCustomColor] = useState(null); 
 
@@ -17,9 +17,9 @@ export default function ColorCirclePicker({ setMeta }) {
           width: 24,
           height: 24,
           borderRadius: "50%",
-          backgroundColor: customColor || "transparent", 
-          border: customColor ? "2px solid #000" : "2px dashed",
-          borderColor: customColor ? customColor : "divider",
+          backgroundColor: customColor || color || "transparent", 
+          border: (customColor || color) ? "2px solid #000" : "2px dashed",
+          borderColor: (customColor || color) ? (customColor || color) : "divider",
           cursor: "pointer",
           transition: "all 0.2s ease",
           "&:hover": {
@@ -46,14 +46,10 @@ export default function ColorCirclePicker({ setMeta }) {
           }}
         >
           <HexColorPicker
-            color={customColor || "#1890ff"}
-            onChange={(color) => {
-              setCustomColor(color);
-
-              setMeta((prev) => ({
-                ...prev,
-                color,
-              }));
+            color={customColor || color || "#1890ff"}
+            onChange={(newColor) => {
+              setCustomColor(newColor);
+              if (onChange) onChange(newColor);
             }}
           />
         </Box>

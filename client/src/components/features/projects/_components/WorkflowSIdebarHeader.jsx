@@ -1,15 +1,39 @@
-import { Box, TextField, IconButton, Tooltip, Stack } from "@mui/material";
+import { Box, IconButton, Tooltip, Stack, Typography, Switch, FormControlLabel, Chip, Button, CircularProgress } from "@mui/material";
 import CloudDoneIcon from "@mui/icons-material/CloudDone";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import CloudOffIcon from "@mui/icons-material/CloudOff";
+import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
+import { useSelector, useDispatch } from "react-redux";
+import { setIsActive, saveWorkflowTemplate, cloneWorkflowVersion } from "../../../../redux/slices/workflowSlice";
+import { selectWorkflowEligibility } from "../../../../redux/selectors/workflowSelectors";
+import { useParams, useNavigate } from "react-router-dom";
+import { PROJECT_ROUTES } from "../../../../lib/routes";
 
-export default function WorkflowSidebarHeader({
-  workflowName,
-  onChangeName,
-  onSave,
-  isSaving = false,
-  isDirty = false,
-}) {
+export default function WorkflowSidebarHeader() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { workspaceSlug, projectSlug, workflowId } = useParams();
+  const { isSaving, isDirty, name, isWorking, isActive, isEditable, version } = useSelector((state) => state.workflow);
+  const eligibility = useSelector(selectWorkflowEligibility);
+
+  const handleSave = () => {
+    if (workflowId) {
+      dispatch(saveWorkflowTemplate(workflowId));
+    }
+  };
+
+  const handleRegenerate = async () => {
+    if (workflowId) {
+      try {
+        const newWorkflow = await dispatch(cloneWorkflowVersion(workflowId)).unwrap();
+        navigate(PROJECT_ROUTES.projectWorkflowDetail(workspaceSlug, projectSlug, newWorkflow._id));
+      } catch (err) {
+        console.error("Failed to regenerate workflow", err);
+      }
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -17,7 +41,7 @@ export default function WorkflowSidebarHeader({
         alignItems: "center",
         justifyContent: "space-between",
         px: 2,
-        py: 1, 
+        py: 1,
         borderBottom: "1px solid",
         borderColor: "divider",
         gap: 1,
@@ -25,69 +49,136 @@ export default function WorkflowSidebarHeader({
     >
       {/* LEFT: Name + Status */}
       <Stack direction="row" alignItems="center" spacing={1} sx={{ flex: 1 }}>
-        
+
         {/* Status Dot */}
-        <FiberManualRecordIcon
-          sx={{
-            fontSize: 10,
-            color: isSaving
-              ? "warning.main"     
-              : isDirty
-              ? "warning.main"     
-              : "success.main",   
-          }}
-        />
+
+
+        <Box sx={{ position: "relative", display: "inline-flex", minWidth: 20 }}>
+          {/* Spinner */}
+          {isSaving && (
+            <CircularProgress
+              size={16}
+              thickness={5}
+              color="warning"
+            />
+          )}
+
+          {/* Centered dot */}
+          <FiberManualRecordIcon
+            sx={{
+              fontSize: 8,
+              color: isSaving
+                ? "warning.main"
+                : !eligibility.isEligible
+                  ? "error.main"
+                  : isDirty
+                    ? "warning.main"
+                    : "success.main",
+              position: "absolute",
+              top: "50%",
+              left: "40%",
+              transform: "translate(-50%, -50%)",
+            }}
+          />
+        </Box>
 
         {/* Workflow Name */}
-        <TextField
-          variant="standard"
-          placeholder="Untitled Workflow"
-          value={workflowName}
-          onChange={(e) => onChangeName(e.target.value)}
-          InputProps={{
-            disableUnderline: true,
-            sx: {
-              fontSize: 15,
-              fontWeight: 500,
-            },
-          }}
-          sx={{
-            flex: 1,
-          }}
-        />
+        <Typography 
+            title={name || "Untitled Workflow"}
+            sx={{ 
+                fontSize: 14, 
+                fontWeight: 600, 
+                flex: 1, 
+                ml: 1,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                maxWidth: 90,
+            }}
+        >
+            {(name || "Untitled").length > 8 ? (name || "Untitled").slice(0, 8) + "…" : (name || "Untitled")}
+        </Typography>
+
+        <Chip label={`V${version || 1}`} size="small" color="primary" variant="outlined" sx={{ mr: 1 }} />
       </Stack>
 
-      {/* RIGHT: Save Icon */}
-      <Tooltip
-        title={
-          isSaving
-            ? "Saving..."
-            : isDirty
-            ? "Save changes"
-            : "Saved"
-        }
-      >
-        <span>
-          <IconButton
-            onClick={onSave}
-            disabled={!isDirty && !isSaving}
-            sx={{
-              ml: 1,
-            }}
-          >
-            {isSaving ? (
-              <CloudUploadIcon sx={{ fontSize: 22 }} />
-            ) : (
-              <CloudDoneIcon
-                sx={{
-                  fontSize: 22,
-                  color: isDirty ? "warning.main" : "success.main",
-                }}
-              />
-            )}
-          </IconButton>
-        </span>
-      </Tooltip>
+      {/* RIGHT: Save & Status Icons */}
+      <Stack direction="row" alignItems="center" spacing={1}>
+
+        {!isEditable ? (
+          <Button variant="outlined" size="small" color="primary" onClick={handleRegenerate}>
+            Regenerate
+          </Button>
+        ) : (
+          <>
+            {/* Active/Draft Toggle */}
+            <Tooltip title={
+              isWorking ? "Cannot toggle off while workflow is in use by tasks." :
+                !eligibility.isEligible ? "Workflow has errors and cannot be active." :
+                  isActive ? "Set to Draft" : "Set to Active"
+            }>
+              <span>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={isActive}
+                      onChange={(e) => dispatch(setIsActive(e.target.checked))}
+                      disabled={isWorking || (!isActive && !eligibility.isEligible)}
+                  size="small"
+                  color="success"
+                />
+              }
+
+              sx={{ m: 0, mr: 1 }}
+            />
+          </span>
+        </Tooltip>
+
+        {isWorking && (
+          <Tooltip title="Workflow is currently in use">
+            <PlayCircleOutlineIcon sx={{ color: "success.main", fontSize: 20, mr: 1 }} />
+          </Tooltip>
+        )}
+
+        <Tooltip
+          title={
+            (isWorking && !eligibility.isEligible)
+              ? `Cannot Save Active Workflow:\n${eligibility.errors.join("\n")}`
+              : !eligibility.isEligible
+                ? `Cannot Activate:\n${eligibility.errors.join("\n")}`
+                : isSaving
+                  ? "Saving..."
+                  : isDirty
+                    ? "Save changes"
+                    : "Active (Saved)"
+          }
+        >
+          <span>
+            <IconButton
+              onClick={handleSave}
+              disabled={(!isDirty && !isSaving) || (isWorking && !eligibility.isEligible)}
+              sx={{
+                ml: 1,
+              }}
+            >
+              {!eligibility.isEligible ? (
+                <CloudOffIcon sx={{ fontSize: 22, color: "error.main" }} />
+              ) : isSaving ? (
+                <CloudUploadIcon sx={{ fontSize: 22 }} />
+              ) : (
+                <CloudDoneIcon
+                  sx={{
+                    fontSize: 22,
+                    color: isDirty ? "warning.main" : "success.main",
+                  }}
+                />
+              )}
+            </IconButton>
+          </span>
+        </Tooltip>
+        </>
+        )}
+      </Stack>
     </Box>
   );
 }
