@@ -14,14 +14,14 @@ import {
 
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { MenuOutlined, ChevronRightOutlined, ViewKanbanOutlined, TaskOutlined, GroupOutlined, SettingsOutlined, History, HistoryOutlined, ShieldOutlined, TimelineOutlined, InsightsOutlined } from "@mui/icons-material";
+import { MenuOutlined, ChevronRightOutlined, CategoryOutlined, ViewKanbanOutlined, TaskOutlined, GroupOutlined, SettingsOutlined, HistoryOutlined, ShieldOutlined, TimelineOutlined, InsightsOutlined, CommentOutlined } from "@mui/icons-material";
 import { PROJECT_ROUTES } from "../../../../lib/routes";
 import { Analytics, BarChart, PieChart, AccountTreeOutlined } from "@mui/icons-material";
 
 const EXPANDED_WIDTH = 240;
 const COLLAPSED_WIDTH = 72;
 
-const ProjectSidebar = () => {
+const ProjectSidebar = ({ onOpenMembers }) => {
   const [collapsed, setCollapsed] = useState(true);
 
   const navigate = useNavigate();
@@ -53,9 +53,19 @@ const ProjectSidebar = () => {
       path: PROJECT_ROUTES.projectTimeline(workspaceSlug, projectSlug),
     },
     {
+      label: "Task Categories",
+      icon: <CategoryOutlined sx={{ fontSize: 20 }} />,
+      path: PROJECT_ROUTES.projectTaskCategories(workspaceSlug, projectSlug),
+    },
+    {
       label: "Task State History", 
       icon: <HistoryOutlined sx={{fontSize: 20}} />, 
       path: PROJECT_ROUTES.projectTaskStateHistory(workspaceSlug, projectSlug) 
+    },
+    {
+      label: "Comments",
+      icon: <CommentOutlined sx={{ fontSize: 20 }} />,
+      path: PROJECT_ROUTES.projectComments(workspaceSlug, projectSlug),
     },
 
    
@@ -66,11 +76,6 @@ const ProjectSidebar = () => {
       path: PROJECT_ROUTES.projectWorkflows(workspaceSlug, projectSlug),
     },
 
-    {
-      label: "Gantt",
-      icon: <BarChart sx={{ fontSize: 20 }} />,
-      path: PROJECT_ROUTES.projectGantt(workspaceSlug, projectSlug),
-    },
     {
       label: "Members",
       icon: <GroupOutlined sx={{ fontSize: 20 }} />,
@@ -98,7 +103,10 @@ const ProjectSidebar = () => {
         display: "flex",
         flexDirection: "column",
         height: "100%",
+        minHeight: 0,
         bgcolor: "background.paper",
+        overflowY: "auto",
+        overflowX: "hidden",
       }}
     >
       <Box
@@ -130,7 +138,7 @@ const ProjectSidebar = () => {
 
       <Divider />
 
-      <List sx={{ mt: 2, px: 0.5 }}>
+      <List sx={{ mt: 1, px: 0.5, flex: 1, minHeight: 0 }}>
         {menuItems.map((item, index) => {
           const isOverview =
             index === 0 &&

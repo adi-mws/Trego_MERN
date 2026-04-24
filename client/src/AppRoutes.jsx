@@ -29,17 +29,19 @@ import ProjectOverview from "./components/features/projects/ProjectOverview";
 import ProjectMembers from "./components/features/projects/ProjectMembers";
 import ProjectTaskBoard from "./components/features/projects/ProjectTaskBoard";
 import ProjectTasks from "./components/features/projects/ProjectTasks";
-import ProjectGantt from "./components/features/projects/ProjectGantt";
 import ProjectWorkflow from "./components/features/projects/ProjectWorkflow";
 import ProjectRoles from "./components/features/projects/ProjectRoles";
 import ProjectTaskStateHistory from "./components/features/projects/ProjectTaskStateHistory";
 import ProjectTimeline from "./components/features/projects/ProjectTimeline";
 import ProjectWorkflowsList from "./components/features/projects/ProjectWorkflowsList";
+import TaskCategories from "./components/features/tasks/TaskCategories";
+import TaskView from "./components/features/tasks/TaskView";
+import ProjectComments from "./components/features/tasks/ProjectComments";
 
 
 export default function AppRoutes() {
   useVerifyAuth();
-return (
+  return (
     <>
       <AlertContainer />
       <Router>
@@ -77,12 +79,14 @@ return (
                   <Route path="roles" element={<ProjectRoles />} />
                   <Route path="board" element={<ProjectTaskBoard />} />
                   <Route path="members" element={<ProjectMembers />} />
-                  <Route path="gantt" element={<ProjectGantt />} />
+                  <Route path="task-categories" element={<TaskCategories />} />
                   <Route path="workflows" element={<ProjectWorkflowsList />} />
                   <Route path="workflows/:workflowId" element={<ProjectWorkflow />} />
                   <Route path="settings" element={<ProjectSettings />} />
                   <Route path="timeline" element={<ProjectTimeline />} />
                   <Route path="task-state-history" element={<ProjectTaskStateHistory />} />
+                  <Route path="tasks/:taskId" element={<TaskView />} />
+                  <Route path="comments" element={<ProjectComments />} />
                 </Route>
               </Route>
 

@@ -1,8 +1,12 @@
+import mongoose from "mongoose";
+
 const taskCategorySchema = new mongoose.Schema(
   {
-    name: { type: String, required: true },
-
-    key: { type: String, required: true },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
 
     projectId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -11,24 +15,37 @@ const taskCategorySchema = new mongoose.Schema(
       index: true,
     },
 
-    workflowTemplateId: {
+    description: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    color: {
+      type: String,
+      default: "#1890ff",
+    },
+
+    defaultWorkflowId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "WorkflowTemplate",
-      required: true,
-    },
-
-    description: String,
-
-    defaultPriority: {
-      type: String,
-      enum: ["LOW", "MEDIUM", "HIGH"],
-      default: "MEDIUM",
-    },
-
-    isSystem: {
-      type: Boolean,
-      default: false,
+      default: null,
     },
   },
   { timestamps: true }
 );
+
+
+taskCategorySchema.index(
+  { name: 1, projectId: 1 },
+  { unique: true }
+);
+
+
+taskCategorySchema.pre("save", async function () {
+  if (this.name) {
+    this.name = this.name.trim();
+  }
+});
+
+export default mongoose.model("TaskCategory", taskCategorySchema);

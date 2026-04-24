@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 const taskObjectiveSchema = new mongoose.Schema(
   {
     taskId: {
@@ -39,4 +41,4 @@ const taskObjectiveSchema = new mongoose.Schema(
 export const TaskObjective = mongoose.model(
   "TaskObjective",
   taskObjectiveSchema
-);e
+);

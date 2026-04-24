@@ -40,7 +40,9 @@ export const PROJECT_ROUTES = {
     projectTaskBoard: (workspaceSlug, projectSlug) => `${WORKSPACE_ROUTES.workspace(workspaceSlug)}/projects/${projectSlug}/board`,
     projectWorkflows: (workspaceSlug, projectSlug) => `${WORKSPACE_ROUTES.workspace(workspaceSlug)}/projects/${projectSlug}/workflows`,
     projectWorkflowDetail: (workspaceSlug, projectSlug, workflowId) => `${WORKSPACE_ROUTES.workspace(workspaceSlug)}/projects/${projectSlug}/workflows/${workflowId}`,
-    projectGantt: (workspaceSlug, projectSlug) => `${WORKSPACE_ROUTES.workspace(workspaceSlug)}/projects/${projectSlug}/gantt`,
     projectTaskStateHistory: (workspaceSlug, projectSlug) => `${WORKSPACE_ROUTES.workspace(workspaceSlug)}/projects/${projectSlug}/task-state-history`,
     projectTimeline: (workspaceSlug, projectSlug) => `${WORKSPACE_ROUTES.workspace(workspaceSlug)}/projects/${projectSlug}/timeline`,
+    projectTaskCategories: (workspaceSlug, projectSlug) => `${WORKSPACE_ROUTES.workspace(workspaceSlug)}/projects/${projectSlug}/task-categories`,
+    projectTaskDetail: (workspaceSlug, projectSlug, taskId) => `${WORKSPACE_ROUTES.workspace(workspaceSlug)}/projects/${projectSlug}/tasks/${taskId}`,
+    projectComments: (workspaceSlug, projectSlug) => `${WORKSPACE_ROUTES.workspace(workspaceSlug)}/projects/${projectSlug}/comments`,
 }

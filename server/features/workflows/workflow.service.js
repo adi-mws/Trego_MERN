@@ -1,4 +1,4 @@
-import { WorkflowTemplate } from "./workflow.model.js";
+import { WorkflowTemplate } from "./workflowTemplate.model.js";
 import { WorkflowStage } from "./workflowStage.model.js";
 import { WorkflowTransition } from "./workflowTransition.model.js";
 import mongoose from "mongoose";

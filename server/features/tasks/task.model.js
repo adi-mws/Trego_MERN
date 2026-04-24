@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 const taskSchema = new mongoose.Schema(
   {
     projectId: {
@@ -7,18 +9,16 @@ const taskSchema = new mongoose.Schema(
       index: true,
     },
 
-    currentStageId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "WorkflowStage",
-      required: true,
-    },
-
     title: {
       type: String,
       required: true,
+      trim: true,
     },
 
-    description: String,
+    description: {
+      type: String,
+      default: "",
+    },
 
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -26,10 +26,25 @@ const taskSchema = new mongoose.Schema(
       required: true,
     },
 
+    // Category (optional — task can be uncategorized)
     categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "TaskCategory",
-      required: true,
+      default: null,
+      index: true,
+    },
+
+    // Workflow tracking (optional — only when a workflow is assigned)
+    workflowId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "WorkflowTemplate",
+      default: null,
+    },
+
+    currentStageId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "WorkflowStage",
+      default: null,
     },
 
     priority: {
@@ -39,6 +54,8 @@ const taskSchema = new mongoose.Schema(
     },
 
     deadline: Date,
+    startDate: Date,
+    endDate: Date,
 
     isBlocked: {
       type: Boolean,
@@ -46,13 +63,6 @@ const taskSchema = new mongoose.Schema(
     },
 
     blockedReason: String,
-
-    eligibleRoles: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "ProjectRole",
-      },
-    ],
 
     assignees: [
       {
@@ -67,9 +77,6 @@ const taskSchema = new mongoose.Schema(
         ref: "Task",
       },
     ],
-
-    startDate: Date,
-    endDate: Date,
   },
   { timestamps: true }
 );

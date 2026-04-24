@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Box } from "@mui/material";
 import { useParams } from "react-router-dom";
 import MembersSidebar from "./MembersSidebar";
 import ProjectSidebar from "../../features/projects/_components/ProjectSidebar";
@@ -19,7 +20,7 @@ export default function RightSidebar() {
     }, [isProjectView]);
 
     return (
-        <>
+        <Box sx={{ height: "100%", minHeight: 0, overflow: "hidden" }}>
             {isProjectView ? (
                 activePanel === "project" ? (
                     <ProjectSidebar
@@ -33,6 +34,6 @@ export default function RightSidebar() {
             ) : (
                 <MembersSidebar />
             )}
-        </>
+        </Box>
     );
 }
