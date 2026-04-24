@@ -13,7 +13,7 @@ import { PROJECT_ROUTES } from "../../../lib/routes";
 export default function ProjectComments() {
   const { _id: projectId } = useSelector(s => s.project);
   const { workspaceSlug, projectSlug } = useParams();
-  const currentUser = useSelector(s => s.auth?.user);
+  const currentUser = useSelector(s => s.auth?.data);
   const navigate = useNavigate();
 
   const [comments, setComments] = useState([]);
@@ -52,7 +52,7 @@ export default function ProjectComments() {
   );
 
   return (
-    <Box sx={{ p: 3, maxWidth: 800, mx: "auto" }}>
+    <Box sx={{ p: 3, width: "100%", maxWidth: "none", mx: 0 }}>
       <Box mb={3}>
         <Typography variant="h5" fontWeight={700}>Project Comments</Typography>
         <Typography variant="body2" color="text.secondary" mt={0.5}>

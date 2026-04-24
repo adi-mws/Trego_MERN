@@ -53,7 +53,7 @@ export default function ProjectTaskStateHistory() {
   );
 
   return (
-    <Box sx={{ p: 3, maxWidth: 960, mx: "auto" }}>
+    <Box sx={{ p: 3, width: "100%", maxWidth: "none", mx: 0 }}>
       <Box mb={3}>
         <Typography variant="h5" fontWeight={700}>Task State History</Typography>
         <Typography variant="body2" color="text.secondary" mt={0.5}>

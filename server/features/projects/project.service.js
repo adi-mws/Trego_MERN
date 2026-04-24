@@ -21,7 +21,19 @@ export const createProject = async ({
   return createdProject;
 };
 
-
+export const updateProject = async (projectId, updateData) => {
+  try {
+    const updatedProject = await Project.findByIdAndUpdate(
+      projectId,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+    return updatedProject;
+  } catch (error) {
+    console.error("Update Project Error:", error);
+    throw error;
+  }
+};
 
 // * Project Global State
 
@@ -257,11 +269,17 @@ export const getProjectRole = async ({ roleId, projectId }) => {
 /**
  * Get all roles
  */
-export const getAllProjectRoles = async ({ projectId }) => {
+export const getAllProjectRoles = async ({ projectId, search }) => {
   try {
     if (!projectId) throw new Error("Project ID is required");
 
-    return await ProjectRole.find({ project: projectId }).sort({
+    const query = { project: projectId };
+
+    if (search && String(search).trim()) {
+      query.name = { $regex: String(search).trim(), $options: "i" };
+    }
+
+    return await ProjectRole.find(query).sort({
       createdAt: 1,
     });
   } catch (error) {

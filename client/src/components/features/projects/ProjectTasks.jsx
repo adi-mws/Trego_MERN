@@ -12,14 +12,18 @@ import BlockIcon from "@mui/icons-material/Block";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import FlagIcon from "@mui/icons-material/Flag";
 import { useSelector } from "react-redux";
+import { useNavigate, useParams } from "react-router-dom";
 import { callApi } from "../../../api/api";
 import CreateTaskDialog from "../tasks/_components/CreateTaskDialog";
 import BlockTaskDialog from "../tasks/_components/BlockTaskDialog";
+import { PROJECT_ROUTES } from "../../../lib/routes";
 
 const PRIORITY_COLOR = { LOW: "success", MEDIUM: "warning", HIGH: "error" };
 
 export default function ProjectTasks() {
   const { _id: projectId } = useSelector(s => s.project);
+  const { workspaceSlug, projectSlug } = useParams();
+  const navigate = useNavigate();
 
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -136,9 +140,11 @@ export default function ProjectTasks() {
                 <TableRow
                   key={task._id}
                   hover
+                  onClick={() => navigate(PROJECT_ROUTES.projectTaskDetail(workspaceSlug, projectSlug, task._id))}
                   sx={{
                     opacity: task.isBlocked ? 0.7 : 1,
                     borderLeft: task.color ? `3px solid ${task.color}` : "none",
+                    cursor: "pointer",
                   }}
                 >
                   <TableCell>

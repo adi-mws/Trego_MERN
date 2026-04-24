@@ -2,16 +2,15 @@ import React, { useEffect, useState } from "react";
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, MenuItem, Button, CircularProgress, Alert,
-  Divider, Stack, Chip, Box, Typography, Autocomplete,
+  Divider, Stack, Chip, Box,
 } from "@mui/material";
-import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { callApi } from "../../../../api/api";
 import { useSelector } from "react-redux";
 
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH"];
-
 const PRIORITY_COLOR = { LOW: "success", MEDIUM: "warning", HIGH: "error" };
 
 export default function CreateTaskDialog({ open, onClose, onCreated, defaultCategoryId }) {
@@ -21,6 +20,7 @@ export default function CreateTaskDialog({ open, onClose, onCreated, defaultCate
     title: "",
     description: "",
     priority: "MEDIUM",
+    startDate: null,
     deadline: null,
     categoryId: defaultCategoryId || "",
     workflowId: "",
@@ -33,7 +33,7 @@ export default function CreateTaskDialog({ open, onClose, onCreated, defaultCate
   useEffect(() => {
     if (!open || !projectId) return;
     setError("");
-    setForm(f => ({ ...f, categoryId: defaultCategoryId || "", workflowId: "" }));
+    setForm(f => ({ ...f, categoryId: defaultCategoryId || "", workflowId: "", startDate: null, deadline: null }));
 
     callApi({ method: "get", url: `/tasks/project/${projectId}/categories` })
       .then(r => { if (r.success) setCategories(r.data.data); });
@@ -44,11 +44,11 @@ export default function CreateTaskDialog({ open, onClose, onCreated, defaultCate
 
   const selectedCategory = categories.find(c => c._id === form.categoryId);
 
-  // Available workflows: category's defaultWorkflow + any other active workflow
-  const availableWorkflows = workflows;
-
   const handleSubmit = async () => {
     if (!form.title.trim()) { setError("Title is required"); return; }
+    if (form.startDate && form.deadline && new Date(form.startDate) > new Date(form.deadline)) {
+      setError("Start date cannot be after the deadline"); return;
+    }
     setLoading(true);
     setError("");
     const res = await callApi({
@@ -58,6 +58,7 @@ export default function CreateTaskDialog({ open, onClose, onCreated, defaultCate
         title: form.title,
         description: form.description,
         priority: form.priority,
+        startDate: form.startDate || undefined,
         deadline: form.deadline || undefined,
         categoryId: form.categoryId || undefined,
         workflowId: form.workflowId || undefined,
@@ -106,29 +107,48 @@ export default function CreateTaskDialog({ open, onClose, onCreated, defaultCate
             size="small"
           />
 
-          <Stack direction="row" spacing={2}>
-            {/* Priority */}
-            <TextField
-              select
-              label="Priority"
-              value={form.priority}
-              onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}
-              size="small"
-              sx={{ flex: 1 }}
-            >
-              {PRIORITIES.map(p => (
-                <MenuItem key={p} value={p}>
-                  <Chip label={p} size="small" color={PRIORITY_COLOR[p]} sx={{ minWidth: 60 }} />
-                </MenuItem>
-              ))}
-            </TextField>
+          {/* Priority */}
+          <TextField
+            select
+            label="Priority"
+            value={form.priority}
+            onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}
+            size="small"
+          >
+            {PRIORITIES.map(p => (
+              <MenuItem key={p} value={p}>
+                <Chip label={p} size="small" color={PRIORITY_COLOR[p]} sx={{ minWidth: 60 }} />
+              </MenuItem>
+            ))}
+          </TextField>
 
-            {/* Deadline */}
-            <DateTimePicker
+          {/* Start Date + Deadline side by side */}
+          <Stack direction="row" spacing={2}>
+            <DatePicker
+              label="Start Date"
+              value={form.startDate}
+              onChange={v => setForm(f => ({ ...f, startDate: v }))}
+              maxDate={form.deadline || undefined}
+              slotProps={{
+                textField: {
+                  size: "small",
+                  sx: { flex: 1 },
+                  helperText: "When this task begins",
+                },
+              }}
+            />
+            <DatePicker
               label="Deadline"
               value={form.deadline}
               onChange={v => setForm(f => ({ ...f, deadline: v }))}
-              slotProps={{ textField: { size: "small", sx: { flex: 1 } } }}
+              minDate={form.startDate || undefined}
+              slotProps={{
+                textField: {
+                  size: "small",
+                  sx: { flex: 1 },
+                  helperText: "Due date",
+                },
+              }}
             />
           </Stack>
 
@@ -151,8 +171,8 @@ export default function CreateTaskDialog({ open, onClose, onCreated, defaultCate
             ))}
           </TextField>
 
-          {/* Workflow — shown only if category has one OR there are active workflows */}
-          {availableWorkflows.length > 0 && (
+          {/* Workflow */}
+          {workflows.length > 0 && (
             <TextField
               select
               label={selectedCategory?.defaultWorkflow ? "Workflow (category default available)" : "Workflow (optional)"}
@@ -164,7 +184,7 @@ export default function CreateTaskDialog({ open, onClose, onCreated, defaultCate
                 : ""}
             >
               <MenuItem value="">None / Use category default</MenuItem>
-              {availableWorkflows.map(wf => (
+              {workflows.map(wf => (
                 <MenuItem key={wf._id} value={wf._id}>
                   {wf.name} — V{wf.version}
                   {selectedCategory?.defaultWorkflowId === wf._id && (

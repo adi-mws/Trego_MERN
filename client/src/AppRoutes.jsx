@@ -37,6 +37,7 @@ import ProjectWorkflowsList from "./components/features/projects/ProjectWorkflow
 import TaskCategories from "./components/features/tasks/TaskCategories";
 import TaskView from "./components/features/tasks/TaskView";
 import ProjectComments from "./components/features/tasks/ProjectComments";
+import GlobalAgentChatPanel from "./components/features/agent/GlobalAgentChatPanel";
 
 
 export default function AppRoutes() {
@@ -70,6 +71,7 @@ export default function AppRoutes() {
 
               <Route path=":workspaceSlug" element={<WorkspaceDetailLayout />}>
                 <Route index element={<WorkspaceOverviewPage />} />
+                <Route path="agent" element={<GlobalAgentChatPanel />} />
                 <Route path="members" element={<WorkspaceMemberPage />} />
                 <Route path="settings" element={<WorkspaceSettingsPage />} />
                 <Route path="projects" element={<WorkspaceProjectsPage />} />

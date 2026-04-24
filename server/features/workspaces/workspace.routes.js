@@ -33,6 +33,8 @@ router.get("/:workspaceId/members", ensureAuth, workspaceController.getWorkspace
 router.get("/:workspaceId/members-list", ensureAuth, workspaceController.getWorkspaceMembersByRoleController);
 router.post("/:workspaceId/members-roles", ensureAuth, workspaceController.updateWorkspaceMemberRoleController);
 
+import { getWorkspaceMetrics } from "./workspaceMetrics.controller.js";
+router.get("/:workspaceId/metrics", ensureAuth, getWorkspaceMetrics);
 
 router.get("/:id", ensureAuth, workspaceController.getWorkspace);
 router.put("/:id", ensureAuth, uploadAvatar, workspaceController.updateWorkspace);

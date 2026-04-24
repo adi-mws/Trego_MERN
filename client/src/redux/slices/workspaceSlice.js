@@ -1,5 +1,19 @@
 import { createSlice } from '@reduxjs/toolkit'
 
+function normalizeProjects(projects) {
+  if (Array.isArray(projects)) return projects
+  if (!projects) return []
+
+  if (Array.isArray(projects.items)) return projects.items
+  if (Array.isArray(projects.projects)) return projects.projects
+
+  if (typeof projects === "object") {
+    return Object.values(projects).filter((item) => item && typeof item === "object")
+  }
+
+  return []
+}
+
 const initialState = {
   currentWorkspace: null,
   name: null,
@@ -31,7 +45,7 @@ const workspaceSlice = createSlice({
       state._id = ws?._id || null
       state.members = ws?.members || []
       state.invites = ws?.invites || []
-      state.projects = ws?.projects || []
+      state.projects = normalizeProjects(ws?.projects)
       state.totalMembers = ws?.totalMembers || 0
       state.isLoading = false
       state.error = null;
@@ -107,7 +121,7 @@ const workspaceSlice = createSlice({
 
       if (!payload) return;
 
-      const projectsToAdd = Array.isArray(payload) ? payload : [payload];
+      const projectsToAdd = normalizeProjects(payload);
 
       projectsToAdd.forEach((project) => {
         const exists = state.projects.some(
@@ -121,7 +135,7 @@ const workspaceSlice = createSlice({
     },
 
     setProjects: (state, action) => {
-      state.projects = action.payload || [];
+      state.projects = normalizeProjects(action.payload);
     },
   },
 })

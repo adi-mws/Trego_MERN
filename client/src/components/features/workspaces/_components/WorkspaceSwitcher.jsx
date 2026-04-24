@@ -100,9 +100,7 @@ export default function WorkspaceSwitcher() {
   const handleWorkspaceCreation = () => {
 
   }
-  if (loading) {
-    return <Loading />
-  }
+  // removed early return to prevent unmounting and losing focus
 
   return (
     <>
@@ -188,7 +186,9 @@ export default function WorkspaceSwitcher() {
 
           {/* Workspace List */}
           <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
-            {workspaces.length > 0 ? (
+            {loading ? (
+              <Box display="flex" justifyContent="center" py={3}><Loading /></Box>
+            ) : workspaces.length > 0 ? (
               <List disablePadding>
                 {workspaces.map((workspace) => {
                   const isActive = workspace.slug === currentSlug

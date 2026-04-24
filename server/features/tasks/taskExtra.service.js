@@ -225,6 +225,18 @@ export const advanceTaskStage = async ({ taskId, transitionId, userId, comment }
     if (!canProceed) throw new Error("You do not have the required role for this transition");
   }
 
+  // ── startDate enforcement ────────────────────────────────────────────────────
+  // Block advancement from the start stage if startDate hasn't arrived yet.
+  const fullTask = await Task.findById(taskId).select("startDate workflowId currentStageId").lean();
+  if (fullTask?.startDate && fullTask?.workflowId) {
+    const startStage = await WorkflowStage.findOne({ workflowId: fullTask.workflowId, isStart: true }).lean();
+    const isOnStartStage = startStage && String(fullTask.currentStageId) === String(startStage._id);
+    if (isOnStartStage && new Date(fullTask.startDate) > new Date()) {
+      const startStr = new Date(fullTask.startDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+      throw new Error(`Task is scheduled to start on ${startStr} and cannot be advanced before then.`);
+    }
+  }
+
   // Perform stage update
   const oldStageId = task.currentStageId;
   await Task.findByIdAndUpdate(taskId, { currentStageId: transition.toStage._id });

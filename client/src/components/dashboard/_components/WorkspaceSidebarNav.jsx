@@ -1,4 +1,4 @@
-import { use, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
     Box,
     List,
@@ -13,10 +13,8 @@ import {
 import {
     People as PeopleIcon,
     Settings as SettingsIcon,
-    AccessTime as RolesIcon,
     ExpandMore as ExpandMoreIcon,
     Cabin as AIIcon,
-    FolderOutlined as ProjectIcon,
     Add,
     AutoGraphOutlined,
 } from '@mui/icons-material';
@@ -29,16 +27,38 @@ import UserMenu from '../../features/account/UserMenu';
 import { setProjects } from '../../../redux/slices/workspaceSlice';
 import CreateProjectDialog from '../../features/projects/_components/CreateProjectDialog';
 import { getImageUrl } from '../../../utils/image.utils';
+import { resolveWorkspaceRole } from '../../../utils/workspaceRole.utils';
 export default function WorkspaceSidebarNav() {
     const [openCreateProjectDialog, setOpenCreateProjectDialog] = useState(false);
     const workspace = useSelector((state) => state.workspace);
+    const authUser = useSelector((state) => state.auth?.data);
+    const workspaceSlug = workspace?.slug || workspace?.currentWorkspace?.slug;
+    const workspaceRole = resolveWorkspaceRole(workspace, authUser);
+    const canOpenAgent = ["ADMIN", "OWNER"].includes(workspaceRole);
+    const workspaceProjects = Array.isArray(workspace?.projects)
+        ? workspace.projects
+        : Array.isArray(workspace?.projects?.items)
+            ? workspace.projects.items
+            : Array.isArray(workspace?.projects?.projects)
+                ? workspace.projects.projects
+                : Array.isArray(workspace?.currentWorkspace?.projects)
+                    ? workspace.currentWorkspace.projects
+                    : Array.isArray(workspace?.currentWorkspace?.projects?.items)
+                        ? workspace.currentWorkspace.projects.items
+                        : Array.isArray(workspace?.currentWorkspace?.projects?.projects)
+                            ? workspace.currentWorkspace.projects.projects
+                            : [];
     const menuGroups = [
         {
             id: 'workspace',
             label: 'WORKSPACE',
             items: [
-                { id: 'overview', label: 'Overview', icon: <AutoGraphOutlined />, path: WORKSPACE_ROUTES.workspace(workspace?.slug) },
-                { id: 'members', label: 'Members', icon: <PeopleIcon />, path: WORKSPACE_ROUTES.workspaceMembers(workspace?.slug) },
+                { id: 'overview', label: 'Overview', icon: <AutoGraphOutlined />, path: WORKSPACE_ROUTES.workspace(workspaceSlug) },
+                ...(canOpenAgent && workspaceSlug ? [
+                    { id: 'agent', label: 'Trego Agent', icon: <AIIcon />, path: `/app/${workspaceSlug}/agent` },
+                ] : []),
+                { id: 'members', label: 'Members', icon: <PeopleIcon />, path: WORKSPACE_ROUTES.workspaceMembers(workspaceSlug) },
+                { id: 'settings', label: 'Settings', icon: <SettingsIcon />, path: WORKSPACE_ROUTES.workspace(workspaceSlug) + '/settings' },
             ],
         },
         {
@@ -53,7 +73,7 @@ export default function WorkspaceSidebarNav() {
     const navigate = useNavigate()
 
     const [expandedGroups, setExpandedGroups] = useState({
-        workspace: false,
+        workspace: true,
         'ai-agent': false,
         projectsList: true,
     })
@@ -67,11 +87,15 @@ export default function WorkspaceSidebarNav() {
     //  PROJECTS 
     const dispatch = useDispatch();
     const fetchProjects = async () => {
-        if (!workspace) return
+        if (!workspaceSlug || workspaceProjects.length > 0) return
 
         try {
-            const res = await callApi(`/workspaces/${workspace.slug}/projects`)
-            dispatch((res?.items || []))
+            const res = await callApi({
+                method: "get",
+                url: `/workspaces/global/${workspaceSlug}`,
+            })
+            const projects = res?.data?.workspace?.projects || res?.data?.projects || res?.data?.items || res?.data || []
+            dispatch(setProjects(projects))
         } catch (err) {
             console.error('Failed to fetch projects', err)
         }
@@ -79,14 +103,14 @@ export default function WorkspaceSidebarNav() {
 
     useEffect(() => {
         fetchProjects()
-    }, [workspace])
+    }, [workspaceSlug, workspaceProjects.length])
 
     const { _id: projectId } = useSelector((state) => state.project)
 
 
 
     return (
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: 1 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, p: 1, overflow: 'hidden' }}>
             <Box component={'img'} src="/images/logo-with-text.png" alt="Logo" sx={{ width: 80, m: 1 }} />
 
             {/* Workspace Switcher */}
@@ -95,7 +119,7 @@ export default function WorkspaceSidebarNav() {
             </Box>
 
             <Divider sx={{ my: 1 }} />
-            <Box sx={{ overflowY: 'auto' }}>
+            <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
                 {/*  PROJECT LIST  */}
                 <Box>
                     <ListItemButton onClick={() => toggleGroup('projectsList')}>
@@ -122,7 +146,7 @@ export default function WorkspaceSidebarNav() {
 
                     <Collapse in={expandedGroups.projectsList}>
                         <List disablePadding>
-                            {workspace.projects?.map((project) => (
+                            {workspaceProjects.map((project) => (
                                 <ListItemButton
                                     key={project._id}
                                     selected={project._id === projectId}
@@ -209,7 +233,8 @@ export default function WorkspaceSidebarNav() {
                                     {group.items.map((item) => (
                                         <ListItemButton
                                             key={item.id}
-                                            onClick={() => navigate(item.path)}
+                                            disabled={!item.path}
+                                            onClick={() => item.path && navigate(item.path)}
                                         >
                                             <ListItemIcon
                                                 sx={{

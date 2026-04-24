@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import ReactFlow, {
   addEdge,
   applyEdgeChanges,
@@ -19,7 +19,7 @@ import WorkflowControls from "./_components/WorkflowControls";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import { PROJECT_ROUTES } from "../../../lib/routes";
-import { fetchWorkflowDetails, setEdges, setIsDirty, setLayoutDir, selectEdge, selectNode, setNodes, clearSelection } from "../../../redux/slices/workflowSlice";
+import { fetchWorkflowDetails, setEdges, setIsDirty, setLayoutDir, selectEdge, selectNode, setNodes, clearSelection, resetWorkflow } from "../../../redux/slices/workflowSlice";
 
 const nodeTypes = { workflow: WorkflowNode };
 
@@ -68,16 +68,29 @@ function WorkflowBuilderInner() {
   const edges = useSelector(selectStyledEdges)
 
   const dispatch = useDispatch();
+  const hasRedirected = useRef(false);
+  const isInitialLayout = useRef(true);
+
+  // Reset redirect guard when URL workflowId changes
+  useEffect(() => {
+    hasRedirected.current = false;
+    isInitialLayout.current = true;
+  }, [workflowId]);
 
   useEffect(() => {
     if (workflowId) {
       dispatch(fetchWorkflowDetails(workflowId));
     }
+    // Clean up stale state when leaving this workflow
+    return () => {
+      dispatch(resetWorkflow());
+    };
   }, [dispatch, workflowId]);
 
   useEffect(() => {
-    // If the backend auto-cloned the workflow to a V2 during a save, redirect seamlessly!
-    if (reduxWorkflowId && workflowId && reduxWorkflowId !== workflowId) {
+    // If the backend auto-cloned the workflow to a V2 during a save, redirect ONCE
+    if (reduxWorkflowId && workflowId && reduxWorkflowId !== workflowId && !hasRedirected.current) {
+      hasRedirected.current = true;
       navigate(PROJECT_ROUTES.projectWorkflowDetail(workspaceSlug, projectSlug, reduxWorkflowId), { replace: true });
     }
   }, [reduxWorkflowId, workflowId, navigate, workspaceSlug, projectSlug]);
@@ -102,6 +115,9 @@ function WorkflowBuilderInner() {
     (changes) => {
       const updatedNodes = applyNodeChanges(changes, nodes);
       dispatch(setNodes(updatedNodes));
+
+      // Don't mark dirty during initial auto-layout
+      if (isInitialLayout.current) return;
 
       const dirtyTypes = ["remove", "add", "reset", "position"];
       const hasDirtyChange = changes.some((change) => dirtyTypes.includes(change.type) && (!change.dragging));
@@ -150,6 +166,8 @@ function WorkflowBuilderInner() {
     } else {
       setTimeout(() => fitView({ padding: 0.2 }), 50);
     }
+    // Mark initial layout complete after a short delay
+    setTimeout(() => { isInitialLayout.current = false; }, 500);
   }, [nodes.length]);
 
   const onConnect = useCallback(

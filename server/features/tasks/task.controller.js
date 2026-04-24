@@ -53,7 +53,8 @@ export const deleteCategory = async (req, res, next) => {
 export const getTasks = async (req, res, next) => {
     try {
         const { projectId } = req.params;
-        const tasks = await taskService.getTasksByProject(projectId);
+        const { search } = req.query;
+        const tasks = await taskService.getTasksByProject(projectId, search);
         res.status(200).json({ success: true, data: tasks });
     } catch (err) {
         next(err);
@@ -64,11 +65,11 @@ export const createTask = async (req, res, next) => {
     try {
         const { projectId } = req.params;
         const createdBy = req.user.userId;
-        const { title, description, categoryId, workflowId, priority, deadline, assignees } = req.body;
+        const { title, description, categoryId, workflowId, priority, deadline, startDate, endDate, assignees } = req.body;
 
         const task = await taskService.createTask({
             projectId, title, description, createdBy,
-            categoryId, workflowId, priority, deadline, assignees,
+            categoryId, workflowId, priority, deadline, startDate, endDate, assignees,
         });
 
         res.status(201).json({ success: true, data: task });

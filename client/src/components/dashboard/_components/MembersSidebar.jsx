@@ -34,7 +34,7 @@ const EXPANDED_WIDTH = 240;
 const COLLAPSED_WIDTH = 72;
 
 export default function MembersSidebar({ onBack }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [search, setSearch] = useState("");
 
   const { projectSlug } = useParams();

@@ -231,6 +231,27 @@ const workflowSlice = createSlice({
             state.isDirty = true;
         },
 
+        resetWorkflow(state) {
+            Object.assign(state, {
+                nodes: [],
+                edges: [],
+                selectedNode: null,
+                selectedEdge: null,
+                layoutDir: "TB",
+                isLoading: false,
+                isSaving: false,
+                isDirty: false,
+                error: null,
+                name: "Untitled Workflow",
+                description: "",
+                isActive: false,
+                isWorking: false,
+                version: 1,
+                isEditable: true,
+                _id: null,
+            });
+        },
+
         updateNode(state, action) {
             const updated = action.payload;
 
@@ -324,8 +345,21 @@ const workflowSlice = createSlice({
         builder
             // Fetch Workflow
             .addCase(fetchWorkflowDetails.pending, (state) => {
-                state.isLoading = true;
+                // Clear stale data immediately so the old workflow never flickers
+                state.nodes = [];
+                state.edges = [];
+                state.selectedNode = null;
+                state.selectedEdge = null;
+                state._id = null;
+                state.name = "Untitled Workflow";
+                state.description = "";
+                state.isActive = false;
+                state.isWorking = false;
+                state.version = 1;
+                state.isEditable = true;
+                state.isDirty = false;
                 state.error = null;
+                state.isLoading = true;
             })
             .addCase(fetchWorkflowDetails.fulfilled, (state, action) => {
                 state.isLoading = false;
@@ -431,6 +465,7 @@ export const {
     setIsActive,
     setVersion,
     setIsEditable,
+    resetWorkflow,
 } = workflowSlice.actions;
 
 export default workflowSlice.reducer;

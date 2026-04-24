@@ -3,11 +3,12 @@ import WorkspaceSidebarNav from '../components/dashboard/_components/WorkspaceSi
 import Header from '../components/dashboard/_components/Header'
 import RightSidebar from '../components/dashboard/_components/RightSidebar'
 import { Box, Stack, Avatar, Chip } from '@mui/material'
-import { Outlet, useParams } from 'react-router-dom'
+import { Outlet, useLocation, useParams } from 'react-router-dom'
 
 import { useHeader } from '../contexts/HeaderContext'
 import { callApi } from '../api/api'
 import { getImageUrl } from '../utils/image.utils'
+import { resolveWorkspaceRole } from '../utils/workspaceRole.utils'
 import {
   setWorkspace,
   setLoading,
@@ -25,9 +26,11 @@ function formatMemberCount(count) {
 export default function WorkspaceDetailLayout() {
   const { setHeaderLeftContent, setHeaderTitle } = useHeader()
   const { workspaceSlug, projectSlug } = useParams()
+  const location = useLocation()
 
   const dispatch = useDispatch()
   const workspace = useSelector((state) => state?.workspace)
+  const authUser = useSelector((state) => state.auth?.data)
 
   const fetchWorkspace = async () => {
     try {
@@ -83,14 +86,19 @@ export default function WorkspaceDetailLayout() {
   }, [projectSlug]);
 
   useEffect(() => {
-    if (!workspace) return
+    if (!workspace?.slug && !workspace?.name && !workspace?.currentWorkspace) return
     if (location.pathname.includes('projects') && !projectSlug) return
-
+    const workspaceRole = resolveWorkspaceRole(workspace, authUser) || 'MEMBER'
     setHeaderTitle(workspace.name || workspaceSlug || 'Workspace')
 
     setHeaderLeftContent(
       <>
-        <Chip label={workspace.role} size="small" color="success" sx={{ fontSize: 12 }} />
+        <Chip
+          label={workspaceRole}
+          size="small"
+          color={["ADMIN", "OWNER"].includes(workspaceRole) ? "success" : "default"}
+          sx={{ fontSize: 12 }}
+        />
 
         <Stack direction="row" spacing={-0.75} alignItems="center">
           {(workspace.members || []).slice(0, 4).map((member, index) => (
@@ -127,7 +135,7 @@ export default function WorkspaceDetailLayout() {
         </Stack>
       </>
     )
-  }, [workspace, workspaceSlug])
+  }, [workspace, authUser, workspaceSlug, location.pathname, projectSlug])
 
   const isProjectView = Boolean(projectSlug)
 
@@ -176,9 +184,12 @@ export default function WorkspaceDetailLayout() {
           minHeight: 0,
           overflow: "hidden",
           p: 2,
+          gap: 1.5,
         }}
       >
-        <Outlet context={{ workspace }} />
+        <Box sx={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+          <Outlet context={{ workspace }} />
+        </Box>
       </Box>
 
       {/* RIGHT SIDEBAR */}

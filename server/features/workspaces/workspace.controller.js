@@ -131,9 +131,14 @@ export const updateWorkspace = async (req, res) => {
   try {
     const { id } = req.params;
 
+    const updateData = { ...req.body };
+    if (req.file) {
+      updateData.avatar = await saveFile(req.file, "workspaces/avatars");
+    }
+
     const workspace = await workspaceService.updateWorkspace(
       id,
-      req.body
+      updateData
     );
 
     if (!workspace) {

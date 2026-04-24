@@ -147,9 +147,15 @@ export const getWorkspaceGlobalState = async (workspaceSlug, userId) => {
 
 /*  UPDATE  */
 export const updateWorkspace = async (workspaceId, data) => {
-  return await Workspace.findByIdAndUpdate(workspaceId, data, {
-    new: true,
-  });
+  const workspace = await Workspace.findById(workspaceId);
+  if (!workspace) throw new Error("Workspace not found");
+
+  if (data.name) workspace.name = data.name;
+  if (data.about !== undefined) workspace.about = data.about;
+  if (data.avatar !== undefined) workspace.avatar = data.avatar;
+
+  await workspace.save();
+  return workspace;
 };
 
 

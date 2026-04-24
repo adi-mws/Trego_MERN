@@ -147,12 +147,25 @@ export const deleteTaskCategory = async (categoryId) => {
 // TASK SERVICES
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const getTasksByProject = async (projectId) => {
+export const getTasksByProject = async (projectId, search) => {
     if (!projectId) throw new Error("Project ID is required");
+
+    const searchTerm = String(search || "").trim();
+    const searchMatch = searchTerm
+        ? {
+            $or: [
+                { title: { $regex: searchTerm, $options: "i" } },
+                { description: { $regex: searchTerm, $options: "i" } },
+            ],
+        }
+        : null;
 
     const tasks = await Task.aggregate([
         {
-            $match: { projectId: new mongoose.Types.ObjectId(projectId) },
+            $match: {
+                projectId: new mongoose.Types.ObjectId(projectId),
+                ...(searchMatch || {}),
+            },
         },
         // Inherit color from category
         {
@@ -218,7 +231,7 @@ export const getTasksByProject = async (projectId) => {
     return tasks;
 };
 
-export const createTask = async ({ projectId, title, description, createdBy, categoryId, workflowId, priority, deadline, assignees }) => {
+export const createTask = async ({ projectId, title, description, createdBy, categoryId, workflowId, priority, deadline, startDate, endDate, assignees }) => {
     if (!projectId || !title || !createdBy) throw new Error("projectId, title, and createdBy are required");
 
     let resolvedWorkflowId = workflowId || null;
@@ -243,7 +256,9 @@ export const createTask = async ({ projectId, title, description, createdBy, cat
         workflowId: resolvedWorkflowId,
         currentStageId,
         priority,
-        deadline,
+        deadline: deadline || null,
+        startDate: startDate || null,
+        endDate: endDate || null,
         assignees: assignees || [],
     });
 

@@ -30,7 +30,6 @@ import AccountTreeOutlinedIcon from "@mui/icons-material/AccountTreeOutlined";
 import TaskAltIcon from "@mui/icons-material/TaskAlt";
 import { useSelector } from "react-redux";
 import { callApi } from "../../../api/api";
-import { useParams } from "react-router-dom";
 
 const COLOR_PRESETS = [
   "#1890ff", "#52c41a", "#faad14", "#f5222d",
@@ -183,7 +182,6 @@ function DeleteCategoryDialog({ open, onClose, onConfirm, category, loading }) {
 
 // ─── Main TaskCategories Page ─────────────────────────────────────────────────
 const TaskCategories = () => {
-  const { workspaceSlug, projectSlug } = useParams();
   const { _id: projectId } = useSelector(state => state.project);
 
   const [categories, setCategories] = useState([]);
@@ -270,7 +268,7 @@ const TaskCategories = () => {
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <Box sx={{ p: 3, maxWidth: 900, mx: "auto" }}>
+    <Box sx={{ p: 3, width: "100%", maxWidth: "none", mx: 0 }}>
       {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Box>

@@ -40,7 +40,6 @@ export default function AppLayout() {
             <AppThemeProvider type='dashboard'>
                 <HeaderProvider>
                     <NotificationsDrawerProvider>
-
                         <AccountDialogProvider>
                             <AccountDialog />
                             <ConfirmDialog />
