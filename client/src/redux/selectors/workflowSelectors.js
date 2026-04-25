@@ -5,7 +5,7 @@ export const selectStyledEdges = createSelector(
     [(state) => state.workflow.edges],
     (edges) =>
         edges.map((e) => {
-            const color = e.data?.meta?.color || "#ccc";
+            const color = e.data?.meta?.color || "#f97316";
             // 'label' is the descriptive note about the transition
             // 'action' is shown inside the edge editor, not as the canvas label
             const displayLabel = e.data?.action

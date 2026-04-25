@@ -66,18 +66,21 @@ const getLayoutedElements = (nodes, edges, direction = "TB") => {
 function WorkflowBuilderInner() {
   const { workspaceSlug, projectSlug, workflowId } = useParams();
   const navigate = useNavigate();
-  const { redirectWorkflowId, edges: rawEdges, layoutDir, isDirty, isEditable, name, version, usage, selectedNode, selectedEdge } = useSelector((state) => state.workflow);
+  const { redirectWorkflowId, edges: rawEdges, layoutDir, isDirty, isEditable, isLoading, _id: loadedWorkflowId, name, version, usage, selectedNode, selectedEdge } = useSelector((state) => state.workflow);
   const workflowNodes = useSelector((state) => state.workflow.nodes);
   const edges = useSelector(selectStyledEdges)
 
   const dispatch = useDispatch();
   const hasRedirected = useRef(false);
+  const hasLoadedCurrentWorkflow = useRef(false);
   const isInitialLayout = useRef(true);
   const [flowNodes, setFlowNodes] = useState([]);
+  const canvasNodes = flowNodes.length > 0 ? flowNodes : workflowNodes;
 
   // Reset redirect guard when URL workflowId changes
   useEffect(() => {
     hasRedirected.current = false;
+    hasLoadedCurrentWorkflow.current = false;
     isInitialLayout.current = true;
   }, [workflowId]);
 
@@ -92,16 +95,25 @@ function WorkflowBuilderInner() {
   }, [dispatch, workflowId]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setFlowNodes(workflowNodes);
-    }, 0);
-
-    return () => window.clearTimeout(timer);
-  }, [workflowNodes]);
+    if (
+      workflowId &&
+      loadedWorkflowId &&
+      String(loadedWorkflowId) === String(workflowId) &&
+      !isLoading
+    ) {
+      hasLoadedCurrentWorkflow.current = true;
+    }
+  }, [workflowId, loadedWorkflowId, isLoading]);
 
   useEffect(() => {
     // If the backend auto-cloned the workflow to a V2 during a save, redirect ONCE.
-    if (redirectWorkflowId && workflowId && redirectWorkflowId !== workflowId && !hasRedirected.current) {
+    if (
+      hasLoadedCurrentWorkflow.current &&
+      redirectWorkflowId &&
+      workflowId &&
+      redirectWorkflowId !== workflowId &&
+      !hasRedirected.current
+    ) {
       hasRedirected.current = true;
       navigate(PROJECT_ROUTES.projectWorkflowDetail(workspaceSlug, projectSlug, redirectWorkflowId), { replace: true });
     }
@@ -125,11 +137,11 @@ function WorkflowBuilderInner() {
 
   const onNodesChange = useCallback(
     (changes) => {
-      const updatedNodes = applyNodeChanges(changes, flowNodes);
+      const updatedNodes = applyNodeChanges(changes, canvasNodes);
 
       const hasMeaningfulChange = changes.some((change) => {
         if (change.type !== "position") return true;
-        const previousNode = flowNodes.find((node) => node.id === change.id);
+        const previousNode = canvasNodes.find((node) => node.id === change.id);
         const nextNode = updatedNodes.find((node) => node.id === change.id);
         if (!previousNode || !nextNode) return true;
         return (
@@ -152,7 +164,7 @@ function WorkflowBuilderInner() {
         }
       }
     },
-    [flowNodes, dispatch]
+    [canvasNodes, dispatch]
   );
 
   const onEdgesChange = useCallback(
@@ -182,34 +194,47 @@ function WorkflowBuilderInner() {
 
 
   const layoutGraph = useCallback(
-    (nds = flowNodes, eds = edges) => {
+    (nds = canvasNodes, eds = edges) => {
       const layoutedNodes = getLayoutedElements(nds, eds, "TB");
       setFlowNodes(layoutedNodes);
       dispatch(setNodes(layoutedNodes));
 
-      setTimeout(() => {
-        fitView({ padding: 0.2 });
-      }, 50);
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          fitView({ nodes: layoutedNodes, padding: 0.2, duration: 500 });
+        });
+      });
     },
-    [flowNodes, edges, dispatch, fitView]
+    [canvasNodes, edges, dispatch, fitView]
   );
 
   useEffect(() => {
-    if (flowNodes.length === 0) return;
-    if (!isInitialLayout.current) return;
-
-    const allAtOrigin = flowNodes.every(n => n.position.x === 0 && n.position.y === 0);
-    if (allAtOrigin) {
-      const timer = window.setTimeout(() => {
-        layoutGraph();
-      }, 0);
-      return () => window.clearTimeout(timer);
-    } else {
-      setTimeout(() => fitView({ padding: 0.2 }), 50);
+    if (workflowNodes.length === 0) {
+      setFlowNodes([]);
+      return;
     }
-    // Mark initial layout complete after a short delay
-    setTimeout(() => { isInitialLayout.current = false; }, 500);
-  }, [flowNodes, fitView, layoutGraph]);
+
+    const timer = window.setTimeout(() => {
+      const nextNodes = workflowNodes.map((node) => ({ ...node }));
+
+      if (isInitialLayout.current) {
+        const layoutedNodes = getLayoutedElements(nextNodes, edges, "TB");
+        setFlowNodes(layoutedNodes);
+        dispatch(setNodes(layoutedNodes));
+        isInitialLayout.current = false;
+        window.requestAnimationFrame(() => {
+          window.requestAnimationFrame(() => {
+            fitView({ nodes: layoutedNodes, padding: 0.2, duration: 500 });
+          });
+        });
+        return;
+      }
+
+      setFlowNodes(nextNodes);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [workflowNodes, edges, dispatch, fitView]);
 
   const onConnect = useCallback(
     (params) => {
@@ -234,9 +259,9 @@ function WorkflowBuilderInner() {
       const newEdges = addEdge(newEdge, rawEdges);
       dispatch(setEdges(newEdges));
       dispatch(setIsDirty(true));
-      layoutGraph(flowNodes, newEdges);
+      layoutGraph(canvasNodes, newEdges);
     },
-    [rawEdges, flowNodes, dispatch, layoutGraph]
+    [rawEdges, canvasNodes, dispatch, layoutGraph]
   );
 
 
@@ -244,10 +269,10 @@ function WorkflowBuilderInner() {
   const handleCenterView = () => {
     const visibleNodes = getNodes();
 
-    if (!flowNodes.length || !visibleNodes.length) return;
+    if (!canvasNodes.length || !visibleNodes.length) return;
 
     fitView({
-      nodes: flowNodes,
+      nodes: canvasNodes,
       padding: 0.3,
       duration: 600,
     });
@@ -256,10 +281,10 @@ function WorkflowBuilderInner() {
 
 
   const handleAutoLayout = () => {
-    if (!flowNodes.length) return;
+    if (!canvasNodes.length) return;
 
     const layoutedNodes = getLayoutedElements(
-      flowNodes.map((n) => ({ ...n })),
+      canvasNodes.map((n) => ({ ...n })),
       edges,
       layoutDir
     );
@@ -267,49 +292,64 @@ function WorkflowBuilderInner() {
     setFlowNodes(layoutedNodes);
     dispatch(setNodes(layoutedNodes));
 
-    fitView({
-      padding: 0.2,
-      duration: 500,
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        fitView({
+          nodes: layoutedNodes,
+          padding: 0.2,
+          duration: 500,
+        });
+      });
     });
   };
 
   const handleHorizontalView = () => {
-    if (!flowNodes.length) return;
+    if (!canvasNodes.length) return;
     dispatch(setLayoutDir("LR"));
-    const layoutedNodes = getLayoutedElements(flowNodes, edges, "LR");
+    const layoutedNodes = getLayoutedElements(canvasNodes, edges, "LR");
 
     setFlowNodes(layoutedNodes);
     dispatch(setNodes(layoutedNodes));
 
-    fitView({
-      padding: 0.2,
-      duration: 500,
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        fitView({
+          nodes: layoutedNodes,
+          padding: 0.2,
+          duration: 500,
+        });
+      });
     });
   };
 
   const handleVerticalView = () => {
-    if (!flowNodes.length) return;
+    if (!canvasNodes.length) return;
     dispatch(setLayoutDir("TB"));
 
-    const layoutedNodes = getLayoutedElements(flowNodes, edges, "TB");
+    const layoutedNodes = getLayoutedElements(canvasNodes, edges, "TB");
 
     setFlowNodes(layoutedNodes);
     dispatch(setNodes(layoutedNodes));
 
-    fitView({
-      padding: 0.2,
-      duration: 500,
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        fitView({
+          nodes: layoutedNodes,
+          padding: 0.2,
+          duration: 500,
+        });
+      });
     });
 
   };
 
   const handleRecalculateFlow = () => {
-    if (!flowNodes.length) return;
+    if (!canvasNodes.length) return;
 
     const direction = layoutDir || "TB";
 
     const layoutedNodes = getLayoutedElements(
-      flowNodes.map((n) => ({ ...n, position: { x: 0, y: 0 } })),
+      canvasNodes.map((n) => ({ ...n, position: { x: 0, y: 0 } })),
       edges,
       direction
     );
@@ -317,9 +357,11 @@ function WorkflowBuilderInner() {
     setFlowNodes(layoutedNodes);
     dispatch(setNodes(layoutedNodes));
 
-    setTimeout(() => {
-      fitView({ padding: 0.25, duration: 600 });
-    }, 50);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        fitView({ nodes: layoutedNodes, padding: 0.25, duration: 600 });
+      });
+    });
   };
 
   const handleFitToScreen = () => {
@@ -388,7 +430,7 @@ function WorkflowBuilderInner() {
         <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
           <Box sx={{ flex: 1, minHeight: 0 }}>
           <ReactFlow
-            nodes={flowNodes}
+            nodes={canvasNodes}
             edges={edges}
             nodeTypes={nodeTypes}
             onNodesChange={isEditable ? onNodesChange : undefined}

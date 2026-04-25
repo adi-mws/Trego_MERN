@@ -88,7 +88,11 @@ export default function CreateTaskDialog({
       });
 
       callApi({ method: "get", url: `/workflows/project/${projectId}` }).then((r) => {
-        if (r.success) setWorkflows(r.data.data.filter((w) => w.isActive));
+        if (r.success) {
+          setWorkflows(
+            r.data.data.filter((w) => w.isActive || w?.usage?.isUsed || (w?.usage?.totalCount || 0) > 0)
+          );
+        }
       });
     }, 0);
 

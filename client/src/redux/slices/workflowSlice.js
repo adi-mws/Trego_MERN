@@ -3,6 +3,14 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { v4 as uuidv4 } from 'uuid';
 import { callApi } from "../../api/api";
 
+const normalizeRefId = (value) => {
+    if (!value) return "";
+    if (typeof value === "object") {
+        return String(value._id || value.id || "");
+    }
+    return String(value);
+};
+
 export const fetchWorkflowDetails = createAsyncThunk(
     "workflow/fetchDetails",
     async (workflowId, { rejectWithValue }) => {
@@ -31,8 +39,10 @@ export const fetchWorkflowDetails = createAsyncThunk(
         const edges = transitions.map(t => ({
             id: t._id,
             _id: t._id,
-            source: t.fromStage.toString(),
-            target: t.toStage.toString(),
+            source: normalizeRefId(t.fromStage),
+            target: normalizeRefId(t.toStage),
+            sourceHandle: t.sourceHandle || "right-out",
+            targetHandle: t.targetHandle || "left-in",
             type: "smoothstep",
             curvature: 0.2,
             data: {
@@ -160,8 +170,10 @@ function reconcileSavedWorkflow(state, payload) {
             ...edge,
             id: nextId,
             _id: nextId,
-            source: transition.fromStage.toString(),
-            target: transition.toStage.toString(),
+            source: normalizeRefId(transition.fromStage),
+            target: normalizeRefId(transition.toStage),
+            sourceHandle: edge.sourceHandle || "right-out",
+            targetHandle: edge.targetHandle || "left-in",
             type: "smoothstep",
             curvature: 0.2,
             data: {
@@ -208,6 +220,7 @@ const initialState = {
     version: 1,
     isEditable: true,
     _id: null,
+    originalWorkflowId: null,
     redirectWorkflowId: null,
     usage: {
         taskCount: 0,
@@ -241,6 +254,9 @@ const workflowSlice = createSlice({
             if (action.payload.isWorking !== undefined) state.isWorking = action.payload.isWorking;
             if (action.payload.version !== undefined) state.version = action.payload.version;
             if (action.payload.isEditable !== undefined) state.isEditable = action.payload.isEditable;
+            if (action.payload.originalWorkflowId !== undefined) {
+                state.originalWorkflowId = action.payload.originalWorkflowId;
+            }
             state.usage = action.payload.usage || initialState.usage;
         },
 
@@ -333,6 +349,7 @@ const workflowSlice = createSlice({
                 version: 1,
                 isEditable: true,
                 _id: null,
+                originalWorkflowId: null,
                 redirectWorkflowId: null,
                 usage: initialState.usage,
             });
@@ -443,6 +460,7 @@ const workflowSlice = createSlice({
                 state.isWorking = false;
                 state.version = 1;
                 state.isEditable = true;
+                state.originalWorkflowId = null;
                 state.isDirty = false;
                 state.error = null;
                 state.isLoading = true;
@@ -460,6 +478,7 @@ const workflowSlice = createSlice({
                 state.isActive = workflow.isActive;
                 state.version = workflow.version;
                 state.isEditable = workflow.isEditable;
+                state.originalWorkflowId = workflow.originalWorkflowId || null;
                 state.usage = workflow.usage || initialState.usage;
                 state.isWorking = Boolean(workflow.usage?.isUsed || workflow.categoryIds?.length > 0);
                 state.isDirty = false;
@@ -485,6 +504,7 @@ const workflowSlice = createSlice({
                     state.isActive = workflow.isActive;
                     state.version = workflow.version;
                     state.isEditable = workflow.isEditable;
+                    state.originalWorkflowId = workflow.originalWorkflowId || null;
                     state.usage = workflow.usage || initialState.usage;
                     state.isWorking = Boolean(workflow.usage?.isUsed || workflow.categoryIds?.length > 0);
                 }

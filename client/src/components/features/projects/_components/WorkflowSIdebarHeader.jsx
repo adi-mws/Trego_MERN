@@ -125,7 +125,6 @@ export default function WorkflowSidebarHeader() {
 
       {/* RIGHT: Save & Status Icons */}
       <Stack direction="row" alignItems="center" spacing={1}>
-
         {!isEditable ? (
           <Button variant="outlined" size="small" color="primary" onClick={handleRegenerate}>
             Regenerate

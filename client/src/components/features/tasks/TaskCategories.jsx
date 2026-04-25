@@ -212,7 +212,9 @@ const TaskCategories = () => {
   const fetchWorkflows = useCallback(async () => {
     if (!projectId) return;
     const res = await callApi({ method: "get", url: `/workflows/project/${projectId}` });
-    if (res.success) setWorkflows(res.data.data.filter(wf => wf.isActive));
+    if (res.success) {
+      setWorkflows(res.data.data.filter((wf) => wf.isActive || wf?.usage?.isUsed || (wf?.usage?.totalCount || 0) > 0));
+    }
   }, [projectId]);
 
   useEffect(() => {

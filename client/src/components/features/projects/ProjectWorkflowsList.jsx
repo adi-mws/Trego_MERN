@@ -34,10 +34,12 @@ function groupWorkflows(workflows = []) {
 
   workflows.forEach((workflow) => {
     const rootId = String(workflow.originalWorkflowId || workflow._id);
+    const originalId = workflow.originalWorkflowId ? String(workflow.originalWorkflowId) : String(workflow._id);
     if (!groups.has(rootId)) {
       groups.set(rootId, {
         rootId,
         name: workflow.name,
+        originalId,
         workflows: [],
       });
     }
@@ -45,12 +47,21 @@ function groupWorkflows(workflows = []) {
     groups.get(rootId).workflows.push(workflow);
   });
 
-  return [...groups.values()].map((group) => ({
-    ...group,
-    workflows: group.workflows.sort((a, b) => (b.version || 0) - (a.version || 0)),
-  })).sort((a, b) => {
-    const aLatest = a.workflows[0]?.version || 0;
-    const bLatest = b.workflows[0]?.version || 0;
+  return [...groups.values()].map((group) => {
+    const workflowsByVersion = group.workflows.sort((a, b) => (b.version || 0) - (a.version || 0));
+    const originalWorkflow = workflowsByVersion.find((wf) => String(wf._id) === group.originalId) || workflowsByVersion[workflowsByVersion.length - 1] || workflowsByVersion[0];
+    const latestWorkflow = workflowsByVersion[0];
+
+    return {
+      ...group,
+      name: originalWorkflow?.name || group.name,
+      originalWorkflow,
+      latestWorkflow,
+      workflows: workflowsByVersion,
+    };
+  }).sort((a, b) => {
+    const aLatest = a.latestWorkflow?.version || 0;
+    const bLatest = b.latestWorkflow?.version || 0;
     if (aLatest !== bLatest) return bLatest - aLatest;
     return String(a.name || "").localeCompare(String(b.name || ""));
   });
@@ -78,8 +89,9 @@ export default function ProjectWorkflowsList() {
           const next = {};
           groups.forEach((group) => {
             const existing = prev[group.rootId];
-            const fallback = group.workflows[0]?._id || "";
-            next[group.rootId] = existing || fallback;
+            const stillExists = group.workflows.some((wf) => wf._id === existing);
+            const preferred = group.originalWorkflow?._id || "";
+            next[group.rootId] = preferred || (stillExists ? existing : group.workflows[0]?._id || "");
           });
           return next;
         });
@@ -158,24 +170,35 @@ export default function ProjectWorkflowsList() {
               </TableHead>
               <TableBody>
                 {groupedWorkflows.map((group) => {
-                  const selectedWorkflowId = selectedVersions[group.rootId] || group.workflows[0]?._id;
+                  const selectedWorkflowId = selectedVersions[group.rootId] || group.originalWorkflow?._id || group.workflows[0]?._id;
                   const selectedWorkflow = group.workflows.find((wf) => wf._id === selectedWorkflowId) || group.workflows[0];
+                  const originalWorkflow = group.originalWorkflow || group.workflows[group.workflows.length - 1] || group.workflows[0];
+                  const latestWorkflow = group.latestWorkflow || group.workflows[0];
 
                   return (
                     <TableRow key={group.rootId} hover>
                       <TableCell sx={{ fontWeight: 500 }}>
                         <Stack spacing={0.5}>
                           <Typography fontWeight={600}>{group.name}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Original V{originalWorkflow?.version || 1}
+                            {latestWorkflow && String(latestWorkflow._id) !== String(originalWorkflow?._id) ? ` | Latest V${latestWorkflow.version || 1}` : ""}
+                          </Typography>
                           <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
-                            {group.workflows.map((wf) => (
-                              <Chip
-                                key={wf._id}
-                                label={`V${wf.version}${wf._id === group.workflows[0]?._id ? " latest" : ""}`}
-                                size="small"
-                                color={selectedWorkflow?._id === wf._id ? "primary" : "default"}
-                                variant={selectedWorkflow?._id === wf._id ? "filled" : "outlined"}
-                              />
-                            ))}
+                            {group.workflows.map((wf) => {
+                              const isOriginal = String(wf._id) === String(originalWorkflow?._id);
+                              const isLatest = String(wf._id) === String(latestWorkflow?._id);
+
+                              return (
+                                <Chip
+                                  key={wf._id}
+                                  label={`V${wf.version}${isOriginal ? " original" : ""}${isLatest && !isOriginal ? " latest" : ""}`}
+                                  size="small"
+                                  color={selectedWorkflow?._id === wf._id ? "primary" : "default"}
+                                  variant={selectedWorkflow?._id === wf._id ? "filled" : "outlined"}
+                                />
+                              );
+                            })}
                           </Stack>
                         </Stack>
                       </TableCell>
@@ -193,12 +216,18 @@ export default function ProjectWorkflowsList() {
                             }
                             IconComponent={KeyboardArrowDownIcon}
                           >
-                            {group.workflows.map((wf) => (
-                              <MenuItem key={wf._id} value={wf._id}>
-                                V{wf.version}{wf._id === group.workflows[0]?._id ? " (latest)" : ""}
-                                {wf.originalWorkflowId ? " (clone)" : " (original)"}
-                              </MenuItem>
-                            ))}
+                            {group.workflows.map((wf) => {
+                              const isOriginal = String(wf._id) === String(originalWorkflow?._id);
+                              const isLatest = String(wf._id) === String(latestWorkflow?._id);
+
+                              return (
+                                <MenuItem key={wf._id} value={wf._id}>
+                                  V{wf.version}
+                                  {isOriginal ? " (original)" : wf.originalWorkflowId ? " (clone)" : ""}
+                                  {isLatest && !isOriginal ? " (latest)" : ""}
+                                </MenuItem>
+                              );
+                            })}
                           </Select>
                         </FormControl>
                       </TableCell>

@@ -5,6 +5,14 @@ import { Task } from "../tasks/task.model.js";
 import TaskCategory from "../tasks/taskCategory.model.js";
 import mongoose from "mongoose";
 
+const normalizeRefId = (value) => {
+  if (!value) return null;
+  if (typeof value === "object") {
+    return String(value._id || value.id || "");
+  }
+  return String(value);
+};
+
 export const getWorkflowUsageSummary = async ({ projectId, workflowId }) => {
   if (!projectId || !workflowId) {
     return { taskCount: 0, categoryCount: 0, totalCount: 0, isUsed: false };
@@ -76,7 +84,11 @@ export const getWorkflowDetails = async (workflowId) => {
   if (!workflow) throw new Error("Workflow not found");
 
   const stages = await WorkflowStage.find({ workflowId }).lean();
-  const transitions = await WorkflowTransition.find({ workflowId }).lean();
+  const transitions = (await WorkflowTransition.find({ workflowId }).lean()).map((transition) => ({
+    ...transition,
+    fromStage: normalizeRefId(transition.fromStage),
+    toStage: normalizeRefId(transition.toStage),
+  }));
   const usage = await getWorkflowUsageSummary({
     projectId: workflow.projectId,
     workflowId: workflow._id,
@@ -199,8 +211,8 @@ export const saveWorkflowDetails = async (workflowId, payload) => {
 
   // Update existing transitions
   for (const t of existingTransitions) {
-    const fromStageId = stageIdMap.get(String(t.fromStage)) || String(t.fromStage);
-    const toStageId   = stageIdMap.get(String(t.toStage))   || String(t.toStage);
+    const fromStageId = stageIdMap.get(normalizeRefId(t.fromStage)) || normalizeRefId(t.fromStage);
+    const toStageId   = stageIdMap.get(normalizeRefId(t.toStage))   || normalizeRefId(t.toStage);
     await WorkflowTransition.findByIdAndUpdate(t._id, {
       fromStage: fromStageId,
       toStage: toStageId,
@@ -215,8 +227,8 @@ export const saveWorkflowDetails = async (workflowId, payload) => {
 
   // Create new transitions
   for (const t of newTransitions) {
-    const fromStageId = stageIdMap.get(String(t.fromStage)) || String(t.fromStage);
-    const toStageId   = stageIdMap.get(String(t.toStage))   || String(t.toStage);
+    const fromStageId = stageIdMap.get(normalizeRefId(t.fromStage)) || normalizeRefId(t.fromStage);
+    const toStageId   = stageIdMap.get(normalizeRefId(t.toStage))   || normalizeRefId(t.toStage);
     if (!fromStageId || !toStageId) {
       console.warn("[SAVE] Skipping transition — missing stage reference:", t);
       continue;
@@ -290,10 +302,12 @@ export const cloneWorkflowVersion = async (workflowId, userId) => {
 
   const originalTransitions = await WorkflowTransition.find({ workflowId }).lean();
   for (const t of originalTransitions) {
+    const fromStageId = normalizeRefId(t.fromStage);
+    const toStageId = normalizeRefId(t.toStage);
     const newEdge = new WorkflowTransition({
       workflowId: newWorkflow._id,
-      fromStage: stageIdMap.get(t.fromStage.toString()),
-      toStage: stageIdMap.get(t.toStage.toString()),
+      fromStage: stageIdMap.get(fromStageId) || fromStageId,
+      toStage: stageIdMap.get(toStageId) || toStageId,
       action: t.action,
       label: t.label,
       allowedRoles: t.allowedRoles,

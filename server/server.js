@@ -12,6 +12,7 @@ import workspaceRoutes from "./features/workspaces/workspace.routes.js"
 import projectRoutes from "./features/projects/project.routes.js"
 import workflowRoutes from "./features/workflows/workflow.route.js"
 import taskRoutes from "./features/tasks/task.route.js"
+import searchRoutes from "./features/search/search.route.js"
 connectDB();
 
 // CRON JOBS
@@ -45,6 +46,7 @@ app.use("/api/workspaces", workspaceRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/workflows", workflowRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use("/api/search", searchRoutes);
 
 
 app.use((err, req, res, next) => {
