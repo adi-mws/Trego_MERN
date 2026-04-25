@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useCallback, useEffect } from 'react'
 import WorkspaceSidebarNav from '../components/dashboard/_components/WorkspaceSidebarNav'
 import Header from '../components/dashboard/_components/Header'
 import RightSidebar from '../components/dashboard/_components/RightSidebar'
@@ -32,7 +32,7 @@ export default function WorkspaceDetailLayout() {
   const workspace = useSelector((state) => state?.workspace)
   const authUser = useSelector((state) => state.auth?.data)
 
-  const fetchWorkspace = async () => {
+  const fetchWorkspace = useCallback(async () => {
     try {
       dispatch(setLoading(true))
 
@@ -49,33 +49,32 @@ export default function WorkspaceDetailLayout() {
     } finally {
       dispatch(setLoading(false))
     }
-  }
+  }, [dispatch, workspaceSlug])
 
   useEffect(() => {
     if (workspaceSlug) fetchWorkspace()
     return () => dispatch(clearWorkspace())
-  }, [workspaceSlug])
+  }, [dispatch, fetchWorkspace, workspaceSlug])
 
 
-  const fetchProject = async () => {
-    try {
-      dispatch(setLoading(true));
+  const fetchProject = useCallback(async () => {
+    dispatch(setLoading(true));
 
-      const res = await callApi({
-        url: `/projects/global/${projectSlug}`,
-      });
+    const res = await callApi({
+      url: `/projects/global/${projectSlug}`,
+      params: { workspaceSlug },
+    });
 
-      if (res.success) {
-        console.log(res.data)
-        dispatch(setProject(res.data));
+    if (res.success) {
+      console.log(res.data);
+      dispatch(setProject(res.data));
 
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      dispatch(setLoading(false));
+    } else {
+      console.error(res.error);
     }
-  };
+    dispatch(setLoading(false));
+
+  }, [dispatch, projectSlug, workspaceSlug]);
 
   useEffect(() => {
     if (!projectSlug) return
@@ -83,7 +82,7 @@ export default function WorkspaceDetailLayout() {
     fetchProject();
 
     return () => dispatch(clearProject());
-  }, [projectSlug]);
+  }, [dispatch, fetchProject, projectSlug]);
 
   useEffect(() => {
     if (!workspace?.slug && !workspace?.name && !workspace?.currentWorkspace) return
@@ -135,7 +134,7 @@ export default function WorkspaceDetailLayout() {
         </Stack>
       </>
     )
-  }, [workspace, authUser, workspaceSlug, location.pathname, projectSlug])
+  }, [authUser, location.pathname, projectSlug, setHeaderLeftContent, setHeaderTitle, workspace, workspaceSlug])
 
   const isProjectView = Boolean(projectSlug)
 

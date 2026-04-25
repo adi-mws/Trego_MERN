@@ -52,7 +52,6 @@ export const saveWorkflowTemplate = createAsyncThunk(
     "workflow/saveTemplate",
     async (workflowId, { getState, rejectWithValue }) => {
         const { workflow } = getState();
-        console.log("hiii")
         // A valid MongoDB ObjectId is a 24-char hex string
         const isMongoId = (id) => /^[a-f\d]{24}$/i.test(id);
 
@@ -85,16 +84,13 @@ export const saveWorkflowTemplate = createAsyncThunk(
             }))
         };
 
-        console.log("[SAVE] Sending payload:", JSON.stringify(payload, null, 2));
         const res = await callApi({
             method: "put",
             url: `/workflows/${workflowId}`,
             data: payload
         });
 
-        console.log("[SAVE] Response:", res);
         if (!res.success) {
-            console.error("[SAVE] Failed:", res.error);
             return rejectWithValue(res.error?.message || res.error || "Save failed");
         }
         return res.data.data;
@@ -112,6 +108,86 @@ export const cloneWorkflowVersion = createAsyncThunk(
         return res.data.data;
     }
 );
+
+function reconcileSavedWorkflow(state, payload) {
+    const { workflow, stages = [], transitions = [], idMap = {} } = payload || {};
+    if (!workflow) return;
+
+    const stageById = new Map(stages.map((stage) => [String(stage._id), stage]));
+    const transitionById = new Map(transitions.map((transition) => [String(transition._id), transition]));
+    const stageIdMap = idMap.stages || {};
+    const transitionIdMap = idMap.transitions || {};
+
+    const remapId = (id, map) => map[String(id)] || String(id);
+
+    const previousSelectedNodeId = state.selectedNode?.id || null;
+    const previousSelectedEdgeId = state.selectedEdge?.id || null;
+
+    state.nodes = state.nodes.map((node) => {
+        const nextId = remapId(node.id, stageIdMap);
+        const stage = stageById.get(nextId) || stageById.get(String(node.id));
+
+        if (!stage) {
+            return nextId === node.id ? node : { ...node, id: nextId, _id: nextId };
+        }
+
+        return {
+            ...node,
+            id: nextId,
+            _id: nextId,
+            type: "workflow",
+            position: stage.position || node.position || { x: 0, y: 0 },
+            data: {
+                ...node.data,
+                label: stage.name,
+                isStart: stage.isStart,
+                isEnd: stage.isEnd,
+                allowedRoles: stage.allowedRoles || [],
+                actions: stage.actions || [],
+            },
+        };
+    });
+
+    state.edges = state.edges.map((edge) => {
+        const nextId = remapId(edge.id, transitionIdMap);
+        const transition = transitionById.get(nextId) || transitionById.get(String(edge.id));
+
+        if (!transition) {
+            return nextId === edge.id ? edge : { ...edge, id: nextId, _id: nextId };
+        }
+
+        return {
+            ...edge,
+            id: nextId,
+            _id: nextId,
+            source: transition.fromStage.toString(),
+            target: transition.toStage.toString(),
+            type: "smoothstep",
+            curvature: 0.2,
+            data: {
+                ...edge.data,
+                action: transition.action,
+                label: transition.label || "",
+                allowedRoles: transition.allowedRoles || [],
+                requireComment: transition.requireComment || false,
+                meta: transition.meta || {},
+            },
+        };
+    });
+
+    const remappedSelectedNodeId = previousSelectedNodeId ? remapId(previousSelectedNodeId, stageIdMap) : null;
+    const remappedSelectedEdgeId = previousSelectedEdgeId ? remapId(previousSelectedEdgeId, transitionIdMap) : null;
+
+    state.selectedNode =
+        state.nodes.find((node) => node.id === remappedSelectedNodeId) ||
+        state.nodes.find((node) => node.id === previousSelectedNodeId) ||
+        null;
+
+    state.selectedEdge =
+        state.edges.find((edge) => edge.id === remappedSelectedEdgeId) ||
+        state.edges.find((edge) => edge.id === previousSelectedEdgeId) ||
+        null;
+}
 
 const initialState = {
     nodes: [],
@@ -132,6 +208,13 @@ const initialState = {
     version: 1,
     isEditable: true,
     _id: null,
+    redirectWorkflowId: null,
+    usage: {
+        taskCount: 0,
+        categoryCount: 0,
+        totalCount: 0,
+        isUsed: false,
+    },
 };
 
 
@@ -158,6 +241,7 @@ const workflowSlice = createSlice({
             if (action.payload.isWorking !== undefined) state.isWorking = action.payload.isWorking;
             if (action.payload.version !== undefined) state.version = action.payload.version;
             if (action.payload.isEditable !== undefined) state.isEditable = action.payload.isEditable;
+            state.usage = action.payload.usage || initialState.usage;
         },
 
         setName(state, action) {
@@ -249,6 +333,8 @@ const workflowSlice = createSlice({
                 version: 1,
                 isEditable: true,
                 _id: null,
+                redirectWorkflowId: null,
+                usage: initialState.usage,
             });
         },
 
@@ -360,6 +446,8 @@ const workflowSlice = createSlice({
                 state.isDirty = false;
                 state.error = null;
                 state.isLoading = true;
+                state.usage = initialState.usage;
+                state.redirectWorkflowId = null;
             })
             .addCase(fetchWorkflowDetails.fulfilled, (state, action) => {
                 state.isLoading = false;
@@ -372,7 +460,8 @@ const workflowSlice = createSlice({
                 state.isActive = workflow.isActive;
                 state.version = workflow.version;
                 state.isEditable = workflow.isEditable;
-                state.isWorking = workflow.categoryIds?.length > 0;
+                state.usage = workflow.usage || initialState.usage;
+                state.isWorking = Boolean(workflow.usage?.isUsed || workflow.categoryIds?.length > 0);
                 state.isDirty = false;
             })
             .addCase(fetchWorkflowDetails.rejected, (state, action) => {
@@ -387,7 +476,7 @@ const workflowSlice = createSlice({
             .addCase(saveWorkflowTemplate.fulfilled, (state, action) => {
                 state.isSaving = false;
                 state.isDirty = false;
-                const { workflow, stages, transitions } = action.payload;
+                const { workflow } = action.payload;
                 // Sync all metadata back from DB response
                 if (workflow) {
                     state._id = workflow._id;
@@ -396,39 +485,21 @@ const workflowSlice = createSlice({
                     state.isActive = workflow.isActive;
                     state.version = workflow.version;
                     state.isEditable = workflow.isEditable;
+                    state.usage = workflow.usage || initialState.usage;
+                    state.isWorking = Boolean(workflow.usage?.isUsed || workflow.categoryIds?.length > 0);
                 }
-                state.nodes = stages.map(s => ({
-                    id: s._id,
-                    _id: s._id,
-                    type: "workflow",
-                    position: s.position || { x: 0, y: 0 },
-                    data: {
-                        label: s.name,
-                        isStart: s.isStart,
-                        isEnd: s.isEnd,
-                        allowedRoles: s.allowedRoles || [],
-                        actions: s.actions || [],
-                    }
-                }));
-                state.edges = transitions.map(t => ({
-                    id: t._id,
-                    _id: t._id,
-                    source: t.fromStage.toString(),
-                    target: t.toStage.toString(),
-                    type: "smoothstep",
-                    curvature: 0.2,
-                    data: {
-                        action: t.action,
-                        label: t.label || "",
-                        allowedRoles: t.allowedRoles || [],
-                        requireComment: t.requireComment || false,
-                        meta: t.meta || {},
-                    }
-                }));
+                state.redirectWorkflowId =
+                    workflow && action.meta?.arg && String(workflow._id) !== String(action.meta.arg)
+                        ? workflow._id
+                        : null;
+                if (action.payload?.idMap) {
+                    reconcileSavedWorkflow(state, action.payload);
+                }
             })
             .addCase(saveWorkflowTemplate.rejected, (state, action) => {
                 state.isSaving = false;
                 state.error = action.payload;
+                state.redirectWorkflowId = null;
             })
             // Clone Workflow
             .addCase(cloneWorkflowVersion.pending, (state) => {

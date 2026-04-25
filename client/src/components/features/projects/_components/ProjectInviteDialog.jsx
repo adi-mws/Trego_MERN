@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -16,6 +16,8 @@ import { useForm, Controller } from "react-hook-form";
 import { callApi } from "../../../../api/api";
 import { useAlert } from "../../../../hooks/useAlert";
 import { useSelector } from "react-redux";
+
+const PROJECT_CLIENT_ROLE_NAME = "Project Client";
 
 export function ProjectInviteDialog({
   open,
@@ -46,9 +48,18 @@ export function ProjectInviteDialog({
   });
 
   const selectedRoles = watch("roleIds");
+  const selectedUserId = watch("userId");
+  const selectedWorkspaceMember = workspaceMembers.find(
+    (member) => String(member._id) === String(selectedUserId)
+  );
+  const selectedIsClient = String(selectedWorkspaceMember?.role || "").toUpperCase() === "CLIENT";
+  const eligibleWorkspaceMembers = workspaceMembers.filter((member) =>
+    ["MEMBER", "CLIENT"].includes(String(member.role || "").toUpperCase())
+  );
+  const projectClientRole = roles.find((role) => role.name === PROJECT_CLIENT_ROLE_NAME);
 
   /* ---------------- FETCH ---------------- */
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -70,18 +81,18 @@ export function ProjectInviteDialog({
       if (membersRes.success) {
         setWorkspaceMembers(membersRes.data.members || []);
       }
-    } catch (err) {
+    } catch {
       alert("Failed to load data", "error");
     } finally {
       setLoading(false);
     }
-  };
+  }, [alert, projectId, workspaceId]);
 
   useEffect(() => {
     if (open && projectId && workspaceId) {
       fetchData();
     }
-  }, [open, projectId, workspaceId]);
+  }, [fetchData, open, projectId, workspaceId]);
 
   /* ---------------- PREFILL (EDIT) ---------------- */
   useEffect(() => {
@@ -94,11 +105,39 @@ export function ProjectInviteDialog({
     } else {
       reset();
     }
-  }, [member, mode]);
+  }, [member, mode, reset, setValue]);
+
+  useEffect(() => {
+    if (!selectedUserId) {
+      return;
+    }
+
+    if (selectedIsClient && projectClientRole?._id) {
+      setValue("roleIds", [projectClientRole._id]);
+      return;
+    }
+
+    if (!selectedIsClient && projectClientRole?._id && selectedRoles?.includes(projectClientRole._id)) {
+      setValue(
+        "roleIds",
+        selectedRoles.filter((roleId) => roleId !== projectClientRole._id)
+      );
+    }
+  }, [projectClientRole?._id, selectedIsClient, selectedRoles, selectedUserId, setValue]);
 
   /* ---------------- ROLE TOGGLE ---------------- */
   const toggleRole = (roleId) => {
     const current = selectedRoles || [];
+
+    if (selectedIsClient && projectClientRole?._id) {
+      if (String(roleId) !== String(projectClientRole._id)) {
+        return;
+      }
+
+      if (current.includes(roleId)) {
+        return;
+      }
+    }
 
     if (current.includes(roleId)) {
       setValue(
@@ -152,9 +191,9 @@ export function ProjectInviteDialog({
       } else {
         alert(res.error?.message || "Failed", "error");
       }
-    } catch (err) {
-      alert("Something went wrong", "error");
-    }
+  } catch {
+    alert("Something went wrong", "error");
+  }
   };
 
   return (
@@ -202,7 +241,7 @@ export function ProjectInviteDialog({
                     <option value="" disabled>
                       Select a member
                     </option>
-                    {workspaceMembers.map((m) => (
+                    {eligibleWorkspaceMembers.map((m) => (
                       <option key={m._id} value={m._id}>
                         {m.name} ({m.email})
                       </option>
@@ -217,6 +256,12 @@ export function ProjectInviteDialog({
                   Project roles
                 </Typography>
 
+                {selectedIsClient && (
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+                    Client workspace members can only be assigned the Project Client role.
+                  </Typography>
+                )}
+
                 <Box
                   sx={{
                     display: "flex",
@@ -226,6 +271,14 @@ export function ProjectInviteDialog({
                   }}
                 >
                   {roles.map((role) => {
+                    if (!selectedIsClient && role.name === PROJECT_CLIENT_ROLE_NAME) {
+                      return null;
+                    }
+
+                    if (selectedIsClient && role.name !== PROJECT_CLIENT_ROLE_NAME) {
+                      return null;
+                    }
+
                     const selected = selectedRoles?.includes(role._id);
 
                     return (
@@ -237,6 +290,7 @@ export function ProjectInviteDialog({
                         color={selected ? "primary" : "default"}
                         variant={selected ? "filled" : "outlined"}
                         onClick={() => toggleRole(role._id)}
+                        disabled={selectedIsClient && role.name !== PROJECT_CLIENT_ROLE_NAME}
                       />
                     );
                   })}
@@ -252,7 +306,8 @@ export function ProjectInviteDialog({
                 disabled={
                   (mode === "create" && !watch("userId")) ||
                   !selectedRoles ||
-                  selectedRoles.length === 0
+                  selectedRoles.length === 0 ||
+                  (selectedIsClient && !projectClientRole?._id)
                 }
               >
                 {mode === "edit" ? "Update Roles" : "Add to Project"}

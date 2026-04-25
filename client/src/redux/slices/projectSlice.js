@@ -7,11 +7,23 @@ const initialState = {
   name: null,
   slug: null,
   avatar: null,
+  workspaceId: null,
   role: null,
   description: null,
 
   memberships: [],
   totalMembers: 0,
+  currentUserRoles: [],
+  currentUserRoleNames: [],
+  permissions: {
+    canManageProject: false,
+    canManageMembers: false,
+    canInviteMembers: false,
+    canCreateTask: false,
+    canEditTask: false,
+    canDeleteTask: false,
+    canViewActivity: false,
+  },
 
   isLoading: false,
   error: null,
@@ -31,15 +43,29 @@ const projectSlice = createSlice({
       state.name = payload?.project?.name || null;
       state.slug = payload?.project?.slug || null;
       state.avatar = payload?.project?.avatar || null;
+      state.workspaceId = payload?.project?.workspace?._id || payload?.project?.workspace || payload?.project?.workspaceId || null;
       state.description = payload?.project?.description || null
       // TODO: to check that whether the data is setting correctly or not
       state.role = payload?.currentUserRole || null;
 
       state.memberships = payload?.project?.memberships || [];
       state.totalMembers = payload?.project?.totalMembers || 0;
+      state.currentUserRoles = payload?.currentUserRoles || [];
+      state.currentUserRoleNames = payload?.currentUserRoleNames || [];
+      state.permissions = {
+        ...initialState.permissions,
+        ...(payload?.currentUserPermissions || {}),
+      };
 
       state.isLoading = false;
       state.error = null;
+    },
+
+
+    updateProjectSettings: (state, action) => {
+      state.name = action.payload.name;
+      state.description = action.payload.description;
+      state.avatar = action.payload.avatar;
     },
 
     setMemberships: (state, action) => {
@@ -92,6 +118,7 @@ export const {
   addMembership,
   removeMembership,
   updateMembershipRole,
+  updateProjectSettings,
   setLoading,
   setError,
   clearProject,

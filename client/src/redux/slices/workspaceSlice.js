@@ -4,6 +4,10 @@ function normalizeProjects(projects) {
   if (Array.isArray(projects)) return projects
   if (!projects) return []
 
+  if (projects && typeof projects === "object" && (projects._id || projects.slug || projects.name)) {
+    return [projects]
+  }
+
   if (Array.isArray(projects.items)) return projects.items
   if (Array.isArray(projects.projects)) return projects.projects
 
@@ -88,7 +92,13 @@ const workspaceSlice = createSlice({
     },
     updateRole: (state, action) => {
       const { role, userId } = action.payload;
-      member.role = role;
+      const member = state.members.find(
+        (item) => item.user?._id === userId || item._id === userId
+      );
+
+      if (member) {
+        member.role = role;
+      }
     
     },
 
@@ -124,6 +134,8 @@ const workspaceSlice = createSlice({
       const projectsToAdd = normalizeProjects(payload);
 
       projectsToAdd.forEach((project) => {
+        if (!project || !project._id) return;
+
         const exists = state.projects.some(
           (p) => p._id === project._id
         );
@@ -132,6 +144,24 @@ const workspaceSlice = createSlice({
           state.projects.unshift(project);
         }
       });
+
+      if (state.currentWorkspace) {
+        const currentWorkspaceProjects = normalizeProjects(
+          state.currentWorkspace.projects
+        );
+        const mergedProjects = [...currentWorkspaceProjects];
+
+        projectsToAdd.forEach((project) => {
+          if (!project || !project._id) return;
+
+          const exists = mergedProjects.some((p) => p._id === project._id);
+          if (!exists) {
+            mergedProjects.unshift(project);
+          }
+        });
+
+        state.currentWorkspace.projects = mergedProjects;
+      }
     },
 
     setProjects: (state, action) => {

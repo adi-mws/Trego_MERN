@@ -4,23 +4,26 @@ import { TaskComment } from "./taskComment.model.js";
 import { TaskStateHistory } from "./taskStateHistory.model.js";
 import { TaskObjective } from "./taskObjective.model.js";
 import { WorkflowStage } from "../workflows/workflowStage.model.js";
+import { WorkflowTransition } from "../workflows/workflowTransition.model.js";
 import { WorkspaceMember } from "../workspaces/workspaceMember.model.js";
 import { Project } from "../projects/project.model.js";
 import { ProjectMember } from "../projects/projectMember.model.js";
 import TaskCategory from "./taskCategory.model.js";
+import {
+  canUserViewTaskByStageAssignments,
+  getTaskStageAssignmentBundle,
+} from "./taskStageAssignee.service.js";
+import { TaskStageAssignee } from "./taskStageAssignee.model.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET FULL TASK DETAIL (for TaskView page)
 // ─────────────────────────────────────────────────────────────────────────────
-export const getTaskDetail = async (taskId) => {
-  const [task, comments, stateHistory, subtasks] = await Promise.all([
-    Task.findById(taskId)
-      .populate("categoryId", "name color")
-      .populate("workflowId", "name version")
-      .populate("currentStageId", "name isStart isEnd allowedRoles")
-      .populate("createdBy", "name email avatar")
-      .populate("assignees", "name email avatar")
-      .lean(),
+export const getTaskDetail = async (taskId, { userId, workspaceRole } = {}) => {
+  const canView = await canUserViewTaskByStageAssignments({ taskId, userId, workspaceRole });
+  if (!canView) throw new Error("Task not found");
+
+  const [taskBundle, comments, stateHistory, subtasks] = await Promise.all([
+    getTaskStageAssignmentBundle(taskId),
     TaskComment.find({ taskId, type: "COMMENT" })
       .populate("user", "name email avatar")
       .sort({ createdAt: 1 })
@@ -37,12 +40,19 @@ export const getTaskDetail = async (taskId) => {
       .lean(),
   ]);
 
-  if (!task) throw new Error("Task not found");
+  const { task, workflowStages, stageAssignments, eligibleMembersByStage } = taskBundle;
+  const workflowTransitions = task.workflowId
+    ? await WorkflowTransition.find({ workflowId: task.workflowId._id || task.workflowId })
+      .populate("fromStage", "name isStart isEnd allowedRoles order")
+      .populate("toStage", "name isStart isEnd allowedRoles order")
+      .populate("allowedRoles", "name color")
+      .sort({ createdAt: 1 })
+      .lean()
+    : [];
 
   // Compute allowedRoles from current stage + outgoing transitions
   let allowedRoles = [];
   if (task.currentStageId) {
-    const { WorkflowTransition } = await import("../workflows/workflowTransition.model.js");
     const transitions = await WorkflowTransition.find({ fromStage: task.currentStageId._id || task.currentStageId })
       .populate("allowedRoles", "name color")
       .lean();
@@ -54,7 +64,17 @@ export const getTaskDetail = async (taskId) => {
     allowedRoles = [...roleMap.values()];
   }
 
-  return { task, comments, stateHistory, subtasks, allowedRoles };
+  return {
+    task,
+    comments,
+    stateHistory,
+    subtasks,
+    allowedRoles,
+    workflowStages,
+    workflowTransitions,
+    stageAssignments,
+    eligibleMembersByStage,
+  };
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -189,7 +209,7 @@ export const getAvailableTransitions = async (taskId) => {
 // Advance task to a new stage via a specific transition (admin/owner bypass OR role check)
 export const advanceTaskStage = async ({ taskId, transitionId, userId, comment }) => {
   const { WorkflowTransition } = await import("../workflows/workflowTransition.model.js");
-  const task = await Task.findById(taskId).select("projectId currentStageId").lean();
+  const task = await Task.findById(taskId).select("projectId currentStageId workflowId").lean();
   if (!task) throw new Error("Task not found");
 
   const transition = await WorkflowTransition.findById(transitionId)
@@ -209,6 +229,9 @@ export const advanceTaskStage = async ({ taskId, transitionId, userId, comment }
     userId,
   }).lean();
 
+  const isAdminOrOwner = ["ADMIN", "OWNER"].includes(String(workspaceMember?.role || "").toUpperCase());
+  const transitionComment = String(comment || "").trim();
+
   const projectMember = await ProjectMember.findOne({
     project: task.projectId,
     user: userId,
@@ -216,16 +239,21 @@ export const advanceTaskStage = async ({ taskId, transitionId, userId, comment }
     .populate("roles", "_id name")
     .lean();
 
-  const isAdminOrOwner = ["ADMIN", "OWNER"].includes(String(workspaceMember?.role || "").toUpperCase());
+  if (!isAdminOrOwner && !projectMember) {
+    throw new Error("Only project members can advance this task");
+  }
+
   if (!isAdminOrOwner) {
-    // Check projectRole overlap with transition allowedRoles
-    const allowedIds = (transition.allowedRoles || []).map(r => String(r._id));
-    const userIds = (projectMember?.roles || []).map(r => String(r._id || r.id || r));
-    const canProceed = allowedIds.length === 0 || userIds.some(id => allowedIds.includes(id));
+    const allowedIds = (transition.allowedRoles || []).map((r) => String(r._id));
+    const userIds = (projectMember?.roles || []).map((r) => String(r._id || r.id || r));
+    const canProceed = allowedIds.length === 0 || userIds.some((id) => allowedIds.includes(id));
     if (!canProceed) throw new Error("You do not have the required role for this transition");
   }
 
-  // ── startDate enforcement ────────────────────────────────────────────────────
+  if (transition.requireComment && !transitionComment) {
+    throw new Error("A comment is required before this transition can be applied");
+  }
+
   // Block advancement from the start stage if startDate hasn't arrived yet.
   const fullTask = await Task.findById(taskId).select("startDate workflowId currentStageId").lean();
   if (fullTask?.startDate && fullTask?.workflowId) {
@@ -243,15 +271,16 @@ export const advanceTaskStage = async ({ taskId, transitionId, userId, comment }
 
   // Record history
   const projectId = task.projectId;
-  await recordTransition({
+  const historyRecord = await recordTransition({
     taskId,
     projectId,
     fromStageId: oldStageId,
     toStageId: transition.toStage._id,
     transitionId,
     userId,
-    comment: comment || transition.action || `Moved to ${transition.toStage.name}`,
+    comment: transitionComment || transition.action || `Moved to ${transition.toStage.name}`,
   });
 
-  return { success: true, newStage: transition.toStage };
+  return { success: true, newStage: transition.toStage, historyRecord };
 };
+

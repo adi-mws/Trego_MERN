@@ -3,6 +3,7 @@ import {
   Box, Grid, Card, CardContent, Typography, Stack,
   CircularProgress, LinearProgress, Chip, Avatar, Divider,
   IconButton, Tooltip,
+  useTheme,
 } from "@mui/material";
 import {
   Assignment as TaskIcon,
@@ -21,6 +22,8 @@ import { useSelector } from "react-redux";
 import { callApi } from "../../../api/api";
 import { useNavigate, useParams } from "react-router-dom";
 import { PROJECT_ROUTES } from "../../../lib/routes";
+import { isClient, isClientProjectRole } from "../../../utils/permissions.utils";
+import { resolveWorkspaceRole } from "../../../utils/workspaceRole.utils";
 
 // ── Stat Card ─────────────────────────────────────────────────────────────────
 function StatCard({ label, value, icon, color, subtitle }) {
@@ -49,19 +52,31 @@ export default function ProjectOverview() {
   const { _id: projectId } = useSelector(s => s.project);
   const { workspaceSlug, projectSlug } = useParams();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const workspace = useSelector((state) => state.workspace);
+  const authUser = useSelector((state) => state.auth?.data);
+  const project = useSelector((state) => state.project);
+  const workspaceRole = resolveWorkspaceRole(workspace, authUser);
+  const clientProjectViewer = isClient(workspaceRole) || isClientProjectRole(project);
 
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchMetrics = useCallback(async () => {
     if (!projectId) return;
+    await Promise.resolve();
     setLoading(true);
     const res = await callApi({ method: "get", url: `/projects/${projectId}/metrics` });
     if (res.success) setMetrics(res.data.data);
     setLoading(false);
   }, [projectId]);
 
-  useEffect(() => { fetchMetrics(); }, [fetchMetrics]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void fetchMetrics();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [fetchMetrics]);
 
   if (loading) {
     return (
@@ -131,7 +146,7 @@ export default function ProjectOverview() {
           <Stack direction="row" spacing={3} mt={1.5}>
             {[
               { label: "Completed", val: tasks.completed, color: "#52c41a" },
-              { label: "In Progress", val: tasks.inProgress, color: "#1890ff" },
+              { label: "In Progress", val: tasks.inProgress, color: theme.palette.primary.main },
               { label: "Overdue", val: tasks.overdue, color: "#f5222d" },
             ].map(item => (
               <Stack key={item.label} direction="row" spacing={0.75} alignItems="center">
@@ -181,8 +196,8 @@ export default function ProjectOverview() {
                 xAxis={[{ scaleType: "band", data: priorityData.map(d => d.label) }]}
                 series={[{
                   data: priorityData.map(d => d.value),
-                  label: "Tasks",
-                  color: "#1890ff",
+                  // label: "Tasks",
+                  color: theme.palette.primary.main,
                 }]}
                 height={200}
                 margin={{ top: 10, right: 10, bottom: 30, left: 30 }}
@@ -193,7 +208,8 @@ export default function ProjectOverview() {
       </Grid>
 
       {/* ── Bottom Stat Row ── */}
-      <Grid container spacing={2}>
+      {!clientProjectViewer && (
+        <Grid container spacing={2}>
         <Grid size={{ xs: 12, sm: 4 }}>
           <Card
             variant="outlined"
@@ -251,7 +267,8 @@ export default function ProjectOverview() {
             </CardContent>
           </Card>
         </Grid>
-      </Grid>
+        </Grid>
+      )}
     </Box>
   );
 }

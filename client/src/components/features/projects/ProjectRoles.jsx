@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -27,6 +27,7 @@ import { useForm, Controller } from "react-hook-form";
 import { callApi } from "../../../api/api";
 import { useAlert } from "../../../hooks/useAlert";
 import { useSelector } from "react-redux";
+import ProjectPermissionGate from "./_components/ProjectPermissionGate";
 
 const defaultPermissions = {
   canManageProject: false,
@@ -38,6 +39,8 @@ const defaultPermissions = {
   canViewActivity: true,
 };
 
+const SYSTEM_ROLE_NAMES = new Set(["Head Management", "Project Manager", "Project Client"]);
+
 export default function ProjectRoles() {
   const alert = useAlert();
   const { _id, isLoading } = useSelector((state) => state.project);
@@ -45,17 +48,15 @@ export default function ProjectRoles() {
   const [open, setOpen] = useState(false);
   const [editRole, setEditRole] = useState(null);
 
-  const { control, handleSubmit, reset, watch } = useForm({
+  const { control, handleSubmit, reset } = useForm({
     defaultValues: {
       name: "",
       permissions: defaultPermissions,
     },
   });
 
-  const permissions = watch("permissions");
-
   //  Fetch roles
-  const fetchRoles = async () => {
+  const fetchRoles = useCallback(async () => {
     const res = await callApi({
       method: "get",
       url: `/projects/${_id}/roles`,
@@ -66,12 +67,17 @@ export default function ProjectRoles() {
     } else {
       alert("Failed to fetch roles", "error");
     }
-  };
+  }, [alert, _id]);
 
   useEffect(() => {
-    if (_id)
-      fetchRoles();
-  }, [_id]);
+    if (_id) {
+      const timer = window.setTimeout(() => {
+        void fetchRoles();
+      }, 0);
+
+      return () => window.clearTimeout(timer);
+    }
+  }, [fetchRoles, _id]);
 
   const handleCreate = () => {
     setEditRole(null);
@@ -89,16 +95,6 @@ export default function ProjectRoles() {
       permissions: role.permissions || defaultPermissions,
     });
     setOpen(true);
-  };
-
-  const togglePermission = (key) => {
-    reset({
-      name: watch("name"),
-      permissions: {
-        ...permissions,
-        [key]: !permissions[key],
-      },
-    });
   };
 
   const onSubmit = async (data) => {
@@ -154,6 +150,11 @@ export default function ProjectRoles() {
   }
 
   return (
+    <ProjectPermissionGate
+      permission="canManageProject"
+      title="You do not have permission to manage project roles"
+      message="Ask a project admin to update role permissions."
+    >
     <Box>
       {/*  Header */}
       <Stack direction="row" justifyContent="space-between" mb={2}>
@@ -185,7 +186,7 @@ export default function ProjectRoles() {
                 <TableCell>
                   <Stack direction="row" flexWrap="wrap" gap={1}>
                     {Object.entries(role.permissions || {})
-                      .filter(([_, v]) => v)
+                      .filter(([, v]) => v)
                       .map(([key]) => (
                         <Chip
                           key={key}
@@ -198,13 +199,14 @@ export default function ProjectRoles() {
                 </TableCell>
 
                 <TableCell align="right">
-                  <IconButton onClick={() => handleEdit(role)}>
+                  <IconButton onClick={() => handleEdit(role)} disabled={SYSTEM_ROLE_NAMES.has(role.name)}>
                     <Edit fontSize="small" />
                   </IconButton>
 
                   <IconButton
                     color="error"
                     onClick={() => handleDelete(role._id)}
+                    disabled={SYSTEM_ROLE_NAMES.has(role.name)}
                   >
                     <Delete fontSize="small" />
                   </IconButton>
@@ -301,5 +303,6 @@ export default function ProjectRoles() {
         </Box>
       </Dialog>
     </Box>
+    </ProjectPermissionGate>
   );
 }

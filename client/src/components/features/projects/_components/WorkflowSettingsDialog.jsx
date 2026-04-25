@@ -30,7 +30,7 @@ export default function WorkflowSettingsDialog({ open, onClose }) {
             <DialogContent sx={{ pt: 2.5 }}>
                 <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: "block" }}>
                     {isEditable
-                        ? "Changes are auto-saved when you save the workflow."
+                        ? "Edit the workflow here. Changes save automatically after a short pause, and the header button can be used for an immediate save."
                         : "This is a read-only version. You cannot edit it."}
                 </Typography>
 

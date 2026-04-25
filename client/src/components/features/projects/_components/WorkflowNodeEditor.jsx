@@ -40,10 +40,14 @@ export default function WorkflowNodeEditor() {
   useEffect(() => {
     if (!selectedNode) return;
 
-    setLabel(selectedNode.data.label || "");
-    setAllowedRoles(selectedNode.data.allowedRoles || []);
-    setIsStart(selectedNode.data.isStart || false);
-    setIsEnd(selectedNode.data.isEnd || false);
+    const timer = window.setTimeout(() => {
+      setLabel(selectedNode.data.label || "");
+      setAllowedRoles(selectedNode.data.allowedRoles || []);
+      setIsStart(selectedNode.data.isStart || false);
+      setIsEnd(selectedNode.data.isEnd || false);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [selectedNode]);
 
   useEffect(() => {
@@ -71,13 +75,36 @@ export default function WorkflowNodeEditor() {
   const open = Boolean(anchorEl);
   const connectedEdges = edges.filter((e) => e.source === selectedNode.id);
   const connectedNodes = connectedEdges.map((e) => nodes.find((n) => n.id === e.target));
+  const incomingEdges = edges.filter((e) => e.target === selectedNode.id);
+  const incomingNodes = incomingEdges.map((e) => nodes.find((n) => n.id === e.source));
 
   const handleUpdate = (updates) => {
     dispatch(updateNode({ ...selectedNode, data: { ...selectedNode.data, ...updates } }));
   };
   return (
     <>
-      <Typography variant="body2">Workflow Stage</Typography>
+      <Box
+        sx={{
+          p: 1.5,
+          borderRadius: 2,
+          bgcolor: "action.hover",
+          border: "1px solid",
+          borderColor: "divider",
+        }}
+      >
+        <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap">
+          <Typography variant="subtitle2" fontWeight={700}>
+            {selectedNode.data.label || "Untitled Stage"}
+          </Typography>
+          {isStart && <Chip label="Start" size="small" color="success" variant="outlined" />}
+          {isEnd && <Chip label="End" size="small" color="primary" variant="outlined" />}
+        </Stack>
+        <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+          {isEnd
+            ? "This is an end stage. It will not have outgoing transitions."
+            : "Edit the stage details, allowed roles, and outgoing transitions below."}
+        </Typography>
+      </Box>
 
       <TextField
         fullWidth
@@ -155,7 +182,9 @@ export default function WorkflowNodeEditor() {
               );
             })}
             {connectedEdges.length === 0 && (
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>No connected stages found.</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                {isEnd ? "No outgoing transitions from an end stage." : "No connected stages found."}
+              </Typography>
             )}
           </Stack>
         </DialogContent>
@@ -163,7 +192,7 @@ export default function WorkflowNodeEditor() {
 
       {/* Connected Stages */}
       <Box sx={{ mt: 2 }}>
-        <Typography variant="body2">Connected Stages</Typography>
+        <Typography variant="body2">Outgoing Transitions</Typography>
 
         <Stack spacing={1} sx={{ mt: 1 }}>
           {connectedNodes.map((n, i) => {
@@ -183,6 +212,31 @@ export default function WorkflowNodeEditor() {
               />
             );
           })}
+        </Stack>
+      </Box>
+
+      <Box sx={{ mt: 2 }}>
+        <Typography variant="body2">Incoming From</Typography>
+        <Stack spacing={1} sx={{ mt: 1 }}>
+          {incomingNodes.filter(Boolean).length > 0 ? (
+            incomingNodes.map((n, i) => {
+              const edge = incomingEdges[i];
+              if (!n) return null;
+
+              return (
+                <Chip
+                  key={edge?.id || n.id}
+                  label={`${n.data?.label || "Unknown"} → ${edge?.data?.action || "No Action"}`}
+                  variant="outlined"
+                  size="small"
+                />
+              );
+            })
+          ) : (
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+              {isStart ? "No incoming transitions on the start stage." : "No incoming transitions found."}
+            </Typography>
+          )}
         </Stack>
       </Box>
 

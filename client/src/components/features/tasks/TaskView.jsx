@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
+  Autocomplete,
   Avatar,
   Badge,
   Box,
@@ -25,6 +26,7 @@ import AddIcon from "@mui/icons-material/Add";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
 import FlagIcon from "@mui/icons-material/Flag";
 import PersonIcon from "@mui/icons-material/Person";
 import SendIcon from "@mui/icons-material/Send";
@@ -33,7 +35,10 @@ import BlockIcon from "@mui/icons-material/Block";
 import { useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { callApi } from "../../../api/api";
+import CreateTaskDialog from "../tasks/_components/CreateTaskDialog";
 import BlockTaskDialog from "../tasks/_components/BlockTaskDialog";
+import { resolveWorkspaceRole } from "../../../utils/workspaceRole.utils";
+import { isAdmin as checkIsAdmin } from "../../../utils/permissions.utils";
 
 const PRIORITY_META = {
   LOW: { label: "Low", color: "success" },
@@ -47,6 +52,14 @@ function getId(value) {
 
 function normalizeCurrentUser(userState) {
   return userState?.user || userState || null;
+}
+
+function getProjectMemberId(member) {
+  return member?._id || member?.id || member?.projectMemberId || member || null;
+}
+
+function safeArray(value) {
+  return Array.isArray(value) ? value : [];
 }
 
 function formatDuration(start, end) {
@@ -256,42 +269,40 @@ export default function TaskView() {
   const { taskId } = useParams();
   const { _id: projectId, memberships = [] } = useSelector((state) => state.project);
   const workspaceState = useSelector((state) => state.workspace);
-  const currentUser = normalizeCurrentUser(useSelector((state) => state.auth?.data));
+  const authUser = useSelector((state) => state.auth?.data);
+  const currentUser = normalizeCurrentUser(authUser);
+  const workspaceRole = resolveWorkspaceRole(workspaceState, authUser);
+  const userIsAdmin = checkIsAdmin(workspaceRole);
 
   const [data, setData] = useState(null);
-  const [transitions, setTransitions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
+  const [editOpen, setEditOpen] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [transitionComment, setTransitionComment] = useState("");
   const [newSubtask, setNewSubtask] = useState("");
   const [addingSubtask, setAddingSubtask] = useState(false);
   const [blockOpen, setBlockOpen] = useState(false);
+  const [stageAssigneeDrafts, setStageAssigneeDrafts] = useState({});
+  const [savingStageId, setSavingStageId] = useState(null);
   const [savingComment, setSavingComment] = useState(false);
   const [advancingTransitionId, setAdvancingTransitionId] = useState(null);
+  const [transitionError, setTransitionError] = useState("");
   const [selectedStageId, setSelectedStageId] = useState(null);
 
   const commentEndRef = useRef(null);
   const previousCurrentStageIdRef = useRef(null);
+  const stageSaveTimersRef = useRef({});
 
   const fetchData = useCallback(async () => {
     if (!taskId) return;
 
     setLoading(true);
     try {
-      const [detailRes, transitionsRes] = await Promise.all([
-        callApi({ method: "get", url: `/tasks/${taskId}/detail` }),
-        callApi({ method: "get", url: `/tasks/${taskId}/transitions` }),
-      ]);
+      const detailRes = await callApi({ method: "get", url: `/tasks/${taskId}/detail` });
 
       if (detailRes.success) {
         setData(detailRes.data.data);
-      }
-
-      if (transitionsRes.success) {
-        setTransitions(transitionsRes.data.data || []);
-      } else {
-        setTransitions([]);
       }
     } finally {
       setLoading(false);
@@ -310,6 +321,33 @@ export default function TaskView() {
   const comments = data?.comments || [];
   const stateHistory = data?.stateHistory || [];
   const subtasks = data?.subtasks || [];
+  const stageAssignments = useMemo(() => data?.stageAssignments || [], [data?.stageAssignments]);
+  const allTransitions = useMemo(() => data?.workflowTransitions || data?.transitions || [], [data]);
+  const currentStageAssignments = useMemo(
+    () => stageAssignments.find((entry) => String(entry.stage?._id) === String(getId(task?.currentStageId))) || null,
+    [stageAssignments, task?.currentStageId]
+  );
+
+  useEffect(() => {
+    const drafts = {};
+    stageAssignments.forEach((entry) => {
+      const stageId = String(entry.stage?._id);
+      drafts[stageId] = (entry.assignees || []).map((assignment) => String(getProjectMemberId(assignment.projectMemberId)));
+    });
+
+    setStageAssigneeDrafts(drafts);
+  }, [stageAssignments]);
+
+  useEffect(() => {
+    const timers = stageSaveTimersRef.current;
+    return () => {
+      Object.values(timers).forEach((timer) => {
+        if (timer) {
+          window.clearTimeout(timer);
+        }
+      });
+    };
+  }, []);
 
   const currentStage = task?.currentStageId || null;
   const currentStageId = getId(currentStage);
@@ -325,7 +363,7 @@ export default function TaskView() {
       .filter(Boolean);
   }, [memberships, currentUser]);
 
-  const isWorkspaceAdmin = ["admin", "owner"].includes(String(workspaceState?.role || "").toLowerCase());
+  const isWorkspaceAdmin = userIsAdmin;
 
   const stageOptions = useMemo(() => {
     const options = [];
@@ -339,7 +377,7 @@ export default function TaskView() {
       });
     }
 
-    transitions.forEach((transition) => {
+    allTransitions.forEach((transition) => {
       const stageId = getId(transition.toStage);
       if (!stageId) return;
       if (options.some((option) => option.id === String(stageId))) return;
@@ -354,7 +392,7 @@ export default function TaskView() {
     });
 
     return options;
-  }, [currentStage, currentStageId, transitions]);
+  }, [allTransitions, currentStage, currentStageId]);
 
   useEffect(() => {
     const currentId = currentStageId ? String(currentStageId) : null;
@@ -369,13 +407,116 @@ export default function TaskView() {
   }, [currentStageId, selectedStageId, stageOptions]);
 
   const selectedStage = stageOptions.find((option) => option.id === selectedStageId) || stageOptions[0] || null;
+  const transitions = useMemo(
+    () => allTransitions.filter((transition) => String(getId(transition.fromStage)) === String(currentStageId)),
+    [allTransitions, currentStageId]
+  );
+  const canEditWorkflow =
+    userIsAdmin ||
+    stageAssignments.every((entry) => (entry.assignees || []).length === 0) ||
+    Boolean(currentStage?.isStart);
+  const workflowLockMessage = canEditWorkflow
+    ? ""
+    : "Workflow can only be changed before stage assignees are added or while the task is still on the start stage.";
 
   const doneCount = subtasks.filter((subtask) => subtask.isCompleted).length;
   const subtaskProgress = subtasks.length > 0 ? (doneCount / subtasks.length) * 100 : 0;
 
+  const applyTaskPatch = (patch) => {
+    setData((prev) => {
+      if (!prev?.task) return prev;
+      return {
+        ...prev,
+        task: {
+          ...prev.task,
+          ...patch,
+        },
+      };
+    });
+  };
+
+  const revertStageDraft = (stageId, previousIds) => {
+    setStageAssigneeDrafts((prev) => ({
+      ...prev,
+      [stageId]: previousIds,
+    }));
+  };
+
+  const scheduleStageSave = (stageId, memberIds, previousIds) => {
+    const timerKey = String(stageId);
+    if (stageSaveTimersRef.current[timerKey]) {
+      window.clearTimeout(stageSaveTimersRef.current[timerKey]);
+    }
+
+    setSavingStageId(timerKey);
+    stageSaveTimersRef.current[timerKey] = window.setTimeout(async () => {
+      try {
+        const res = await callApi({
+          method: "put",
+          url: `/tasks/${taskId}/stages/${stageId}/assignees`,
+          data: { projectMemberIds: memberIds },
+        });
+
+        if (res.success) {
+          const nextData = res.data?.data;
+          if (nextData?.task) {
+            setData((prev) => {
+              if (!prev) return nextData;
+              return {
+                ...prev,
+                ...nextData,
+                task: {
+                  ...prev.task,
+                  ...nextData.task,
+                },
+                comments: safeArray(prev.comments),
+                subtasks: safeArray(prev.subtasks),
+                stateHistory: safeArray(prev.stateHistory),
+              };
+            });
+          }
+        } else {
+          revertStageDraft(stageId, previousIds);
+          setTransitionError(res.error?.message || "Failed to update stage assignees");
+        }
+      } catch (err) {
+        revertStageDraft(stageId, previousIds);
+        setTransitionError(err?.message || "Failed to update stage assignees");
+      } finally {
+        setSavingStageId(null);
+        stageSaveTimersRef.current[timerKey] = null;
+      }
+    }, 250);
+  };
+
+  const handleStageAssigneesChange = (stageId, memberIds) => {
+    const key = String(stageId);
+    const previousIds = stageAssigneeDrafts[key] || [];
+    setStageAssigneeDrafts((prev) => ({
+      ...prev,
+      [key]: memberIds,
+    }));
+    scheduleStageSave(stageId, memberIds, previousIds);
+  };
+
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
 
+    const tempId = `temp-comment-${Date.now()}`;
+    const optimisticComment = {
+      _id: tempId,
+      content: newComment.trim(),
+      createdAt: new Date().toISOString(),
+      user: currentUser,
+      type: "COMMENT",
+      __optimistic: true,
+    };
+
+    setData((prev) =>
+      prev
+        ? ({ ...prev, comments: [...safeArray(prev.comments), optimisticComment] })
+        : prev
+    );
     setSavingComment(true);
     try {
       const res = await callApi({
@@ -386,7 +527,21 @@ export default function TaskView() {
 
       if (res.success) {
         setNewComment("");
-        fetchData();
+        setData((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            comments: safeArray(prev.comments).map((comment) =>
+              comment._id === tempId ? res.data.data : comment
+            ),
+          };
+        });
+      } else {
+        setData((prev) =>
+          prev
+            ? ({ ...prev, comments: safeArray(prev.comments).filter((comment) => comment._id !== tempId) })
+            : prev
+        );
       }
     } finally {
       setSavingComment(false);
@@ -394,32 +549,93 @@ export default function TaskView() {
   };
 
   const handleDeleteComment = async (commentId) => {
-    await callApi({ method: "delete", url: `/tasks/comments/${commentId}` });
-    fetchData();
+    const previousComments = comments;
+    setData((prev) =>
+      prev
+        ? ({ ...prev, comments: safeArray(prev.comments).filter((comment) => comment._id !== commentId) })
+        : prev
+    );
+    const res = await callApi({ method: "delete", url: `/tasks/comments/${commentId}` });
+    if (!res.success) {
+      setData((prev) => prev ? ({ ...prev, comments: previousComments }) : prev);
+    }
   };
 
   const handleAddSubtask = async () => {
     if (!newSubtask.trim()) return;
 
-    await callApi({
+    const tempId = `temp-subtask-${Date.now()}`;
+    const optimisticSubtask = {
+      _id: tempId,
+      title: newSubtask.trim(),
+      isCompleted: false,
+      position: subtasks.length,
+      workflowStageId: currentStageId || null,
+      __optimistic: true,
+    };
+
+    setData((prev) =>
+      prev
+        ? ({ ...prev, subtasks: [...safeArray(prev.subtasks), optimisticSubtask] })
+        : prev
+    );
+
+    const res = await callApi({
       method: "post",
       url: `/tasks/${taskId}/subtasks`,
       data: { title: newSubtask.trim(), workflowStageId: currentStageId || null },
     });
 
-    setNewSubtask("");
-    setAddingSubtask(false);
-    fetchData();
+    if (res.success) {
+      setData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          subtasks: safeArray(prev.subtasks).map((subtask) =>
+            subtask._id === tempId ? res.data.data : subtask
+          ),
+        };
+      });
+      setNewSubtask("");
+      setAddingSubtask(false);
+    } else {
+      setData((prev) =>
+        prev
+          ? ({ ...prev, subtasks: safeArray(prev.subtasks).filter((subtask) => subtask._id !== tempId) })
+          : prev
+      );
+    }
   };
 
   const handleToggleSubtask = async (subtaskId) => {
-    await callApi({ method: "patch", url: `/tasks/subtasks/${subtaskId}/toggle` });
-    fetchData();
+    const previousSubtasks = subtasks;
+    setData((prev) => prev ? ({
+      ...prev,
+      subtasks: safeArray(prev.subtasks).map((subtask) =>
+        subtask._id === subtaskId
+          ? { ...subtask, isCompleted: !subtask.isCompleted }
+          : subtask
+      ),
+    }) : prev);
+
+    const res = await callApi({ method: "patch", url: `/tasks/subtasks/${subtaskId}/toggle` });
+    if (!res.success) {
+      setData((prev) => prev ? ({ ...prev, subtasks: previousSubtasks }) : prev);
+    }
   };
 
   const handleDeleteSubtask = async (subtaskId) => {
-    await callApi({ method: "delete", url: `/tasks/subtasks/${subtaskId}` });
-    fetchData();
+    const previousSubtasks = subtasks;
+    setData((prev) =>
+      prev
+        ? ({ ...prev, subtasks: safeArray(prev.subtasks).filter((subtask) => subtask._id !== subtaskId) })
+        : prev
+    );
+
+    const res = await callApi({ method: "delete", url: `/tasks/subtasks/${subtaskId}` });
+    if (!res.success) {
+      setData((prev) => prev ? ({ ...prev, subtasks: previousSubtasks }) : prev);
+    }
   };
 
   const handleAdvanceTransition = async (transition) => {
@@ -431,6 +647,12 @@ export default function TaskView() {
       );
 
     if (!canUseTransition) return;
+    if (transition.requireComment && !transitionComment.trim()) {
+      setTransitionError("A comment is required before this transition can be applied.");
+      return;
+    }
+
+    setTransitionError("");
 
     setAdvancingTransitionId(transition._id);
     try {
@@ -445,11 +667,42 @@ export default function TaskView() {
 
       if (res.success) {
         setTransitionComment("");
-        fetchData();
+        setTransitionError("");
+        applyTaskPatch({ currentStageId: transition.toStage });
+        if (res.data?.data?.historyRecord) {
+          setData((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              stateHistory: [...safeArray(prev.stateHistory), res.data.data.historyRecord],
+            };
+          });
+        }
+      } else {
+        setTransitionError(res.error?.message || res.message || "Failed to advance the task.");
       }
     } finally {
       setAdvancingTransitionId(null);
     }
+  };
+
+  const handleTaskUpdated = (updatedPayload) => {
+    if (!updatedPayload) return;
+    if (updatedPayload.task) {
+      setData(updatedPayload);
+      return;
+    }
+
+    setData((prev) => {
+      if (!prev?.task) return prev;
+      return {
+        ...prev,
+        task: {
+          ...prev.task,
+          ...updatedPayload,
+        },
+      };
+    });
   };
 
   if (loading) {
@@ -546,15 +799,22 @@ export default function TaskView() {
               </Stack>
             </Box>
 
-            <Tooltip title={task.isBlocked ? "Unblock task" : "Block task"}>
-              <IconButton
-                onClick={() => setBlockOpen(true)}
-                color={task.isBlocked ? "success" : "warning"}
-                size="small"
-              >
-                {task.isBlocked ? <CheckCircleIcon /> : <BlockIcon />}
-              </IconButton>
-            </Tooltip>
+            <Stack direction="row" spacing={0.5}>
+              <Tooltip title="Edit task">
+                <IconButton onClick={() => setEditOpen(true)} size="small">
+                  <EditIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={task.isBlocked ? "Unblock task" : "Block task"}>
+                <IconButton
+                  onClick={() => setBlockOpen(true)}
+                  color={task.isBlocked ? "success" : "warning"}
+                  size="small"
+                >
+                  {task.isBlocked ? <CheckCircleIcon /> : <BlockIcon />}
+                </IconButton>
+              </Tooltip>
+            </Stack>
           </Stack>
         </Box>
 
@@ -690,22 +950,67 @@ export default function TaskView() {
                 <StageRoleChips roles={data.allowedRoles || []} />
               </Box>
 
-              {task.assignees?.length > 0 && (
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Typography variant="caption" color="text.secondary">
-                    Assignees
-                  </Typography>
-                  <Stack direction="row" spacing={0.5}>
-                    {task.assignees.map((assignee) => (
-                      <Tooltip key={assignee._id} title={assignee.name}>
-                        <Avatar sx={{ width: 22, height: 22, fontSize: 10 }}>
-                          {assignee.name?.[0] || "?"}
-                        </Avatar>
-                      </Tooltip>
-                    ))}
+              {/* ── Assignees Section ─────────────────────────────────────────── */}
+              <Box>
+                <Stack direction="row" alignItems="center" justifyContent="space-between" mb={0.75}>
+                  <Stack direction="row" spacing={0.5} alignItems="center">
+                    <PersonIcon sx={{ fontSize: 14, color: "text.secondary" }} />
+                    <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                      Stage Assignees
+                    </Typography>
                   </Stack>
+                  {userIsAdmin && stageAssignments.length > 0 && (
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      sx={{ fontSize: 11, py: 0.25, px: 1, borderRadius: 1.5 }}
+                      onClick={() => setActiveTab(3)}
+                    >
+                      Manage
+                    </Button>
+                  )}
                 </Stack>
-              )}
+
+                {currentStageAssignments?.assignees?.length > 0 ? (
+                  <Stack spacing={0.5}>
+                    {currentStageAssignments.assignees.map((assignee) => {
+                      const member = assignee.projectMemberId;
+                      const user = member?.user || {};
+                      return (
+                        <Stack key={assignee._id} direction="row" alignItems="center" spacing={1}>
+                          <Avatar sx={{ width: 22, height: 22, fontSize: 10 }}>
+                            {user.name?.[0] || "?"}
+                          </Avatar>
+                          <Box minWidth={0}>
+                            <Typography variant="caption" fontWeight={500} noWrap>
+                              {user.name || "Unknown"}
+                            </Typography>
+                            <Typography variant="caption" color="text.disabled" display="block" lineHeight={1.2}>
+                              {currentStage?.name || "Current stage"}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      );
+                    })}
+                  </Stack>
+                ) : (
+                  <Box
+                    sx={{
+                      p: 1.25,
+                      borderRadius: 1.5,
+                      bgcolor: userIsAdmin ? "warning.light" : "action.hover",
+                      border: "1px dashed",
+                      borderColor: userIsAdmin ? "warning.main" : "divider",
+                    }}
+                  >
+                    <Typography variant="caption" color={userIsAdmin ? "warning.dark" : "text.disabled"} fontWeight={userIsAdmin ? 600 : 400}>
+                      {userIsAdmin
+                        ? "No one assigned to the current workflow stage yet"
+                        : "No assignees yet"}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
             </Stack>
           </Box>
         </Box>
@@ -760,6 +1065,16 @@ export default function TaskView() {
                 <Badge badgeContent={stateHistory.length} color="default" max={99}>
                   <Box pr={1} sx={{ fontSize: 13, fontWeight: 600 }}>
                     Task Timeline
+                  </Box>
+                </Badge>
+              }
+              sx={{ minHeight: 40, textTransform: "none" }}
+            />
+            <Tab
+              label={
+                <Badge badgeContent={stageAssignments.length} color="secondary" max={99}>
+                  <Box pr={1} sx={{ fontSize: 13, fontWeight: 600 }}>
+                    Stage Assignees
                   </Box>
                 </Badge>
               }
@@ -873,7 +1188,10 @@ export default function TaskView() {
                 </Box>
 
                 {transitions.length === 0 ? (
-                  <Alert severity="info">No next transitions are available from the current stage.</Alert>
+                  <>
+                    <Alert severity="success">Task completed sucessfully </Alert>
+                    <Alert severity="info">No more transitions available to advance to next stage</Alert>
+                  </>
                 ) : (
                   <Stack spacing={1}>
                     {transitions.map((transition) => {
@@ -883,6 +1201,7 @@ export default function TaskView() {
                         (transition.allowedRoles || []).some((role) =>
                           projectRoleIds.includes(String(role?._id || role?.id || role))
                         );
+                      const requiresComment = Boolean(transition.requireComment);
 
                       return (
                         <Paper
@@ -908,7 +1227,12 @@ export default function TaskView() {
                                 size="small"
                                 variant="contained"
                                 onClick={() => handleAdvanceTransition(transition)}
-                                disabled={!canUseTransition || advancingTransitionId === transition._id || task.isBlocked}
+                                disabled={
+                                  !canUseTransition ||
+                                  advancingTransitionId === transition._id ||
+                                  task.isBlocked ||
+                                  (requiresComment && !transitionComment.trim())
+                                }
                                 startIcon={
                                   advancingTransitionId === transition._id ? (
                                     <CircularProgress size={14} color="inherit" />
@@ -929,11 +1253,23 @@ export default function TaskView() {
                   </Stack>
                 )}
 
+                {transitionError && (
+                  <Alert severity="warning" variant="outlined">
+                    {transitionError}
+                  </Alert>
+                )}
+
                 <TextField
                   label="Transition comment"
-                  placeholder="Optional note for this state change"
+                  placeholder="Add a note for this state change"
                   value={transitionComment}
-                  onChange={(e) => setTransitionComment(e.target.value)}
+                  error={Boolean(transitionError)}
+                  required={transitions.some((transition) => transition.requireComment)}
+                  helperText={transitionError || "Required for transitions that ask for a comment."}
+                  onChange={(e) => {
+                    setTransitionComment(e.target.value);
+                    if (transitionError) setTransitionError("");
+                  }}
                   multiline
                   minRows={2}
                   fullWidth
@@ -1036,14 +1372,230 @@ export default function TaskView() {
             )}
           </Box>
         )}
+
+        {activeTab === 3 && (
+          <Box sx={{ flex: 1, overflowY: "auto", px: 3, py: 2.5 }}>
+            {stageAssignments.length === 0 ? (
+              <Typography variant="body2" color="text.disabled" textAlign="center" mt={4}>
+                This task is not attached to a workflow yet.
+              </Typography>
+            ) : (
+              <Stack spacing={2}>
+                {stageAssignments.map(({ stage, eligibleMembers }) => {
+                  const stageId = String(stage._id);
+                  const canEdit = userIsAdmin;
+                  const selectedIds = stageAssigneeDrafts[stageId] || [];
+                  const selectedMembers = eligibleMembers.filter((member) =>
+                    selectedIds.includes(String(member._id))
+                  );
+                  const isSavingStage = savingStageId === stageId;
+
+                  return (
+                    <Card key={stageId} variant="outlined" sx={{ borderRadius: 2.5 }}>
+                      <CardContent sx={{ p: 2.25 }}>
+                        <Stack spacing={1.75}>
+                          <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={2} flexWrap="wrap">
+                            <Box>
+                              <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                                <Chip label={stage.name} color="primary" />
+                                {stage.isStart && <Chip label="Start" size="small" variant="outlined" />}
+                                {stage.isEnd && <Chip label="End" size="small" color="success" variant="outlined" />}
+                              </Stack>
+                              <Typography variant="caption" color="text.secondary" display="block" mt={0.75}>
+                                Allowed roles for execution
+                              </Typography>
+                              <StageRoleChips
+                                roles={stage.allowedRoles || []}
+                                emptyLabel="Open to all project members"
+                              />
+                            </Box>
+
+                            <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap">
+                              <Chip
+                                size="small"
+                                label={`${selectedMembers.length} assignee${selectedMembers.length === 1 ? "" : "s"}`}
+                                variant="outlined"
+                              />
+                              <Chip
+                                size="small"
+                                label={`${eligibleMembers.length} eligible`}
+                                color="secondary"
+                                variant="outlined"
+                              />
+                            </Stack>
+                          </Stack>
+
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.75}>
+                              Current assignees
+                            </Typography>
+                            {selectedMembers.length > 0 ? (
+                              <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                                {selectedMembers.map((member) => {
+                                  const user = member?.user || {};
+                                  return (
+                                    <Chip
+                                      key={member._id}
+                                      avatar={
+                                        <Avatar sx={{ width: 20, height: 20 }}>
+                                          {user.name?.[0] || "?"}
+                                        </Avatar>
+                                      }
+                                      label={user.name || "Unknown"}
+                                      variant="outlined"
+                                    />
+                                  );
+                                })}
+                              </Stack>
+                            ) : (
+                              <Typography variant="body2" color="text.disabled">
+                                No assignees yet.
+                              </Typography>
+                            )}
+                          </Box>
+
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.75}>
+                              Assign project members
+                            </Typography>
+                            <Autocomplete
+                              multiple
+                              options={eligibleMembers}
+                              value={selectedMembers}
+                              disabled={!canEdit}
+                              PaperComponent={(paperProps) => (
+                                <Paper
+                                  {...paperProps}
+                                  sx={{
+                                    mt: 1,
+                                    bgcolor: "background.paper",
+                                    backgroundImage: "none",
+                                    border: "1px solid",
+                                    borderColor: "divider",
+                                    boxShadow: 8,
+                                    borderRadius: 2,
+                                    overflow: "hidden",
+                                  }}
+                                />
+                              )}
+                              onChange={(_, newValue) => {
+                                handleStageAssigneesChange(
+                                  stageId,
+                                  newValue.map((member) => String(member._id))
+                                );
+                              }}
+                              isOptionEqualToValue={(option, value) => String(option._id) === String(value._id)}
+                              getOptionLabel={(option) => option.user?.name || option.user?.email || "Unknown"}
+                              renderOption={(props, option) => (
+                                <Box
+                                  component="li"
+                                  {...props}
+                                  key={option._id}
+                                  sx={{ alignItems: "flex-start !important", py: 1 }}
+                                >
+                                  <Stack spacing={0.75} width="100%">
+                                    <Stack direction="row" spacing={1.25} alignItems="flex-start">
+                                      <Avatar sx={{ width: 30, height: 30, fontSize: 11, flexShrink: 0 }}>
+                                        {option.user?.name?.[0] || "?"}
+                                      </Avatar>
+                                      <Box flex={1} minWidth={0}>
+                                        <Typography variant="body2" fontWeight={700} noWrap>
+                                          {option.user?.name || "Unknown"}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary" noWrap display="block">
+                                          {option.user?.email || "No email"}
+                                        </Typography>
+                                      </Box>
+                                    </Stack>
+                                    <Stack direction="row" spacing={0.5} useFlexGap flexWrap="wrap" sx={{ pl: 4.75 }}>
+                                      {(option.roles || []).map((role) => (
+                                        <Chip
+                                          key={role._id}
+                                          label={role.name}
+                                          size="small"
+                                          variant="outlined"
+                                          sx={{ height: 20, fontSize: 10, bgcolor: "action.hover" }}
+                                        />
+                                      ))}
+                                    </Stack>
+                                  </Stack>
+                                </Box>
+                              )}
+                              renderTags={(value, getTagProps) =>
+                                value.map((option, index) => (
+                                  <Chip
+                                    {...getTagProps({ index })}
+                                    key={option._id}
+                                    label={option.user?.name || "Unknown"}
+                                    avatar={
+                                      <Avatar sx={{ width: 20, height: 20 }}>
+                                        {option.user?.name?.[0] || "?"}
+                                      </Avatar>
+                                    }
+                                    size="small"
+                                    sx={{ bgcolor: "background.paper" }}
+                                  />
+                                ))
+                              }
+                              renderInput={(params) => (
+                                <TextField
+                                  {...params}
+                                  placeholder={canEdit ? "Select project members" : "Read only"}
+                                  size="small"
+                                  helperText={isSavingStage ? "Saving assignees..." : ""}
+                                  sx={{
+                                    "& .MuiInputBase-root": {
+                                      bgcolor: "background.paper",
+                                    },
+                                  }}
+                                />
+                              )}
+                            />
+                          </Box>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </Stack>
+            )}
+          </Box>
+        )}
       </Box>
 
       <BlockTaskDialog
         open={blockOpen}
         task={task}
         onClose={() => setBlockOpen(false)}
-        onBlocked={() => fetchData()}
+        onBlocked={(updatedTask) => {
+          if (!updatedTask) return;
+          if (updatedTask.task) {
+            setData(updatedTask);
+            return;
+          }
+          setData((prev) => {
+            if (!prev?.task) return prev;
+            return {
+              ...prev,
+              task: {
+                ...prev.task,
+                ...updatedTask,
+              },
+            };
+          });
+        }}
       />
+
+      <CreateTaskDialog
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        mode="edit"
+        task={task}
+        onUpdated={handleTaskUpdated}
+        workflowDisabled={!canEditWorkflow}
+        workflowHelperText={workflowLockMessage}
+      />
+
     </Box>
   );
 }

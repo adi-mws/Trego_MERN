@@ -2,21 +2,24 @@ import { useState, useCallback, useEffect } from "react";
 import {
   Box, Grid, Card, CardContent, Typography, Stack,
   Button, Avatar, Chip, CircularProgress, Divider,
-  LinearProgress, Tooltip
+  LinearProgress, Tooltip,
+  useTheme
 } from "@mui/material";
 import PersonAddAltIcon from "@mui/icons-material/PersonAddAlt";
 import {
   FolderOutlined, GroupOutlined,
   AddCircleOutline, ArrowForwardIos,
   FavoriteBorderOutlined, CheckCircleOutline,
-  ErrorOutline, TimelineOutlined
+  ErrorOutline, TimelineOutlined, LockOutlined
 } from "@mui/icons-material";
 import { WorkspaceInviteDialog } from "./_components/WorkspaceInviteDialog";
 import CreateProjectDialog from "../projects/_components/CreateProjectDialog";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { WORKSPACE_ROUTES } from "../../../lib/routes";
+import { PROJECT_ROUTES, WORKSPACE_ROUTES } from "../../../lib/routes";
 import { callApi } from "../../../api/api";
+import { resolveWorkspaceRole } from "../../../utils/workspaceRole.utils";
+import { isAdmin } from "../../../utils/permissions.utils";
 
 // ── Stat Card ─────────────────────────────────────────────────────────────────
 function StatCard({ label, value, icon, color, onClick, subtitle }) {
@@ -52,23 +55,31 @@ export default function WorkspaceOverviewPage() {
   const [workspaceInviteOpen, setWorkspaceInviteOpen] = useState(false);
   const [createProjectDialogOpen, setCreateProjectDialogOpen] = useState(false);
   const navigate = useNavigate();
-
+  const theme = useTheme();
   const workspace = useSelector(s => s.workspace);
+  const authUser = useSelector(s => s.auth?.data);
   const projects = workspace.projects || [];
-  const workspaceSlug = workspace.slug;
+  const workspaceRole = resolveWorkspaceRole(workspace, authUser);
+  const userIsAdmin = isAdmin(workspaceRole);
 
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchMetrics = useCallback(async () => {
     if (!workspace._id) return;
+    await Promise.resolve();
     setLoading(true);
     const res = await callApi({ method: "get", url: `/workspaces/${workspace._id}/metrics` });
     if (res.success) setMetrics(res.data.data);
     setLoading(false);
   }, [workspace._id]);
 
-  useEffect(() => { fetchMetrics(); }, [fetchMetrics]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void fetchMetrics();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [fetchMetrics]);
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, height: "100%", overflowY: "auto" }}>
@@ -76,26 +87,30 @@ export default function WorkspaceOverviewPage() {
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
         <Box>
           <Typography variant="h5" fontWeight={700}>{workspace.name || "Workspace"}</Typography>
-          <Typography variant="body2" color="text.secondary">Workspace Health & Overview</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {userIsAdmin ? "Workspace Health & Overview" : "Your Projects"}
+          </Typography>
         </Box>
-        <Stack direction="row" spacing={1.5}>
-          <Button
-            variant="outlined"
-            startIcon={<AddCircleOutline />}
-            sx={{ borderRadius: 2 }}
-            onClick={() => setCreateProjectDialogOpen(true)}
-          >
-            New Project
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<PersonAddAltIcon />}
-            sx={{ borderRadius: 2 }}
-            onClick={() => setWorkspaceInviteOpen(true)}
-          >
-            Invite Member
-          </Button>
-        </Stack>
+        {userIsAdmin && (
+          <Stack direction="row" spacing={1.5}>
+            <Button
+              variant="outlined"
+              startIcon={<AddCircleOutline />}
+              sx={{ borderRadius: 2 }}
+              onClick={() => setCreateProjectDialogOpen(true)}
+            >
+              New Project
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<PersonAddAltIcon />}
+              sx={{ borderRadius: 2 }}
+              onClick={() => setWorkspaceInviteOpen(true)}
+            >
+              Invite Member
+            </Button>
+          </Stack>
+        )}
       </Stack>
 
       {/* ── Stat Cards ── */}
@@ -114,7 +129,7 @@ export default function WorkspaceOverviewPage() {
             label="Task Completion Rate"
             value={loading ? "..." : `${metrics?.taskCompletionRate ?? 0}%`}
             icon={<CheckCircleOutline />}
-            color="#1890ff"
+            color={theme?.palette?.primary?.main}
             subtitle={loading ? "" : `${metrics?.completedTasks ?? 0} / ${metrics?.totalTasks ?? 0} tasks done`}
           />
         </Grid>
@@ -123,7 +138,7 @@ export default function WorkspaceOverviewPage() {
             label="Overdue Tasks"
             value={loading ? "..." : metrics?.overdueTasks ?? 0}
             icon={<ErrorOutline />}
-            color={metrics?.overdueTasks > 0 ? "#f5222d" : "#52c41a"}
+            color={metrics?.overdueTasks > 0 ? "#f5222d" : theme.palette.primary.main}
             subtitle="Past deadline"
           />
         </Grid>
@@ -132,7 +147,7 @@ export default function WorkspaceOverviewPage() {
             label="Blocked Tasks"
             value={loading ? "..." : metrics?.blockedTasks ?? 0}
             icon={<TimelineOutlined />}
-            color={metrics?.blockedTasks > 0 ? "#faad14" : "#13c2c2"}
+            color={metrics?.blockedTasks > 0 ? "#faad14" : theme.palette.primary.main}
             subtitle="Needs attention"
           />
         </Grid>
@@ -152,22 +167,35 @@ export default function WorkspaceOverviewPage() {
               {projects.length === 0 ? (
                 <Box textAlign="center" py={4}>
                   <FolderOutlined sx={{ fontSize: 48, color: "text.disabled", mb: 1 }} />
-                  <Typography color="text.secondary" variant="body2">No projects yet</Typography>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    sx={{ mt: 2 }}
-                    onClick={() => setCreateProjectDialogOpen(true)}
-                  >
-                    Create First Project
-                  </Button>
+                  {userIsAdmin ? (
+                    <>
+                      <Typography color="text.secondary" variant="body2">No projects yet</Typography>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        sx={{ mt: 2 }}
+                        onClick={() => setCreateProjectDialogOpen(true)}
+                      >
+                        Create First Project
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Typography color="text.secondary" variant="body2" mb={0.5}>
+                        You haven't been added to any projects yet
+                      </Typography>
+                      <Typography color="text.disabled" variant="caption">
+                        Ask your workspace admin to add you to a project
+                      </Typography>
+                    </>
+                  )}
                 </Box>
               ) : (
                 <Stack spacing={1}>
                   {projects.slice(0, 6).map(p => (
                     <Box
                       key={p._id}
-                      onClick={() => navigate(WORKSPACE_ROUTES.workspace(workspaceSlug) + `/projects/${p.slug || p._id}/overview`)}
+                      onClick={() => navigate(PROJECT_ROUTES.overview(workspace.slug, p.slug))}
                       sx={{
                         display: "flex",
                         alignItems: "center",
@@ -207,7 +235,7 @@ export default function WorkspaceOverviewPage() {
           <Card variant="outlined" sx={{ borderRadius: 3, height: "100%" }}>
             <CardContent>
               <Typography fontWeight={600} mb={2}>Workspace Health Insights</Typography>
-              
+
               {loading ? (
                 <Box display="flex" justifyContent="center" alignItems="center" py={4}>
                   <CircularProgress size={30} />
@@ -219,9 +247,9 @@ export default function WorkspaceOverviewPage() {
                       <Typography variant="body2" color="text.secondary">Overall Health Score</Typography>
                       <Typography variant="body2" fontWeight={700}>{metrics?.overallHealthScore}/100</Typography>
                     </Stack>
-                    <LinearProgress 
-                      variant="determinate" 
-                      value={metrics?.overallHealthScore || 0} 
+                    <LinearProgress
+                      variant="determinate"
+                      value={metrics?.overallHealthScore || 0}
                       color={metrics?.healthStatus === "HEALTHY" ? "success" : metrics?.healthStatus === "WARNING" ? "warning" : "error"}
                       sx={{ height: 8, borderRadius: 4 }}
                     />
@@ -234,12 +262,12 @@ export default function WorkspaceOverviewPage() {
                     ) : (
                       <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                         {metrics?.riskFlags?.map(flag => (
-                          <Chip 
-                            key={flag} 
-                            label={flag.replace(/_/g, " ")} 
-                            size="small" 
-                            color="error" 
-                            variant="outlined" 
+                          <Chip
+                            key={flag}
+                            label={flag.replace(/_/g, " ")}
+                            size="small"
+                            color="error"
+                            variant="outlined"
                             sx={{ textTransform: "capitalize" }}
                           />
                         ))}

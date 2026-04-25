@@ -1,4 +1,49 @@
 import * as extraService from "./taskExtra.service.js";
+import { Project } from "../projects/project.model.js";
+import { WorkspaceMember } from "../workspaces/workspaceMember.model.js";
+import { ProjectMember } from "../projects/projectMember.model.js";
+import { Task } from "./task.model.js";
+import {
+  addTaskStageAssignee,
+  removeTaskStageAssignee,
+  replaceTaskStageAssignees,
+} from "./taskStageAssignee.service.js";
+
+const ADMIN_ROLES = ["OWNER", "ADMIN"];
+
+async function resolveTaskContext(req, taskId) {
+  const task = await Task.findById(taskId).select("projectId").lean();
+  if (!task) {
+    return null;
+  }
+
+  const project = await Project.findById(task.projectId).select("workspace").lean();
+  if (!project) {
+    return null;
+  }
+
+  const workspaceMembership = await WorkspaceMember.findOne({
+    workspaceId: project.workspace,
+    userId: req.user?.userId,
+  }).lean();
+
+  const workspaceRole = String(workspaceMembership?.role || "").toUpperCase();
+  const projectMembership = await ProjectMember.findOne({
+    project: task.projectId,
+    user: req.user?.userId,
+  })
+    .select("_id")
+    .lean();
+
+  return {
+    task,
+    project,
+    workspaceRole,
+    workspaceMembership,
+    projectMembership,
+    isAdmin: ADMIN_ROLES.includes(workspaceRole),
+  };
+}
 
 // ─ Task Detail ───────────────────────────────────────────────────────────────────────
 
@@ -6,9 +51,35 @@ import * as extraService from "./taskExtra.service.js";
 export const getTaskDetail = async (req, res, next) => {
   try {
     const { taskId } = req.params;
-    const data = await extraService.getTaskDetail(taskId);
+    const context = await resolveTaskContext(req, taskId);
+    if (!context) {
+      return res.status(404).json({ success: false, message: "Task not found" });
+    }
+
+    const data = await extraService.getTaskDetail(taskId, {
+      userId: req.user?.userId,
+      workspaceRole: context.workspaceRole,
+    });
     res.status(200).json({ success: true, data });
   } catch (err) { next(err); }
+};
+
+export const getTaskStageAssignees = async (req, res, next) => {
+  try {
+    const { taskId } = req.params;
+    const context = await resolveTaskContext(req, taskId);
+    if (!context) {
+      return res.status(404).json({ success: false, message: "Task not found" });
+    }
+
+    const data = await extraService.getTaskDetail(taskId, {
+      userId: req.user?.userId,
+      workspaceRole: context.workspaceRole,
+    });
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
 };
 
 // ── Comments ───────────────────────────────────────────────────────────────────
@@ -106,4 +177,75 @@ export const advanceTaskStage = async (req, res, next) => {
     });
     res.status(200).json({ success: true, data: result });
   } catch (err) { next(err); }
+};
+
+export const addStageAssignee = async (req, res, next) => {
+  try {
+    const { taskId, stageId } = req.params;
+    const { projectMemberId } = req.body;
+    const context = await resolveTaskContext(req, taskId);
+    if (!context) {
+      return res.status(404).json({ success: false, message: "Task not found" });
+    }
+
+    if (!context.isAdmin) {
+      return res.status(403).json({ success: false, message: "Only admins can manage stage assignees" });
+    }
+
+    const data = await addTaskStageAssignee({
+      taskId,
+      stageId,
+      projectMemberId,
+      assignedBy: req.user.userId,
+    });
+
+    res.status(201).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const replaceStageAssignees = async (req, res, next) => {
+  try {
+    const { taskId, stageId } = req.params;
+    const { projectMemberIds = [] } = req.body;
+    const context = await resolveTaskContext(req, taskId);
+    if (!context) {
+      return res.status(404).json({ success: false, message: "Task not found" });
+    }
+
+    if (!context.isAdmin) {
+      return res.status(403).json({ success: false, message: "Only admins can manage stage assignees" });
+    }
+
+    const data = await replaceTaskStageAssignees({
+      taskId,
+      stageId,
+      projectMemberIds,
+      assignedBy: req.user.userId,
+    });
+
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteStageAssignee = async (req, res, next) => {
+  try {
+    const { taskId, stageId, projectMemberId } = req.params;
+    const context = await resolveTaskContext(req, taskId);
+    if (!context) {
+      return res.status(404).json({ success: false, message: "Task not found" });
+    }
+
+    if (!context.isAdmin) {
+      return res.status(403).json({ success: false, message: "Only admins can manage stage assignees" });
+    }
+
+    const data = await removeTaskStageAssignee({ taskId, stageId, projectMemberId });
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
 };

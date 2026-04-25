@@ -4,6 +4,7 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import CloudOffIcon from "@mui/icons-material/CloudOff";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
+import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { setIsActive, saveWorkflowTemplate, cloneWorkflowVersion } from "../../../../redux/slices/workflowSlice";
 import { selectWorkflowEligibility } from "../../../../redux/selectors/workflowSelectors";
@@ -14,8 +15,18 @@ export default function WorkflowSidebarHeader() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { workspaceSlug, projectSlug, workflowId } = useParams();
-  const { isSaving, isDirty, name, isWorking, isActive, isEditable, version } = useSelector((state) => state.workflow);
+  const { isSaving, isDirty, name, description, nodes, edges, isWorking, isActive, isEditable, version, usage } = useSelector((state) => state.workflow);
   const eligibility = useSelector(selectWorkflowEligibility);
+
+  useEffect(() => {
+    if (!workflowId || !isEditable || !isDirty || isSaving) return;
+
+    const timer = window.setTimeout(() => {
+      dispatch(saveWorkflowTemplate(workflowId));
+    }, 650);
+
+    return () => window.clearTimeout(timer);
+  }, [workflowId, isEditable, isDirty, isSaving, name, description, nodes, edges, isActive, dispatch]);
 
   const handleSave = () => {
     if (workflowId) {
@@ -99,7 +110,17 @@ export default function WorkflowSidebarHeader() {
             {(name || "Untitled").length > 8 ? (name || "Untitled").slice(0, 8) + "…" : (name || "Untitled")}
         </Typography>
 
-        <Chip label={`V${version || 1}`} size="small" color="primary" variant="outlined" sx={{ mr: 1 }} />
+        <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
+          <Chip label={`V${version || 1}`} size="small" color="primary" variant="outlined" />
+          {usage?.totalCount > 0 && (
+            <Chip
+              label={`Used in ${usage.totalCount}`}
+              size="small"
+              color="warning"
+              variant="outlined"
+            />
+          )}
+        </Stack>
       </Stack>
 
       {/* RIGHT: Save & Status Icons */}
@@ -112,30 +133,35 @@ export default function WorkflowSidebarHeader() {
         ) : (
           <>
             {/* Active/Draft Toggle */}
-            <Tooltip title={
-              isWorking ? "Cannot toggle off while workflow is in use by tasks." :
-                !eligibility.isEligible ? "Workflow has errors and cannot be active." :
-                  isActive ? "Set to Draft" : "Set to Active"
-            }>
+            <Tooltip
+              title={
+                isWorking
+                  ? "Cannot toggle off while workflow is in use by tasks or categories."
+                  : !eligibility.isEligible
+                    ? "Workflow has errors and cannot be active."
+                    : isActive
+                      ? "Set to Draft"
+                      : "Set to Active"
+              }
+            >
               <span>
                 <FormControlLabel
+                  sx={{ m: 0, mr: 1 }}
                   control={
                     <Switch
                       checked={isActive}
                       onChange={(e) => dispatch(setIsActive(e.target.checked))}
                       disabled={isWorking || (!isActive && !eligibility.isEligible)}
-                  size="small"
-                  color="success"
+                      size="small"
+                      color="success"
+                    />
+                  }
                 />
-              }
-
-              sx={{ m: 0, mr: 1 }}
-            />
-          </span>
-        </Tooltip>
+              </span>
+            </Tooltip>
 
         {isWorking && (
-          <Tooltip title="Workflow is currently in use">
+          <Tooltip title="Workflow is currently in use by tasks or categories">
             <PlayCircleOutlineIcon sx={{ color: "success.main", fontSize: 20, mr: 1 }} />
           </Tooltip>
         )}

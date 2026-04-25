@@ -1,16 +1,12 @@
 import { Box, Typography, Divider, Tabs, Tab, Stack, Avatar, TextField, IconButton, CircularProgress, Tooltip } from "@mui/material";
 import { useEffect, useCallback, useState } from "react";
-import { debounce } from 'lodash';
-import SendIcon from "@mui/icons-material/Send";
 import DeleteIcon from "@mui/icons-material/Delete";
 
-import { useDispatch, useSelector } from "react-redux"
+import { useSelector } from "react-redux"
 import WorkflowNodesNotSelected from "./WorkflowNodesNotSelected";
 import WorkflowSidebarHeader from "./WorkflowSIdebarHeader";
 import WorkflowEdgeEditor from "./WorkflowEdgeEditor";
 import WorkflowNodeEditor from "./WorkflowNodeEditor";
-import { saveWorkflowTemplate } from "../../../../redux/slices/workflowSlice";
-import { useParams } from "react-router-dom";
 import { callApi } from "../../../../api/api";
 
 function CommentsPanel({ projectId }) {
@@ -18,7 +14,6 @@ function CommentsPanel({ projectId }) {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState("");
-  const [saving, setSaving] = useState(false);
 
   const fetch = useCallback(async () => {
     if (!projectId) return;
@@ -28,7 +23,13 @@ function CommentsPanel({ projectId }) {
     setLoading(false);
   }, [projectId]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void fetch();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [fetch]);
 
   const handleDelete = async (id) => {
     await callApi({ method: "delete", url: `/tasks/comments/${id}` });
@@ -101,24 +102,9 @@ function CommentsPanel({ projectId }) {
 }
 
 export default function WorkflowSidebar() {
-  const { selectedEdge, selectedNode, isDirty, isSaving } = useSelector((state) => state.workflow);
+  const { selectedEdge, selectedNode } = useSelector((state) => state.workflow);
   const { _id: projectId } = useSelector(s => s.project);
-  const dispatch = useDispatch();
   const [tab, setTab] = useState(0);
-
-  const { workflowId } = useParams();
-
-  const debouncedSave = useCallback(debounce((id) => {
-    if (id) {
-      dispatch(saveWorkflowTemplate(id));
-    }
-  }, 1000), [dispatch]);
-
-  useEffect(() => {
-    if (isDirty && !isSaving) {
-      debouncedSave(workflowId);
-    }
-  }, [isDirty, isSaving, debouncedSave, workflowId]);
 
   return (
     <Box

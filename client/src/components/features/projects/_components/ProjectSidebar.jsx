@@ -9,14 +9,15 @@ import {
   Tooltip,
   Divider,
   Typography,
-  Card,
 } from "@mui/material";
 
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { MenuOutlined, ChevronRightOutlined, CategoryOutlined, ViewKanbanOutlined, TaskOutlined, GroupOutlined, SettingsOutlined, HistoryOutlined, ShieldOutlined, TimelineOutlined, InsightsOutlined, CommentOutlined } from "@mui/icons-material";
 import { PROJECT_ROUTES } from "../../../../lib/routes";
-import { Analytics, BarChart, PieChart, AccountTreeOutlined } from "@mui/icons-material";
+import { AccountTreeOutlined } from "@mui/icons-material";
+import { canManageProject, canManageProjectMembers, canViewProjectActivity, isClient, isClientProjectRole } from "../../../../utils/permissions.utils";
+import { resolveWorkspaceRole } from "../../../../utils/workspaceRole.utils";
 
 const EXPANDED_WIDTH = 240;
 const COLLAPSED_WIDTH = 72;
@@ -30,68 +31,93 @@ const ProjectSidebar = ({ onOpenMembers }) => {
 
   const workspaceSlug = useSelector((state) => state.workspace?.slug);
   const project = useSelector((state) => state.project); // optional if you store project
+  const projectCanViewActivity = canViewProjectActivity(project);
+  const projectCanManageProject = canManageProject(project);
+  const projectCanManageMembers = canManageProjectMembers(project);
+  const authUser = useSelector((state) => state.auth?.data);
+  const workspace = useSelector((state) => state.workspace);
+  const workspaceRole = resolveWorkspaceRole(workspace, authUser);
+  const clientProjectViewer = isClient(workspaceRole) || isClientProjectRole(project);
 
-  const menuItems = [
-    {
-      label: "Overview",
-      icon: <InsightsOutlined sx={{ fontSize: 20 }} />,
-      path: PROJECT_ROUTES.overview(workspaceSlug, projectSlug),
-    },
-    {
-      label: "Board",
-      icon: <ViewKanbanOutlined sx={{ fontSize: 20 }} />,
-      path: PROJECT_ROUTES.projectTaskBoard(workspaceSlug, projectSlug),
-    },
-    {
-      label: "Tasks",
-      icon: <TaskOutlined sx={{ fontSize: 20 }} />,
-      path: PROJECT_ROUTES.projectTasks(workspaceSlug, projectSlug),
-    },
-     {
-      label: "Timeline",
-      icon: <TimelineOutlined sx={{ fontSize: 20 }} />,
-      path: PROJECT_ROUTES.projectTimeline(workspaceSlug, projectSlug),
-    },
-    {
-      label: "Task Categories",
-      icon: <CategoryOutlined sx={{ fontSize: 20 }} />,
-      path: PROJECT_ROUTES.projectTaskCategories(workspaceSlug, projectSlug),
-    },
-    {
-      label: "Task State History", 
-      icon: <HistoryOutlined sx={{fontSize: 20}} />, 
-      path: PROJECT_ROUTES.projectTaskStateHistory(workspaceSlug, projectSlug) 
-    },
-    {
-      label: "Comments",
-      icon: <CommentOutlined sx={{ fontSize: 20 }} />,
-      path: PROJECT_ROUTES.projectComments(workspaceSlug, projectSlug),
-    },
+  const menuItems = clientProjectViewer
+    ? [
+      {
+        label: "Overview",
+        icon: <InsightsOutlined sx={{ fontSize: 20 }} />,
+        path: PROJECT_ROUTES.overview(workspaceSlug, projectSlug),
+        visible: projectCanViewActivity,
+      },
+    ]
+    : [
+      {
+        label: "Overview",
+        icon: <InsightsOutlined sx={{ fontSize: 20 }} />,
+        path: PROJECT_ROUTES.overview(workspaceSlug, projectSlug),
+        visible: projectCanViewActivity,
+      },
+      {
+        label: "Board",
+        icon: <ViewKanbanOutlined sx={{ fontSize: 20 }} />,
+        path: PROJECT_ROUTES.projectTaskBoard(workspaceSlug, projectSlug),
+        visible: projectCanViewActivity,
+      },
+      {
+        label: "Tasks",
+        icon: <TaskOutlined sx={{ fontSize: 20 }} />,
+        path: PROJECT_ROUTES.projectTasks(workspaceSlug, projectSlug),
+        visible: projectCanViewActivity,
+      },
+       {
+        label: "Timeline",
+        icon: <TimelineOutlined sx={{ fontSize: 20 }} />,
+        path: PROJECT_ROUTES.projectTimeline(workspaceSlug, projectSlug),
+        visible: projectCanViewActivity,
+      },
+      {
+        label: "Task Categories",
+        icon: <CategoryOutlined sx={{ fontSize: 20 }} />,
+        path: PROJECT_ROUTES.projectTaskCategories(workspaceSlug, projectSlug),
+        visible: projectCanViewActivity && projectCanManageProject,
+      },
+      {
+        label: "Task State History", 
+        icon: <HistoryOutlined sx={{fontSize: 20}} />, 
+        path: PROJECT_ROUTES.projectTaskStateHistory(workspaceSlug, projectSlug),
+        visible: projectCanViewActivity,
+      },
+      {
+        label: "Comments",
+        icon: <CommentOutlined sx={{ fontSize: 20 }} />,
+        path: PROJECT_ROUTES.projectComments(workspaceSlug, projectSlug),
+        visible: projectCanViewActivity,
+      },
 
-   
+       {
+        label: "Workflows",
+        icon: <AccountTreeOutlined sx={{ fontSize: 20 }} />,
+        path: PROJECT_ROUTES.projectWorkflows(workspaceSlug, projectSlug),
+        visible: projectCanManageProject,
+      },
 
-     {
-      label: "Workflows",
-      icon: <AccountTreeOutlined sx={{ fontSize: 20 }} />,
-      path: PROJECT_ROUTES.projectWorkflows(workspaceSlug, projectSlug),
-    },
-
-    {
-      label: "Members",
-      icon: <GroupOutlined sx={{ fontSize: 20 }} />,
-      path: PROJECT_ROUTES.projectMembers(workspaceSlug, projectSlug),
-    },
-     {
-      label: "Roles",
-      icon: <ShieldOutlined sx={{ fontSize: 20 }} />,
-      path: PROJECT_ROUTES.projectRoles(workspaceSlug, projectSlug),
-    },
-    {
-      label: "Settings",
-      icon: <SettingsOutlined sx={{ fontSize: 20 }} />,
-      path: PROJECT_ROUTES.projectSettings(workspaceSlug, projectSlug),
-    },
-  ];
+      {
+        label: "Members",
+        icon: <GroupOutlined sx={{ fontSize: 20 }} />,
+        path: PROJECT_ROUTES.projectMembers(workspaceSlug, projectSlug),
+        visible: projectCanManageMembers,
+      },
+       {
+        label: "Roles",
+        icon: <ShieldOutlined sx={{ fontSize: 20 }} />,
+        path: PROJECT_ROUTES.projectRoles(workspaceSlug, projectSlug),
+        visible: projectCanManageProject,
+      },
+      {
+        label: "Settings",
+        icon: <SettingsOutlined sx={{ fontSize: 20 }} />,
+        path: PROJECT_ROUTES.projectSettings(workspaceSlug, projectSlug),
+        visible: projectCanManageProject,
+      },
+    ].filter((item) => item.visible !== false);
 
   return (
     <Box

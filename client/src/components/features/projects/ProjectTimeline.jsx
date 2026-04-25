@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import {
   Box, Typography, Stack, Chip, Tooltip, IconButton,
-  CircularProgress, Button
+  CircularProgress, Button, Alert
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
 import BlockIcon from "@mui/icons-material/Block";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
@@ -15,6 +16,8 @@ import { callApi } from "../../../api/api";
 import CreateTaskDialog from "../tasks/_components/CreateTaskDialog";
 import BlockTaskDialog from "../tasks/_components/BlockTaskDialog";
 import { PROJECT_ROUTES } from "../../../lib/routes";
+import { resolveWorkspaceRole } from "../../../utils/workspaceRole.utils";
+import { isAdmin, canCreateProjectTask } from "../../../utils/permissions.utils";
 
 const PRIORITY_COLOR = { LOW: "#52c41a", MEDIUM: "#faad14", HIGH: "#f5222d" };
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -30,7 +33,7 @@ function getOffsetDays(base, date) {
 }
 
 // ─── Timeline Row ──────────────────────────────────────────────────────────────
-function TimelineRow({ task, minDate, dayWidth, onBlock, onOpen }) {
+function TimelineRow({ task, minDate, dayWidth, onBlock, onOpen, onEdit }) {
   const start = task.startDate ? new Date(task.startDate) : (task.deadline ? new Date(task.deadline) : null);
   const end = task.deadline ? new Date(task.deadline) : (task.startDate ? new Date(task.startDate) : null);
 
@@ -121,6 +124,11 @@ function TimelineRow({ task, minDate, dayWidth, onBlock, onOpen }) {
 
       {/* Block action */}
       <Box sx={{ position: "sticky", right: 0, bgcolor: "background.paper", borderLeft: "1px solid", borderColor: "divider", px: 0.5, zIndex: 2, height: "100%", display: "flex", alignItems: "center" }}>
+        <Tooltip title="Edit task">
+          <IconButton size="small" onClick={() => onEdit(task)}>
+            <EditIcon sx={{ fontSize: 16 }} />
+          </IconButton>
+        </Tooltip>
         <Tooltip title={task.isBlocked ? "Unblock" : "Block"}>
           <IconButton size="small" onClick={() => onBlock(task)}>
             {task.isBlocked
@@ -134,7 +142,7 @@ function TimelineRow({ task, minDate, dayWidth, onBlock, onOpen }) {
 }
 
 // ─── Category Group ────────────────────────────────────────────────────────────
-function CategoryGroup({ label, color, tasks, minDate, dayWidth, onBlock, onAddTask, onOpen }) {
+function CategoryGroup({ label, color, tasks, minDate, dayWidth, onBlock, onAddTask, onOpen, onEdit, canCreateTask }) {
   const [collapsed, setCollapsed] = useState(false);
   return (
     <Box sx={{ width: "fit-content", minWidth: "100%" }}>
@@ -164,15 +172,17 @@ function CategoryGroup({ label, color, tasks, minDate, dayWidth, onBlock, onAddT
         </Typography>
         <Chip size="small" label={tasks.length} sx={{ height: 18, fontSize: 10 }} />
         <Box sx={{ flex: 1 }} />
-        <Tooltip title="Add task to this category">
-          <IconButton
-            size="small"
-            onClick={e => { e.stopPropagation(); onAddTask(); }}
-            sx={{ p: 0.3 }}
-          >
-            <AddIcon sx={{ fontSize: 16 }} />
-          </IconButton>
-        </Tooltip>
+        {canCreateTask && (
+          <Tooltip title="Add task to this category">
+            <IconButton
+              size="small"
+              onClick={e => { e.stopPropagation(); onAddTask(); }}
+              sx={{ p: 0.3 }}
+            >
+              <AddIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Tooltip>
+        )}
         <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>{collapsed ? "▶" : "▼"}</Typography>
       </Box>
 
@@ -185,6 +195,7 @@ function CategoryGroup({ label, color, tasks, minDate, dayWidth, onBlock, onAddT
           dayWidth={dayWidth}
           onBlock={onBlock}
           onOpen={onOpen}
+          onEdit={onEdit}
         />
       ))}
     </Box>
@@ -196,6 +207,12 @@ export default function ProjectTimeline() {
   const { _id: projectId } = useSelector(s => s.project);
   const { workspaceSlug, projectSlug } = useParams();
   const navigate = useNavigate();
+  const workspace = useSelector(s => s.workspace);
+  const authUser = useSelector(s => s.auth?.data);
+  const project = useSelector((s) => s.project);
+  const workspaceRole = resolveWorkspaceRole(workspace, authUser);
+  const userIsAdmin = isAdmin(workspaceRole);
+  const canCreateTask = canCreateProjectTask(project);
 
   const [tasks, setTasks] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -203,6 +220,7 @@ export default function ProjectTimeline() {
   const [createOpen, setCreateOpen] = useState(false);
   const [createCategoryId, setCreateCategoryId] = useState(null);
   const [blockTarget, setBlockTarget] = useState(null);
+  const [editTarget, setEditTarget] = useState(null);
 
   // Real-time clock for the indicator line
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -211,6 +229,7 @@ export default function ProjectTimeline() {
 
   const fetchData = useCallback(async () => {
     if (!projectId) return;
+    await Promise.resolve();
     setLoading(true);
     const [taskRes, catRes] = await Promise.all([
       callApi({ method: "get", url: `/tasks/project/${projectId}` }),
@@ -221,7 +240,12 @@ export default function ProjectTimeline() {
     setLoading(false);
   }, [projectId]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void fetchData();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [fetchData]);
 
   // Update current time every minute
   useEffect(() => {
@@ -281,7 +305,7 @@ export default function ProjectTimeline() {
       // Keep it somewhat centered
       containerRef.current.scrollLeft = Math.max(0, todayOffsetPixels - 400);
     }
-  }, [loading]); // Ignore currentTime updates to avoid fighting user scroll
+  }, [loading, todayOffsetPixels]); // Ignore currentTime updates to avoid fighting user scroll
 
   // ── Group tasks by category ────────────────────────────────────────────────
   const grouped = {};
@@ -294,8 +318,18 @@ export default function ProjectTimeline() {
     grouped[cid].push(t);
   });
 
-  const handleBlocked = updated => {
-    setTasks(ts => ts.map(t => t._id === updated._id ? { ...t, ...updated } : t));
+  const handleBlocked = (updated) => {
+    const taskId = updated?.task?._id || updated?._id;
+    const nextTask = updated?.task || updated;
+    if (!taskId || !nextTask) return;
+    setTasks(ts => ts.map(t => t._id === taskId ? { ...t, ...nextTask } : t));
+  };
+
+  const handleTaskUpdated = (updatedTask) => {
+    const taskId = updatedTask?.task?._id || updatedTask?._id;
+    const nextTask = updatedTask?.task || updatedTask;
+    if (!taskId || !nextTask) return;
+    setTasks((ts) => ts.map((t) => (t._id === taskId ? { ...t, ...nextTask } : t)));
   };
 
   const handleOpen = (task) => navigate(PROJECT_ROUTES.projectTaskDetail(workspaceSlug, projectSlug, task._id));
@@ -331,10 +365,18 @@ export default function ProjectTimeline() {
         </Box>
 
         <Stack direction="row" spacing={2} alignItems="center">
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setCreateCategoryId(null); setCreateOpen(true); }} sx={{ borderRadius: 2 }}>
-            New Task
-          </Button>
+          {(userIsAdmin || canCreateTask) && (
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setCreateCategoryId(null); setCreateOpen(true); }} sx={{ borderRadius: 2 }}>
+              New Task
+            </Button>
+          )}
         </Stack>
+
+        {!userIsAdmin && (
+          <Alert severity="info" sx={{ mt: 1.5, borderRadius: 2 }}>
+            You are viewing only the tasks assigned to you across workflow stages.
+          </Alert>
+        )}
       </Box>
 
       {/* ── Main Gantt Area (Fully Scrollable) ── */}
@@ -463,11 +505,13 @@ export default function ProjectTimeline() {
                   tasks={catTasks}
                   minDate={minDate}
                   dayWidth={DAY_WIDTH}
-                  onBlock={setBlockTarget}
-                  onOpen={handleOpen}
-                  onAddTask={() => { setCreateCategoryId(cat._id); setCreateOpen(true); }}
-                />
-              );
+                onBlock={setBlockTarget}
+                onOpen={handleOpen}
+                onEdit={setEditTarget}
+                onAddTask={() => { setCreateCategoryId(cat._id); setCreateOpen(true); }}
+                canCreateTask={userIsAdmin || canCreateTask}
+              />
+            );
             })}
 
             {/* Uncategorized */}
@@ -480,7 +524,9 @@ export default function ProjectTimeline() {
                 dayWidth={DAY_WIDTH}
                 onBlock={setBlockTarget}
                 onOpen={handleOpen}
+                onEdit={setEditTarget}
                 onAddTask={() => { setCreateCategoryId(null); setCreateOpen(true); }}
+                canCreateTask={userIsAdmin || canCreateTask}
               />
             )}
 
@@ -498,6 +544,13 @@ export default function ProjectTimeline() {
         onClose={() => setCreateOpen(false)}
         onCreated={() => fetchData()}
         defaultCategoryId={createCategoryId}
+      />
+      <CreateTaskDialog
+        open={!!editTarget}
+        onClose={() => setEditTarget(null)}
+        mode="edit"
+        task={editTarget}
+        onUpdated={handleTaskUpdated}
       />
       {blockTarget && (
         <BlockTaskDialog

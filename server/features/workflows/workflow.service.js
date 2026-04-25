@@ -1,9 +1,35 @@
 import { WorkflowTemplate } from "./workflowTemplate.model.js";
 import { WorkflowStage } from "./workflowStage.model.js";
 import { WorkflowTransition } from "./workflowTransition.model.js";
+import { Task } from "../tasks/task.model.js";
+import TaskCategory from "../tasks/taskCategory.model.js";
 import mongoose from "mongoose";
 
-const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id) && String(new mongoose.Types.ObjectId(id)) === String(id);
+export const getWorkflowUsageSummary = async ({ projectId, workflowId }) => {
+  if (!projectId || !workflowId) {
+    return { taskCount: 0, categoryCount: 0, totalCount: 0, isUsed: false };
+  }
+
+  const [taskCount, categoryCount] = await Promise.all([
+    Task.countDocuments({
+      projectId: new mongoose.Types.ObjectId(projectId),
+      workflowId: new mongoose.Types.ObjectId(workflowId),
+    }),
+    TaskCategory.countDocuments({
+      projectId: new mongoose.Types.ObjectId(projectId),
+      defaultWorkflowId: new mongoose.Types.ObjectId(workflowId),
+    }),
+  ]);
+
+  const totalCount = taskCount + categoryCount;
+
+  return {
+    taskCount,
+    categoryCount,
+    totalCount,
+    isUsed: totalCount > 0,
+  };
+};
 
 export const createWorkflow = async ({ name, description, projectId, userId }) => {
   const workflow = new WorkflowTemplate({
@@ -30,7 +56,19 @@ export const createWorkflow = async ({ name, description, projectId, userId }) =
 };
 
 export const getWorkflowsByProject = async (projectId) => {
-  return WorkflowTemplate.find({ projectId }).sort({ createdAt: -1 });
+  const workflows = await WorkflowTemplate.find({ projectId }).sort({ createdAt: -1 }).lean();
+
+  const withUsage = await Promise.all(
+    workflows.map(async (workflow) => {
+      const usage = await getWorkflowUsageSummary({ projectId, workflowId: workflow._id });
+      return {
+        ...workflow,
+        usage,
+      };
+    })
+  );
+
+  return withUsage;
 };
 
 export const getWorkflowDetails = async (workflowId) => {
@@ -39,8 +77,12 @@ export const getWorkflowDetails = async (workflowId) => {
 
   const stages = await WorkflowStage.find({ workflowId }).lean();
   const transitions = await WorkflowTransition.find({ workflowId }).lean();
+  const usage = await getWorkflowUsageSummary({
+    projectId: workflow.projectId,
+    workflowId: workflow._id,
+  });
 
-  return { workflow, stages, transitions };
+  return { workflow: { ...workflow, usage }, stages, transitions };
 };
 
 export const saveWorkflowDetails = async (workflowId, payload) => {
@@ -52,9 +94,13 @@ export const saveWorkflowDetails = async (workflowId, payload) => {
 
   let targetWorkflowId = workflowId;
   let forceAllNew = false;
+  const usage = await getWorkflowUsageSummary({
+    projectId: workflow.projectId,
+    workflowId: workflow._id,
+  });
 
-  // Auto-V2 Logic: If workflow is in use (has categories), we clone it to a V2 and save edits there.
-  if (workflow.categoryIds && workflow.categoryIds.length > 0) {
+  // Auto-V2 Logic: If workflow is already in use by tasks or categories, clone it to the next version and save edits there.
+  if (usage.isUsed) {
     workflow.isEditable = false; // Lock V1
     await workflow.save();
 
@@ -137,6 +183,7 @@ export const saveWorkflowDetails = async (workflowId, payload) => {
   // 3. Handle Transitions — use isNew from frontend explicitly (or forceAllNew)
   const existingTransitions = forceAllNew ? [] : transitions.filter(t => !t.isNew);
   const newTransitions      = forceAllNew ? transitions : transitions.filter(t => t.isNew);
+  const transitionIdMap = new Map();
 
   const existingTransitionIds = existingTransitions.map(t => new mongoose.Types.ObjectId(t._id));
 
@@ -163,6 +210,7 @@ export const saveWorkflowDetails = async (workflowId, payload) => {
       requireComment: t.requireComment || false,
       meta: t.meta || {}
     });
+    transitionIdMap.set(String(t._id), String(t._id));
   }
 
   // Create new transitions
@@ -184,9 +232,17 @@ export const saveWorkflowDetails = async (workflowId, payload) => {
       meta: t.meta || {}
     });
     await newEdge.save();
+    transitionIdMap.set(String(t._id), newEdge._id.toString());
   }
 
-  return getWorkflowDetails(targetWorkflowId);
+  const data = await getWorkflowDetails(targetWorkflowId);
+  return {
+    ...data,
+    idMap: {
+      stages: Object.fromEntries(stageIdMap.entries()),
+      transitions: Object.fromEntries(transitionIdMap.entries()),
+    },
+  };
 };
 
 
@@ -255,7 +311,12 @@ export const deleteWorkflow = async (workflowId) => {
   const workflow = await WorkflowTemplate.findById(workflowId);
   if (!workflow) throw new Error("Workflow not found");
 
-  if (workflow.categoryIds && workflow.categoryIds.length > 0) {
+  const usage = await getWorkflowUsageSummary({
+    projectId: workflow.projectId,
+    workflowId: workflow._id,
+  });
+
+  if (usage.isUsed) {
     throw new Error("Cannot delete a workflow that is currently in use.");
   }
 

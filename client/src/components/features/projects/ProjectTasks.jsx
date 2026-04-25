@@ -4,19 +4,23 @@ import {
   TableContainer, TableHead, TableRow, Button, Chip,
   CircularProgress, TextField, InputAdornment, Tooltip,
   IconButton, Stack, Avatar, LinearProgress, Select,
-  MenuItem, FormControl, InputLabel,
+  MenuItem, FormControl, InputLabel, Alert,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
 import SearchIcon from "@mui/icons-material/Search";
 import BlockIcon from "@mui/icons-material/Block";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import FlagIcon from "@mui/icons-material/Flag";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { callApi } from "../../../api/api";
 import CreateTaskDialog from "../tasks/_components/CreateTaskDialog";
 import BlockTaskDialog from "../tasks/_components/BlockTaskDialog";
 import { PROJECT_ROUTES } from "../../../lib/routes";
+import { resolveWorkspaceRole } from "../../../utils/workspaceRole.utils";
+import { isAdmin, canCreateProjectTask } from "../../../utils/permissions.utils";
 
 const PRIORITY_COLOR = { LOW: "success", MEDIUM: "warning", HIGH: "error" };
 
@@ -24,6 +28,12 @@ export default function ProjectTasks() {
   const { _id: projectId } = useSelector(s => s.project);
   const { workspaceSlug, projectSlug } = useParams();
   const navigate = useNavigate();
+  const workspace = useSelector(s => s.workspace);
+  const authUser = useSelector(s => s.auth?.data);
+  const project = useSelector((s) => s.project);
+  const workspaceRole = resolveWorkspaceRole(workspace, authUser);
+  const userIsAdmin = isAdmin(workspaceRole);
+  const canCreateTask = canCreateProjectTask(project);
 
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,9 +44,11 @@ export default function ProjectTasks() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [blockTarget, setBlockTarget] = useState(null);
+  const [editTarget, setEditTarget] = useState(null);
 
   const fetchTasks = useCallback(async () => {
     if (!projectId) return;
+    await Promise.resolve();
     setLoading(true);
     const [taskRes, catRes] = await Promise.all([
       callApi({ method: "get", url: `/tasks/project/${projectId}` }),
@@ -47,7 +59,12 @@ export default function ProjectTasks() {
     setLoading(false);
   }, [projectId]);
 
-  useEffect(() => { fetchTasks(); }, [fetchTasks]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void fetchTasks();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [fetchTasks]);
 
   const filtered = tasks.filter(t => {
     const matchSearch = !search || t.title.toLowerCase().includes(search.toLowerCase());
@@ -61,7 +78,17 @@ export default function ProjectTasks() {
   });
 
   const handleTaskBlocked = (updated) => {
-    setTasks(ts => ts.map(t => t._id === updated._id ? { ...t, ...updated } : t));
+    const taskId = updated?.task?._id || updated?._id;
+    const nextTask = updated?.task || updated;
+    if (!taskId || !nextTask) return;
+    setTasks(ts => ts.map(t => t._id === taskId ? { ...t, ...nextTask } : t));
+  };
+
+  const handleTaskUpdated = (updatedTask) => {
+    const taskId = updatedTask?.task?._id || updatedTask?._id;
+    const nextTask = updatedTask?.task || updatedTask;
+    if (!taskId || !nextTask) return;
+    setTasks((ts) => ts.map((t) => (t._id === taskId ? { ...t, ...nextTask } : t)));
   };
 
   return (
@@ -72,12 +99,22 @@ export default function ProjectTasks() {
           <Typography variant="h5" fontWeight={700}>Tasks</Typography>
           <Typography variant="body2" color="text.secondary">
             {tasks.length} total · {tasks.filter(t => t.isBlocked).length} blocked
+            {!userIsAdmin && " · Showing tasks assigned to you"}
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)} sx={{ borderRadius: 2 }}>
-          New Task
-        </Button>
+        {(userIsAdmin || canCreateTask) && (
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)} sx={{ borderRadius: 2 }}>
+            New Task
+          </Button>
+        )}
       </Box>
+
+      {/* Member info banner */}
+      {!userIsAdmin && (
+        <Alert severity="info" icon={<InfoOutlinedIcon />} sx={{ mb: 2, borderRadius: 2 }}>
+          You are viewing tasks assigned to you. Contact an admin to create or view all tasks.
+        </Alert>
+      )}
 
       {/* Filters */}
       <Stack direction="row" spacing={2} mb={2} flexWrap="wrap">
@@ -133,7 +170,9 @@ export default function ProjectTasks() {
               {filtered.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} align="center" sx={{ py: 6, color: "text.secondary" }}>
-                    No tasks found
+                    {userIsAdmin
+                      ? "No tasks found"
+                      : "No tasks assigned to you yet. Ask an admin to assign you to a task."}
                   </TableCell>
                 </TableRow>
               ) : filtered.map(task => (
@@ -200,11 +239,18 @@ export default function ProjectTasks() {
                     />
                   </TableCell>
                   <TableCell align="right">
-                    <Tooltip title={task.isBlocked ? "Unblock task" : "Block task"}>
-                      <IconButton size="small" color={task.isBlocked ? "success" : "warning"} onClick={() => setBlockTarget(task)}>
-                        {task.isBlocked ? <CheckCircleIcon fontSize="small" /> : <BlockIcon fontSize="small" />}
-                      </IconButton>
-                    </Tooltip>
+                    <Stack direction="row" justifyContent="flex-end" spacing={0.5}>
+                      <Tooltip title="Edit task">
+                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); setEditTarget(task); }}>
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title={task.isBlocked ? "Unblock task" : "Block task"}>
+                        <IconButton size="small" color={task.isBlocked ? "success" : "warning"} onClick={(e) => { e.stopPropagation(); setBlockTarget(task); }}>
+                          {task.isBlocked ? <CheckCircleIcon fontSize="small" /> : <BlockIcon fontSize="small" />}
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
                   </TableCell>
                 </TableRow>
               ))}
@@ -217,6 +263,13 @@ export default function ProjectTasks() {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         onCreated={() => fetchTasks()}
+      />
+      <CreateTaskDialog
+        open={!!editTarget}
+        onClose={() => setEditTarget(null)}
+        mode="edit"
+        task={editTarget}
+        onUpdated={handleTaskUpdated}
       />
       {blockTarget && (
         <BlockTaskDialog

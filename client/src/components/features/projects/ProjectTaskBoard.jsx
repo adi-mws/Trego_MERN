@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Box, Typography, Stack, Chip, Tooltip, IconButton,
-  Paper, CircularProgress, Button, Tabs, Tab, Avatar,
-  Badge,
+  Paper, CircularProgress, Button, Tabs, Tab, Avatar, Alert, Badge,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
 import BlockIcon from "@mui/icons-material/Block";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
@@ -16,6 +16,8 @@ import { callApi } from "../../../api/api";
 import CreateTaskDialog from "../tasks/_components/CreateTaskDialog";
 import BlockTaskDialog from "../tasks/_components/BlockTaskDialog";
 import { PROJECT_ROUTES } from "../../../lib/routes";
+import { resolveWorkspaceRole } from "../../../utils/workspaceRole.utils";
+import { isAdmin, canCreateProjectTask } from "../../../utils/permissions.utils";
 
 const PRIORITY_COLOR = { LOW: "#52c41a", MEDIUM: "#faad14", HIGH: "#f5222d" };
 const PRIORITY_BG = { LOW: "#f6ffed", MEDIUM: "#fffbe6", HIGH: "#fff2f0" };
@@ -31,7 +33,7 @@ function isPending(task) {
 }
 
 // ─── Task Card ─────────────────────────────────────────────────────────────────
-function TaskCard({ task, onBlock, onOpen }) {
+function TaskCard({ task, onBlock, onOpen, onEdit }) {
   const borderColor = task.color || "#1976d2";
   const overdueFlag = isOverdue(task);
 
@@ -61,6 +63,11 @@ function TaskCard({ task, onBlock, onOpen }) {
         <Tooltip title="Open task">
           <IconButton size="small" onClick={e => { e.stopPropagation(); onOpen(task); }} sx={{ p: 0.3 }}>
             <OpenInNewIcon sx={{ fontSize: 14 }} />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Edit task">
+          <IconButton size="small" onClick={e => { e.stopPropagation(); onEdit(task); }} sx={{ p: 0.3, ml: 0.25 }}>
+            <EditIcon sx={{ fontSize: 14 }} />
           </IconButton>
         </Tooltip>
       </Stack>
@@ -96,7 +103,7 @@ function TaskCard({ task, onBlock, onOpen }) {
 }
 
 // ─── Category Column ───────────────────────────────────────────────────────────
-function CategoryColumn({ category, tasks, onBlock, onOpen, onAddTask, tab }) {
+function CategoryColumn({ category, tasks, onBlock, onOpen, onAddTask, onEdit, tab, canCreateTask }) {
   const filtered = tasks.filter(t => {
     if (tab === 0) return isPending(t);        // Pending
     if (tab === 1) return isTaskDone(t);       // Completed
@@ -138,16 +145,18 @@ function CategoryColumn({ category, tasks, onBlock, onOpen, onAddTask, tab }) {
         <Badge badgeContent={filtered.length} color="primary" sx={{ "& .MuiBadge-badge": { fontSize: 10, minWidth: 18, height: 18 } }}>
           <Box />
         </Badge>
-        <Tooltip title="Add task">
-          <IconButton size="small" onClick={onAddTask} sx={{ p: 0.3 }}>
-            <AddIcon sx={{ fontSize: 16 }} />
-          </IconButton>
-        </Tooltip>
+        {canCreateTask && (
+          <Tooltip title="Add task">
+            <IconButton size="small" onClick={onAddTask} sx={{ p: 0.3 }}>
+              <AddIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Tooltip>
+        )}
       </Box>
 
       {/* Cards */}
       <Box sx={{ p: 1.5, display: "flex", flexDirection: "column", gap: 1.5, flex: 1, overflowY: "auto", minHeight: 100, maxHeight: "calc(100vh - 300px)" }}>
-        {filtered.map(t => <TaskCard key={t._id} task={t} onBlock={onBlock} onOpen={onOpen} />)}
+        {filtered.map(t => <TaskCard key={t._id} task={t} onBlock={onBlock} onOpen={onOpen} onEdit={onEdit} />)}
         {filtered.length === 0 && (
           <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", py: 4, gap: 1 }}>
             <Typography variant="caption" color="text.disabled">
@@ -165,6 +174,12 @@ export default function ProjectTaskBoard() {
   const { _id: projectId } = useSelector(s => s.project);
   const { workspaceSlug, projectSlug } = useParams();
   const navigate = useNavigate();
+  const workspace = useSelector(s => s.workspace);
+  const authUser = useSelector(s => s.auth?.data);
+  const project = useSelector((s) => s.project);
+  const workspaceRole = resolveWorkspaceRole(workspace, authUser);
+  const userIsAdmin = isAdmin(workspaceRole);
+  const canCreateTask = canCreateProjectTask(project);
 
   const [tasks, setTasks] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -173,9 +188,11 @@ export default function ProjectTaskBoard() {
   const [createOpen, setCreateOpen] = useState(false);
   const [createCategoryId, setCreateCategoryId] = useState(null);
   const [blockTarget, setBlockTarget] = useState(null);
+  const [editTarget, setEditTarget] = useState(null);
 
   const fetchData = useCallback(async () => {
     if (!projectId) return;
+    await Promise.resolve();
     setLoading(true);
     const [taskRes, catRes] = await Promise.all([
       callApi({ method: "get", url: `/tasks/project/${projectId}` }),
@@ -186,9 +203,25 @@ export default function ProjectTaskBoard() {
     setLoading(false);
   }, [projectId]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void fetchData();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [fetchData]);
 
-  const handleBlocked = updated => setTasks(ts => ts.map(t => t._id === updated._id ? { ...t, ...updated } : t));
+  const handleBlocked = (updated) => {
+    const taskId = updated?.task?._id || updated?._id;
+    const nextTask = updated?.task || updated;
+    if (!taskId || !nextTask) return;
+    setTasks(ts => ts.map(t => t._id === taskId ? { ...t, ...nextTask } : t));
+  };
+  const handleTaskUpdated = (updatedTask) => {
+    const taskId = updatedTask?.task?._id || updatedTask?._id;
+    const nextTask = updatedTask?.task || updatedTask;
+    if (!taskId || !nextTask) return;
+    setTasks((ts) => ts.map((t) => (t._id === taskId ? { ...t, ...nextTask } : t)));
+  };
   const handleOpen = (task) => navigate(PROJECT_ROUTES.projectTaskDetail(workspaceSlug, projectSlug, task._id));
 
   // Group tasks by category
@@ -230,10 +263,18 @@ export default function ProjectTaskBoard() {
             <Typography variant="h5" fontWeight={800}>Board</Typography>
             <Typography variant="body2" color="text.secondary">{total} tasks total</Typography>
           </Box>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setCreateCategoryId(null); setCreateOpen(true); }} sx={{ borderRadius: 2 }}>
-            New Task
-          </Button>
+          {(userIsAdmin || canCreateTask) && (
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setCreateCategoryId(null); setCreateOpen(true); }} sx={{ borderRadius: 2 }}>
+              New Task
+            </Button>
+          )}
         </Stack>
+
+        {!userIsAdmin && (
+          <Alert severity="info" sx={{ mb: 1.5, borderRadius: 2 }}>
+            You are viewing only the tasks assigned to you across workflow stages.
+          </Alert>
+        )}
 
         {/* Status tabs */}
         <Tabs
@@ -257,7 +298,9 @@ export default function ProjectTaskBoard() {
             tasks={tasksByCategory[cat._id] || []}
             onBlock={setBlockTarget}
             onOpen={handleOpen}
+            onEdit={setEditTarget}
             onAddTask={() => { setCreateCategoryId(cat._id); setCreateOpen(true); }}
+            canCreateTask={userIsAdmin || canCreateTask}
             tab={tab}
           />
         ))}
@@ -269,7 +312,9 @@ export default function ProjectTaskBoard() {
             tasks={uncategorized}
             onBlock={setBlockTarget}
             onOpen={handleOpen}
+            onEdit={setEditTarget}
             onAddTask={() => { setCreateCategoryId(null); setCreateOpen(true); }}
+            canCreateTask={userIsAdmin || canCreateTask}
             tab={tab}
           />
         )}
@@ -282,6 +327,13 @@ export default function ProjectTaskBoard() {
       </Box>
 
       <CreateTaskDialog open={createOpen} onClose={() => setCreateOpen(false)} onCreated={fetchData} defaultCategoryId={createCategoryId} />
+      <CreateTaskDialog
+        open={!!editTarget}
+        onClose={() => setEditTarget(null)}
+        mode="edit"
+        task={editTarget}
+        onUpdated={handleTaskUpdated}
+      />
       {blockTarget && (
         <BlockTaskDialog open={!!blockTarget} task={blockTarget} onClose={() => setBlockTarget(null)} onBlocked={handleBlocked} />
       )}

@@ -3,6 +3,7 @@ import TaskCategory from "./taskCategory.model.js";
 import { Task } from "./task.model.js";
 import { WorkflowTemplate } from "../workflows/workflowTemplate.model.js";
 import { WorkflowStage } from "../workflows/workflowStage.model.js";
+import { TaskStageAssignee } from "./taskStageAssignee.model.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TASK CATEGORY SERVICES
@@ -147,7 +148,7 @@ export const deleteTaskCategory = async (categoryId) => {
 // TASK SERVICES
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const getTasksByProject = async (projectId, search) => {
+export const getTasksByProject = async (projectId, search, visibility = { scope: "all" }) => {
     if (!projectId) throw new Error("Project ID is required");
 
     const searchTerm = String(search || "").trim();
@@ -160,7 +161,10 @@ export const getTasksByProject = async (projectId, search) => {
         }
         : null;
 
-    const tasks = await Task.aggregate([
+    const visibilityScope = String(visibility?.scope || "all").toLowerCase();
+    const projectMemberId = visibility?.projectMemberId ? new mongoose.Types.ObjectId(visibility.projectMemberId) : null;
+
+    const pipeline = [
         {
             $match: {
                 projectId: new mongoose.Types.ObjectId(projectId),
@@ -226,12 +230,47 @@ export const getTasksByProject = async (projectId, search) => {
             $project: { outgoingTransitions: 0 },
         },
         { $sort: { createdAt: -1 } },
-    ]);
+    ];
+
+    if (visibilityScope === "member" && projectMemberId) {
+        pipeline.push(
+            {
+                $lookup: {
+                    from: "taskstageassignees",
+                    let: { taskId: "$_id" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ["$taskId", "$$taskId"] },
+                                        { $eq: ["$projectMemberId", projectMemberId] },
+                                    ],
+                                },
+                            },
+                        },
+                        { $limit: 1 },
+                    ],
+                    as: "visibilityAssignments",
+                },
+            },
+            {
+                $match: {
+                    $expr: { $gt: [{ $size: "$visibilityAssignments" }, 0] },
+                },
+            },
+            {
+                $project: { visibilityAssignments: 0 },
+            }
+        );
+    }
+
+    const tasks = await Task.aggregate(pipeline);
 
     return tasks;
 };
 
-export const createTask = async ({ projectId, title, description, createdBy, categoryId, workflowId, priority, deadline, startDate, endDate, assignees }) => {
+export const createTask = async ({ projectId, title, description, createdBy, categoryId, workflowId, priority, deadline, startDate, endDate }) => {
     if (!projectId || !title || !createdBy) throw new Error("projectId, title, and createdBy are required");
 
     let resolvedWorkflowId = workflowId || null;
@@ -259,7 +298,6 @@ export const createTask = async ({ projectId, title, description, createdBy, cat
         deadline: deadline || null,
         startDate: startDate || null,
         endDate: endDate || null,
-        assignees: assignees || [],
     });
 
     await task.save();
@@ -270,10 +308,40 @@ export const updateTask = async (taskId, updates) => {
     const task = await Task.findById(taskId);
     if (!task) throw new Error("Task not found");
 
-    const allowedFields = ["title", "description", "priority", "deadline", "startDate", "endDate", "isBlocked", "blockedReason", "assignees", "dependencies"];
+    const allowedFields = ["title", "description", "priority", "deadline", "startDate", "endDate", "isBlocked", "blockedReason", "dependencies", "categoryId"];
     allowedFields.forEach(field => {
         if (updates[field] !== undefined) task[field] = updates[field];
     });
+
+    if (Object.prototype.hasOwnProperty.call(updates, "workflowId")) {
+        const nextWorkflowId = updates.workflowId || null;
+        const currentWorkflowId = task.workflowId ? String(task.workflowId) : null;
+        const desiredWorkflowId = nextWorkflowId ? String(nextWorkflowId) : null;
+
+        if (currentWorkflowId !== desiredWorkflowId) {
+            const hasStageAssignees = await TaskStageAssignee.exists({ taskId });
+
+            let currentStageIsStart = true;
+            if (task.currentStageId) {
+                const currentStage = await WorkflowStage.findById(task.currentStageId).lean();
+                currentStageIsStart = Boolean(currentStage?.isStart);
+            }
+
+            if (hasStageAssignees && !currentStageIsStart) {
+                throw new Error("Cannot switch workflow while the task is already in progress.");
+            }
+
+            await TaskStageAssignee.deleteMany({ taskId });
+
+            task.workflowId = desiredWorkflowId;
+            if (desiredWorkflowId) {
+                const startStage = await WorkflowStage.findOne({ workflowId: desiredWorkflowId, isStart: true }).lean();
+                task.currentStageId = startStage?._id || null;
+            } else {
+                task.currentStageId = null;
+            }
+        }
+    }
 
     await task.save();
     return task;

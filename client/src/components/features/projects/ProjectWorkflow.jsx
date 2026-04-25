@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import ReactFlow, {
   addEdge,
   applyEdgeChanges,
@@ -11,7 +11,8 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import { selectStyledEdges } from "../../../redux/selectors/workflowSelectors";
 import dagre from "dagre";
-import { Box } from "@mui/material";
+import { Box, Button, Chip, Stack, Typography } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 import WorkflowNode from "./_components/WorkflowNode";
 import WorkflowSidebar from "./_components/WorkflowSidebar";
@@ -20,6 +21,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import { PROJECT_ROUTES } from "../../../lib/routes";
 import { fetchWorkflowDetails, setEdges, setIsDirty, setLayoutDir, selectEdge, selectNode, setNodes, clearSelection, resetWorkflow } from "../../../redux/slices/workflowSlice";
+import ProjectPermissionGate from "./_components/ProjectPermissionGate";
 
 const nodeTypes = { workflow: WorkflowNode };
 
@@ -64,12 +66,14 @@ const getLayoutedElements = (nodes, edges, direction = "TB") => {
 function WorkflowBuilderInner() {
   const { workspaceSlug, projectSlug, workflowId } = useParams();
   const navigate = useNavigate();
-  const { _id: reduxWorkflowId, nodes, edges: rawEdges, selectedNode, selectedEdge, layoutDir, isLoading, isSaving, isDirty, error, isEditable } = useSelector((state) => state.workflow);
+  const { redirectWorkflowId, edges: rawEdges, layoutDir, isDirty, isEditable, name, version, usage, selectedNode, selectedEdge } = useSelector((state) => state.workflow);
+  const workflowNodes = useSelector((state) => state.workflow.nodes);
   const edges = useSelector(selectStyledEdges)
 
   const dispatch = useDispatch();
   const hasRedirected = useRef(false);
   const isInitialLayout = useRef(true);
+  const [flowNodes, setFlowNodes] = useState([]);
 
   // Reset redirect guard when URL workflowId changes
   useEffect(() => {
@@ -88,12 +92,20 @@ function WorkflowBuilderInner() {
   }, [dispatch, workflowId]);
 
   useEffect(() => {
-    // If the backend auto-cloned the workflow to a V2 during a save, redirect ONCE
-    if (reduxWorkflowId && workflowId && reduxWorkflowId !== workflowId && !hasRedirected.current) {
+    const timer = window.setTimeout(() => {
+      setFlowNodes(workflowNodes);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [workflowNodes]);
+
+  useEffect(() => {
+    // If the backend auto-cloned the workflow to a V2 during a save, redirect ONCE.
+    if (redirectWorkflowId && workflowId && redirectWorkflowId !== workflowId && !hasRedirected.current) {
       hasRedirected.current = true;
-      navigate(PROJECT_ROUTES.projectWorkflowDetail(workspaceSlug, projectSlug, reduxWorkflowId), { replace: true });
+      navigate(PROJECT_ROUTES.projectWorkflowDetail(workspaceSlug, projectSlug, redirectWorkflowId), { replace: true });
     }
-  }, [reduxWorkflowId, workflowId, navigate, workspaceSlug, projectSlug]);
+  }, [redirectWorkflowId, workflowId, navigate, workspaceSlug, projectSlug]);
 
   useEffect(() => {
     const handleBeforeUnload = (event) => {
@@ -113,23 +125,46 @@ function WorkflowBuilderInner() {
 
   const onNodesChange = useCallback(
     (changes) => {
-      const updatedNodes = applyNodeChanges(changes, nodes);
-      dispatch(setNodes(updatedNodes));
+      const updatedNodes = applyNodeChanges(changes, flowNodes);
 
-      // Don't mark dirty during initial auto-layout
-      if (isInitialLayout.current) return;
+      const hasMeaningfulChange = changes.some((change) => {
+        if (change.type !== "position") return true;
+        const previousNode = flowNodes.find((node) => node.id === change.id);
+        const nextNode = updatedNodes.find((node) => node.id === change.id);
+        if (!previousNode || !nextNode) return true;
+        return (
+          previousNode.position?.x !== nextNode.position?.x ||
+          previousNode.position?.y !== nextNode.position?.y
+        );
+      });
 
-      const dirtyTypes = ["remove", "add", "reset", "position"];
-      const hasDirtyChange = changes.some((change) => dirtyTypes.includes(change.type) && (!change.dragging));
-      if (hasDirtyChange) {
-        dispatch(setIsDirty(true));
+      if (!hasMeaningfulChange) {
+        return;
+      }
+
+      setFlowNodes(updatedNodes);
+
+      const structuralChanges = changes.some((change) => ["add", "remove", "reset"].includes(change.type));
+      if (structuralChanges) {
+        dispatch(setNodes(updatedNodes));
+        if (!isInitialLayout.current) {
+          dispatch(setIsDirty(true));
+        }
       }
     },
-    [nodes, dispatch]
+    [flowNodes, dispatch]
   );
 
   const onEdgesChange = useCallback(
     (changes) => {
+      const structuralChanges = changes.filter((change) =>
+        ["add", "remove", "reset"].includes(change.type)
+      );
+
+      if (structuralChanges.length === 0) {
+        return;
+      }
+
       // Operate on RAW edges (not styled) so we don't persist visual decorations to state
       const updatedEdges = applyEdgeChanges(changes, rawEdges);
       dispatch(setEdges(updatedEdges));
@@ -147,28 +182,34 @@ function WorkflowBuilderInner() {
 
 
   const layoutGraph = useCallback(
-    (nds = nodes, eds = edges) => {
+    (nds = flowNodes, eds = edges) => {
       const layoutedNodes = getLayoutedElements(nds, eds, "TB");
+      setFlowNodes(layoutedNodes);
       dispatch(setNodes(layoutedNodes));
 
       setTimeout(() => {
         fitView({ padding: 0.2 });
       }, 50);
     },
-    [nodes, edges, dispatch, fitView]
+    [flowNodes, edges, dispatch, fitView]
   );
 
   useEffect(() => {
-    if (nodes.length === 0) return;
-    const allAtOrigin = nodes.every(n => n.position.x === 0 && n.position.y === 0);
+    if (flowNodes.length === 0) return;
+    if (!isInitialLayout.current) return;
+
+    const allAtOrigin = flowNodes.every(n => n.position.x === 0 && n.position.y === 0);
     if (allAtOrigin) {
-      layoutGraph();
+      const timer = window.setTimeout(() => {
+        layoutGraph();
+      }, 0);
+      return () => window.clearTimeout(timer);
     } else {
       setTimeout(() => fitView({ padding: 0.2 }), 50);
     }
     // Mark initial layout complete after a short delay
     setTimeout(() => { isInitialLayout.current = false; }, 500);
-  }, [nodes.length]);
+  }, [flowNodes, fitView, layoutGraph]);
 
   const onConnect = useCallback(
     (params) => {
@@ -193,20 +234,20 @@ function WorkflowBuilderInner() {
       const newEdges = addEdge(newEdge, rawEdges);
       dispatch(setEdges(newEdges));
       dispatch(setIsDirty(true));
-      layoutGraph(nodes, newEdges);
+      layoutGraph(flowNodes, newEdges);
     },
-    [rawEdges, nodes, dispatch, layoutGraph]
+    [rawEdges, flowNodes, dispatch, layoutGraph]
   );
 
 
 
   const handleCenterView = () => {
-    const nodes = getNodes();
+    const visibleNodes = getNodes();
 
-    if (!nodes.length) return;
+    if (!flowNodes.length || !visibleNodes.length) return;
 
     fitView({
-      nodes,
+      nodes: flowNodes,
       padding: 0.3,
       duration: 600,
     });
@@ -215,14 +256,15 @@ function WorkflowBuilderInner() {
 
 
   const handleAutoLayout = () => {
-    if (!nodes.length) return;
+    if (!flowNodes.length) return;
 
     const layoutedNodes = getLayoutedElements(
-      nodes.map((n) => ({ ...n })),
+      flowNodes.map((n) => ({ ...n })),
       edges,
       layoutDir
     );
 
+    setFlowNodes(layoutedNodes);
     dispatch(setNodes(layoutedNodes));
 
     fitView({
@@ -232,10 +274,11 @@ function WorkflowBuilderInner() {
   };
 
   const handleHorizontalView = () => {
-    if (!nodes.length) return;
+    if (!flowNodes.length) return;
     dispatch(setLayoutDir("LR"));
-    const layoutedNodes = getLayoutedElements(nodes, edges, "LR");
+    const layoutedNodes = getLayoutedElements(flowNodes, edges, "LR");
 
+    setFlowNodes(layoutedNodes);
     dispatch(setNodes(layoutedNodes));
 
     fitView({
@@ -245,11 +288,12 @@ function WorkflowBuilderInner() {
   };
 
   const handleVerticalView = () => {
-    if (!nodes.length) return;
+    if (!flowNodes.length) return;
     dispatch(setLayoutDir("TB"));
 
-    const layoutedNodes = getLayoutedElements(nodes, edges, "TB");
+    const layoutedNodes = getLayoutedElements(flowNodes, edges, "TB");
 
+    setFlowNodes(layoutedNodes);
     dispatch(setNodes(layoutedNodes));
 
     fitView({
@@ -260,16 +304,17 @@ function WorkflowBuilderInner() {
   };
 
   const handleRecalculateFlow = () => {
-    if (!nodes.length) return;
+    if (!flowNodes.length) return;
 
     const direction = layoutDir || "TB";
 
     const layoutedNodes = getLayoutedElements(
-      nodes.map((n) => ({ ...n, position: { x: 0, y: 0 } })),
+      flowNodes.map((n) => ({ ...n, position: { x: 0, y: 0 } })),
       edges,
       direction
     );
 
+    setFlowNodes(layoutedNodes);
     dispatch(setNodes(layoutedNodes));
 
     setTimeout(() => {
@@ -294,11 +339,56 @@ function WorkflowBuilderInner() {
   }
 
   return (
-    <Box sx={{ display: "flex", height: "100%", overflow: 'hidden', minHeight: 0 }}>
-      <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        <Box sx={{ flex: 1, minHeight: 0 }}>
+    <ProjectPermissionGate
+      permission="canManageProject"
+      title="You do not have permission to manage workflows"
+      message="Ask a project admin to edit the workflow designer."
+    >
+    <Box sx={{ display: "flex", height: "100%", overflow: 'hidden', minHeight: 0, flexDirection: "column" }}>
+      <Box
+        sx={{
+          px: 1.75,
+          py: 0.75,
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          bgcolor: "background.paper",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 2,
+          flexShrink: 0,
+        }}
+      >
+        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+          <Button
+            variant="text"
+            size="small"
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate(PROJECT_ROUTES.projectWorkflows(workspaceSlug, projectSlug))}
+          >
+            Back to workflows
+          </Button>
+          <Typography variant="body2" fontWeight={700} noWrap>
+            {name || "Untitled Workflow"}
+          </Typography>
+        </Stack>
+        <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
+          <Chip label={`V${version || 1}`} size="small" color="primary" variant="outlined" />
+          {usage?.totalCount > 0 && (
+            <Chip
+              label={`Used by ${usage.taskCount || 0} tasks, ${usage.categoryCount || 0} categories`}
+              size="small"
+              color="warning"
+              variant="outlined"
+            />
+          )}
+        </Stack>
+      </Box>
+      <Box sx={{ flex: 1, display: "flex", minHeight: 0 }}>
+        <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+          <Box sx={{ flex: 1, minHeight: 0 }}>
           <ReactFlow
-            nodes={nodes}
+            nodes={flowNodes}
             edges={edges}
             nodeTypes={nodeTypes}
             onNodesChange={isEditable ? onNodesChange : undefined}
@@ -307,16 +397,17 @@ function WorkflowBuilderInner() {
             nodesDraggable={isEditable}
             nodesConnectable={isEditable}
             elementsSelectable={true}
-            fitView
             onNodeClick={(e, node) => {
               e.stopPropagation();
-              // console.log('onNodeClick fired', node);
-              dispatch(selectNode(node));
+              if (selectedNode?.id !== node.id) {
+                dispatch(selectNode(node));
+              }
             }}
             onEdgeClick={(e, edge) => {
               e.stopPropagation();
-              // console.log('onEdgeClick fired', edge);
-              dispatch(selectEdge(edge));
+              if (selectedEdge?.id !== edge.id) {
+                dispatch(selectEdge(edge));
+              }
             }}
             onPaneClick={(event) => {
               const target = event.target;
@@ -328,13 +419,14 @@ function WorkflowBuilderInner() {
             <Controls />
             <Background gap={20} size={1} />
           </ReactFlow>
+          </Box>
         </Box>
+
+        {isEditable && <WorkflowControls workflowActions={actions} />}
+        <WorkflowSidebar />
       </Box>
-
-      {isEditable && <WorkflowControls workflowActions={actions} />}
-
-      <WorkflowSidebar />
     </Box>
+    </ProjectPermissionGate>
   );
 }
 

@@ -3,12 +3,14 @@ import ensureAuth from "../../middlewares/ensureAuth.js";
 import {
     getCategories, createCategory, updateCategory, deleteCategory,
     getTasks, createTask, updateTask, assignToCategory, removeFromCategory, switchWorkflow, deleteTask,
+    updateTaskAssignees,
 } from "./task.controller.js";
 import {
     getTaskDetail, addComment, getProjectComments, deleteComment,
     addSubtask, toggleSubtask, deleteSubtask,
     getTaskStateHistory, getProjectStateHistory,
     getAvailableTransitions, advanceTaskStage,
+    getTaskStageAssignees, addStageAssignee, replaceStageAssignees, deleteStageAssignee,
 } from "./taskExtra.controller.js";
 
 const router = express.Router();
@@ -27,8 +29,15 @@ router.get("/project/:projectId/state-history", ensureAuth, getProjectStateHisto
 
 // ─── Single Task ──────────────────────────────────────────────────────────────
 router.get("/:taskId/detail", ensureAuth, getTaskDetail);
+router.get("/:taskId/stage-assignees", ensureAuth, getTaskStageAssignees);
 router.put("/:taskId", ensureAuth, updateTask);
 router.delete("/:taskId", ensureAuth, deleteTask);
+
+// ─── Task Assignees (Admin only) ──────────────────────────────────────────────
+router.patch("/:taskId/assignees", ensureAuth, updateTaskAssignees);
+router.post("/:taskId/stages/:stageId/assignees", ensureAuth, addStageAssignee);
+router.put("/:taskId/stages/:stageId/assignees", ensureAuth, replaceStageAssignees);
+router.delete("/:taskId/stages/:stageId/assignees/:projectMemberId", ensureAuth, deleteStageAssignee);
 
 // ─── Task Category / Workflow ops ─────────────────────────────────────────────
 router.post("/:taskId/assign-category", ensureAuth, assignToCategory);

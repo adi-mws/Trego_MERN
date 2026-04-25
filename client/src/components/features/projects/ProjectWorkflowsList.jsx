@@ -1,132 +1,265 @@
-import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Chip, CircularProgress } from "@mui/material";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Box,
+  Typography,
+  Paper,
+  TableContainer,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  Button,
+  Chip,
+  CircularProgress,
+  Tooltip,
+  IconButton,
+  Stack,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+} from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
 import { PROJECT_ROUTES } from "../../../lib/routes";
-import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { callApi } from "../../../api/api";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { Tooltip, IconButton } from "@mui/material";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import ProjectPermissionGate from "./_components/ProjectPermissionGate";
+
+function groupWorkflows(workflows = []) {
+  const groups = new Map();
+
+  workflows.forEach((workflow) => {
+    const rootId = String(workflow.originalWorkflowId || workflow._id);
+    if (!groups.has(rootId)) {
+      groups.set(rootId, {
+        rootId,
+        name: workflow.name,
+        workflows: [],
+      });
+    }
+
+    groups.get(rootId).workflows.push(workflow);
+  });
+
+  return [...groups.values()].map((group) => ({
+    ...group,
+    workflows: group.workflows.sort((a, b) => (b.version || 0) - (a.version || 0)),
+  })).sort((a, b) => {
+    const aLatest = a.workflows[0]?.version || 0;
+    const bLatest = b.workflows[0]?.version || 0;
+    if (aLatest !== bLatest) return bLatest - aLatest;
+    return String(a.name || "").localeCompare(String(b.name || ""));
+  });
+}
 
 export default function ProjectWorkflowsList() {
-    const navigate = useNavigate();
-    const { workspaceSlug, projectSlug } = useParams();
+  const navigate = useNavigate();
+  const { workspaceSlug, projectSlug } = useParams();
 
-    const { _id: projectId } = useSelector(state => state.project);
-    const [workflows, setWorkflows] = useState([]);
-    const [loading, setLoading] = useState(true);
+  const { _id: projectId } = useSelector((state) => state.project);
+  const [workflows, setWorkflows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedVersions, setSelectedVersions] = useState({});
 
-    useEffect(() => {
-        const fetchWorkflows = async () => {
-            if (!projectId) return;
-            setLoading(true);
-            const res = await callApi({ method: "get", url: `/workflows/project/${projectId}` });
-            if (res.success) {
-                setWorkflows(res.data.data);
-            }
-            setLoading(false);
-        }
-        fetchWorkflows();
-    }, [projectId]);
-
-    const handleCreate = async () => {
-        if (!projectId) return;
-        const res = await callApi({ method: "post", url: `/workflows`, data: { projectId, name: "New Workflow" } });
-        if (res.success) {
-            const newWf = res.data.data;
-            navigate(PROJECT_ROUTES.projectWorkflowDetail(workspaceSlug, projectSlug, newWf._id));
-        }
+  useEffect(() => {
+    const fetchWorkflows = async () => {
+      if (!projectId) return;
+      setLoading(true);
+      const res = await callApi({ method: "get", url: `/workflows/project/${projectId}` });
+      if (res.success) {
+        const items = res.data.data || [];
+        setWorkflows(items);
+        const groups = groupWorkflows(items);
+        setSelectedVersions((prev) => {
+          const next = {};
+          groups.forEach((group) => {
+            const existing = prev[group.rootId];
+            const fallback = group.workflows[0]?._id || "";
+            next[group.rootId] = existing || fallback;
+          });
+          return next;
+        });
+      }
+      setLoading(false);
     };
 
-    const handleDelete = async (workflowId) => {
-        const res = await callApi({ method: "delete", url: `/workflows/${workflowId}` });
-        if (res.success) {
-            setWorkflows(workflows.filter(wf => wf._id !== workflowId));
-        } else {
-            console.error("Failed to delete workflow");
-        }
-    };
+    fetchWorkflows();
+  }, [projectId]);
 
-    return (
-        <Box sx={{ p: 3, height: "100%", display: "flex", flexDirection: "column" }}>
-            <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
-                <Typography variant="h5" fontWeight={600}>Workflows</Typography>
-                <Button 
-                    variant="contained" 
-                    startIcon={<AddIcon />}
-                    onClick={handleCreate}
-                >
-                    Create Workflow
-                </Button>
-            </Box>
+  const groupedWorkflows = useMemo(() => groupWorkflows(workflows), [workflows]);
 
-            {loading ? (
-                <Box sx={{ display: "flex", justifyContent: "center", mt: 5 }}>
-                    <CircularProgress />
-                </Box>
-            ) : (
+  const handleCreate = async () => {
+    if (!projectId) return;
+    const res = await callApi({ method: "post", url: `/workflows`, data: { projectId, name: "New Workflow" } });
+    if (res.success) {
+      const newWf = res.data.data;
+      navigate(PROJECT_ROUTES.projectWorkflowDetail(workspaceSlug, projectSlug, newWf._id));
+    }
+  };
 
-            <TableContainer component={Paper} variant="outlined">
-                <Table>
-                    <TableHead sx={{ bgcolor: "background.default" }}>
-                        <TableRow>
-                            <TableCell>Name</TableCell>
-                            <TableCell>Version</TableCell>
-                            <TableCell>Status</TableCell>
-                            <TableCell>Editable</TableCell>
-                            <TableCell align="right">Actions</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {workflows.map((wf) => (
-                            <TableRow key={wf._id}>
-                                <TableCell sx={{ fontWeight: 500 }}>{wf.name}</TableCell>
-                                <TableCell>V{wf.version}</TableCell>
-                                <TableCell>
-                                    <Chip 
-                                        label={wf.isActive ? "Active" : "Draft"} 
-                                        color={wf.isActive ? "success" : "default"} 
-                                        size="small" 
-                                    />
-                                </TableCell>
-                                <TableCell>
-                                    <Chip 
-                                        label={wf.isEditable ? "Yes" : "Read-only"} 
-                                        color={wf.isEditable ? "primary" : "error"} 
-                                        size="small" 
-                                        variant="outlined"
-                                    />
-                                </TableCell>
-                                <TableCell align="right">
-                                    <Button 
-                                        variant="outlined" 
-                                        size="small"
-                                        onClick={() => navigate(PROJECT_ROUTES.projectWorkflowDetail(workspaceSlug, projectSlug, wf._id))}
-                                        sx={{ mr: 1 }}
-                                    >
-                                        Open
-                                    </Button>
-                                    <Tooltip 
-                                        title={wf.categoryIds?.length > 0 ? "already in work now.. not possible to remove it .." : "Delete Workflow"}
-                                    >
-                                        <span>
-                                            <IconButton 
-                                                size="small" 
-                                                color="error" 
-                                                onClick={() => handleDelete(wf._id)}
-                                                disabled={wf.categoryIds?.length > 0}
-                                            >
-                                                <DeleteIcon fontSize="small" />
-                                            </IconButton>
-                                        </span>
-                                    </Tooltip>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
-            )}
+  const handleDelete = async (workflowId) => {
+    const res = await callApi({ method: "delete", url: `/workflows/${workflowId}` });
+    if (res.success) {
+      setWorkflows((prev) => prev.filter((wf) => wf._id !== workflowId));
+      setSelectedVersions((prev) => {
+        const next = { ...prev };
+        Object.keys(next).forEach((rootId) => {
+          if (next[rootId] === workflowId) {
+            delete next[rootId];
+          }
+        });
+        return next;
+      });
+    } else {
+      console.error("Failed to delete workflow");
+    }
+  };
+
+  return (
+    <ProjectPermissionGate
+      permission="canManageProject"
+      title="You do not have permission to manage workflows"
+      message="Ask a project admin to edit workflows."
+    >
+      <Box sx={{ p: 3, height: "100%", display: "flex", flexDirection: "column" }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
+          <Box>
+            <Typography variant="h5" fontWeight={600}>
+              Workflows
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Versions are grouped so you can switch between v1, v2, and later revisions in one place.
+            </Typography>
+          </Box>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleCreate}>
+            Create Workflow
+          </Button>
         </Box>
-    );
+
+        {loading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", mt: 5 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3 }}>
+            <Table>
+              <TableHead sx={{ bgcolor: "background.default" }}>
+                <TableRow>
+                  <TableCell>Workflow</TableCell>
+                  <TableCell>Version</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Editable</TableCell>
+                  <TableCell align="right">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {groupedWorkflows.map((group) => {
+                  const selectedWorkflowId = selectedVersions[group.rootId] || group.workflows[0]?._id;
+                  const selectedWorkflow = group.workflows.find((wf) => wf._id === selectedWorkflowId) || group.workflows[0];
+
+                  return (
+                    <TableRow key={group.rootId} hover>
+                      <TableCell sx={{ fontWeight: 500 }}>
+                        <Stack spacing={0.5}>
+                          <Typography fontWeight={600}>{group.name}</Typography>
+                          <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
+                            {group.workflows.map((wf) => (
+                              <Chip
+                                key={wf._id}
+                                label={`V${wf.version}${wf._id === group.workflows[0]?._id ? " latest" : ""}`}
+                                size="small"
+                                color={selectedWorkflow?._id === wf._id ? "primary" : "default"}
+                                variant={selectedWorkflow?._id === wf._id ? "filled" : "outlined"}
+                              />
+                            ))}
+                          </Stack>
+                        </Stack>
+                      </TableCell>
+                      <TableCell sx={{ minWidth: 220 }}>
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Choose version</InputLabel>
+                          <Select
+                            label="Choose version"
+                            value={selectedWorkflowId || ""}
+                            onChange={(e) =>
+                              setSelectedVersions((prev) => ({
+                                ...prev,
+                                [group.rootId]: e.target.value,
+                              }))
+                            }
+                            IconComponent={KeyboardArrowDownIcon}
+                          >
+                            {group.workflows.map((wf) => (
+                              <MenuItem key={wf._id} value={wf._id}>
+                                V{wf.version}{wf._id === group.workflows[0]?._id ? " (latest)" : ""}
+                                {wf.originalWorkflowId ? " (clone)" : " (original)"}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </TableCell>
+                      <TableCell>
+                        <Stack spacing={0.75}>
+                          <Chip
+                            label={selectedWorkflow?.isActive ? "Active" : "Draft"}
+                            color={selectedWorkflow?.isActive ? "success" : "default"}
+                            size="small"
+                          />
+                          {(selectedWorkflow?.usage?.totalCount > 0 || selectedWorkflow?.categoryIds?.length > 0) && (
+                            <Chip
+                              label={`Used by ${selectedWorkflow?.usage?.taskCount || 0} tasks, ${selectedWorkflow?.usage?.categoryCount || 0} categories`}
+                              color="warning"
+                              size="small"
+                              variant="outlined"
+                            />
+                          )}
+                        </Stack>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={selectedWorkflow?.isEditable ? "Yes" : "Read-only"}
+                          color={selectedWorkflow?.isEditable ? "primary" : "error"}
+                          size="small"
+                          variant="outlined"
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <Stack direction="row" spacing={1} justifyContent="flex-end">
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() =>
+                              navigate(PROJECT_ROUTES.projectWorkflowDetail(workspaceSlug, projectSlug, selectedWorkflow._id))
+                            }
+                          >
+                            Open
+                          </Button>
+                          <Tooltip title={(selectedWorkflow.usage?.totalCount > 0 || selectedWorkflow.categoryIds?.length > 0) ? "This workflow is currently used, so it cannot be deleted." : "Delete Workflow"}>
+                            <span>
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => handleDelete(selectedWorkflow._id)}
+                                disabled={selectedWorkflow.usage?.totalCount > 0 || selectedWorkflow.categoryIds?.length > 0}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </Box>
+    </ProjectPermissionGate>
+  );
 }

@@ -30,6 +30,7 @@ import AccountTreeOutlinedIcon from "@mui/icons-material/AccountTreeOutlined";
 import TaskAltIcon from "@mui/icons-material/TaskAlt";
 import { useSelector } from "react-redux";
 import { callApi } from "../../../api/api";
+import ProjectPermissionGate from "../projects/_components/ProjectPermissionGate";
 
 const COLOR_PRESETS = [
   "#1890ff", "#52c41a", "#faad14", "#f5222d",
@@ -49,13 +50,17 @@ function CategoryDialog({ open, onClose, onSave, initial, workflows, loading }) 
 
   useEffect(() => {
     if (open) {
-      setError("");
-      setForm({
-        name: initial?.name || "",
-        description: initial?.description || "",
-        color: initial?.color || "#1890ff",
-        defaultWorkflowId: initial?.defaultWorkflowId?._id || initial?.defaultWorkflowId || "",
-      });
+      const timer = window.setTimeout(() => {
+        setError("");
+        setForm({
+          name: initial?.name || "",
+          description: initial?.description || "",
+          color: initial?.color || "#1890ff",
+          defaultWorkflowId: initial?.defaultWorkflowId?._id || initial?.defaultWorkflowId || "",
+        });
+      }, 0);
+
+      return () => window.clearTimeout(timer);
     }
   }, [open, initial]);
 
@@ -211,8 +216,12 @@ const TaskCategories = () => {
   }, [projectId]);
 
   useEffect(() => {
-    fetchCategories();
-    fetchWorkflows();
+    const timer = window.setTimeout(() => {
+      void fetchCategories();
+      void fetchWorkflows();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [fetchCategories, fetchWorkflows]);
 
   // ── Create ─────────────────────────────────────────────────────────────────
@@ -268,6 +277,11 @@ const TaskCategories = () => {
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
+    <ProjectPermissionGate
+      permission="canManageProject"
+      title="You do not have permission to manage task categories"
+      message="Ask a project admin to change task categories."
+    >
     <Box sx={{ p: 3, width: "100%", maxWidth: "none", mx: 0 }}>
       {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
@@ -424,6 +438,7 @@ const TaskCategories = () => {
         loading={saving}
       />
     </Box>
+    </ProjectPermissionGate>
   );
 };
 

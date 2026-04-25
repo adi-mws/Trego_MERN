@@ -4,6 +4,8 @@ import { WorkspaceMember } from "./workspaceMember.model.js";
 import { WorkspaceInvite } from "./workspaceInvite.model.js";
 import { WorkspaceHealth } from "./workspaceHealth.model.js";
 import { Project } from "../projects/project.model.js";
+import { ProjectMember } from "../projects/projectMember.model.js";
+import { ensureProjectClientRole } from "../projects/project.service.js";
 import crypto from "crypto";
 import { User } from "../user/user.model.js";
 
@@ -115,6 +117,7 @@ export const getWorkspaceGlobalState = async (workspaceSlug, userId) => {
   }));
 
   let currentUserRole = null;
+  let isAdmin = false;
 
   if (userId) {
     const currentMember = memberDocs.find(
@@ -122,13 +125,35 @@ export const getWorkspaceGlobalState = async (workspaceSlug, userId) => {
     );
 
     currentUserRole = currentMember?.role || null;
+    isAdmin = ["OWNER", "ADMIN"].includes(currentUserRole);
   }
 
-  const projects = await Project.find({
-    workspace: workspace._id,
-  })
-    .select("name slug avatar createdBy createdAt")
-    .lean();
+  let projects;
+
+  if (isAdmin) {
+    // Admins see all workspace projects
+    projects = await Project.find({
+      workspace: workspace._id,
+    })
+      .select("name slug avatar createdBy createdAt description workspace")
+      .lean();
+  } else {
+    // Members (and clients) only see projects they are part of
+    const projectMemberships = await ProjectMember.find({
+      user: userId,
+    })
+      .select("project")
+      .lean();
+
+    const memberProjectIds = projectMemberships.map((pm) => pm.project);
+
+    projects = await Project.find({
+      workspace: workspace._id,
+      _id: { $in: memberProjectIds },
+    })
+      .select("name slug avatar createdBy createdAt description workspace")
+      .lean();
+  }
 
   return {
     _id: workspace._id,
@@ -140,6 +165,7 @@ export const getWorkspaceGlobalState = async (workspaceSlug, userId) => {
     members,
     totalMembers: members.length,
     currentUserRole,
+    isAdmin,
     projects,
   };
 };
@@ -713,6 +739,38 @@ export const updateWorkspaceMemberRole = async ({
     { _id: memberId },
     { role: newRole }
   );
+
+  if (String(newRole || "").toUpperCase() === "CLIENT") {
+    const targetProjects = await Project.find({
+      workspace: workspaceId,
+    })
+      .select("_id")
+      .lean();
+
+    const clientRoleForProjects = await Promise.all(
+      targetProjects.map((project) => ensureProjectClientRole(project._id))
+    );
+
+    const roleIdsByProject = new Map(
+      clientRoleForProjects.map((role) => [String(role.project), role._id])
+    );
+
+    const projectMemberDocs = await ProjectMember.find({
+      project: { $in: targetProjects.map((project) => project._id) },
+      user: targetMember.userId,
+    }).select("_id project");
+
+    await Promise.all(
+      projectMemberDocs.map((projectMember) =>
+        ProjectMember.updateOne(
+          { _id: projectMember._id },
+          {
+            roles: [roleIdsByProject.get(String(projectMember.project))],
+          }
+        )
+      )
+    );
+  }
 
   return {
     message: "Role updated successfully",

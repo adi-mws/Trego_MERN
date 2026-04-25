@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Typography,
@@ -25,6 +25,7 @@ import { useSelector } from "react-redux";
 import { callApi } from "../../../api/api";
 import { useAlert } from "../../../hooks/useAlert";
 import { ProjectInviteDialog } from "./_components/ProjectInviteDialog";
+import ProjectPermissionGate from "./_components/ProjectPermissionGate";
 
 export default function ProjectMembers() {
   const alert = useAlert();
@@ -59,28 +60,47 @@ export default function ProjectMembers() {
     }
   };
 
-  const fetchRoles = async () => {
-    const res = await callApi({
-      method: "get",
-      url: `/projects/${projectId}/roles`,
-    });
-
-    if (res.success) {
-      setRoles(res.data.roles || []);
-    }
-  };
-
   useEffect(() => {
     if (projectId) {
-      fetchRoles();
+      const timer = window.setTimeout(() => {
+        void (async () => {
+          const res = await callApi({
+            method: "get",
+            url: `/projects/${projectId}/roles`,
+          });
+
+          if (res.success) {
+            setRoles(res.data.roles || []);
+          }
+        })();
+      }, 0);
+
+      return () => window.clearTimeout(timer);
     }
   }, [projectId]);
 
   useEffect(() => {
     if (projectId) {
-      fetchMembers();
+      const timer = window.setTimeout(() => {
+        void (async () => {
+          const query = search ? `?search=${encodeURIComponent(search)}` : "";
+
+          const res = await callApi({
+            method: "get",
+            url: `/projects/${projectId}/members${query}`,
+          });
+
+          if (res.success) {
+            setMembers(res.data.members || []);
+          } else {
+            alert("Failed to fetch members", "error");
+          }
+        })();
+      }, 0);
+
+      return () => window.clearTimeout(timer);
     }
-  }, [search, projectId])
+  }, [alert, projectId, search])
 
 
   /* ---------------- FILTER ---------------- */
@@ -131,6 +151,11 @@ export default function ProjectMembers() {
   /* ---------------- UI ---------------- */
 
   return (
+    <ProjectPermissionGate
+      permission="canManageMembers"
+      title="You do not have permission to view project members"
+      message="Ask a project admin to grant member management access."
+    >
     <Box>
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" mb={2}>
@@ -257,5 +282,6 @@ export default function ProjectMembers() {
         mode={editMember ? "edit" : "create"}
       />
     </Box>
+    </ProjectPermissionGate>
   );
 }

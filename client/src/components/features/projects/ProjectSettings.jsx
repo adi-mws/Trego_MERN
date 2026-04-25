@@ -16,11 +16,16 @@ import { useSelector, useDispatch } from "react-redux";
 import { callApi } from "../../../api/api";
 import { useSnackbar } from "notistack";
 import { useParams } from "react-router-dom";
+import ProjectPermissionGate from "./_components/ProjectPermissionGate";
+import { setProject, updateProjectSettings } from "../../../redux/slices/projectSlice";
+import { getImageUrl } from "../../../utils/image.utils";
+import { showAlert } from "../../../redux/slices/alertSlice";
+import { useAlert } from "../../../hooks/useAlert";
 
 export default function ProjectSettings() {
   const project = useSelector((s) => s.project);
   const dispatch = useDispatch();
-  const { workspaceSlug, projectSlug } = useParams();
+  const { projectSlug } = useParams();
   const { enqueueSnackbar } = useSnackbar();
 
   const [name, setName] = useState("");
@@ -48,6 +53,7 @@ export default function ProjectSettings() {
     }
   };
 
+  const showAlert = useAlert();
   const handleSave = async () => {
     if (!name.trim()) {
       enqueueSnackbar("Project name is required", { variant: "error" });
@@ -58,34 +64,23 @@ export default function ProjectSettings() {
     const formData = new FormData();
     formData.append("name", name.trim());
     formData.append("description", description.trim());
+
     if (avatarFile) {
       formData.append("avatar", avatarFile);
     }
-
     const res = await callApi({
       method: "put",
       url: `/projects/${project._id}`,
       data: formData,
-      headers: { "Content-Type": "multipart/form-data" },
+      isFormData: true,
     });
 
     if (res.success) {
-      enqueueSnackbar("Project settings updated successfully", {
-        variant: "success",
-      });
-      
-      // Fetch updated global state without refreshing page
-      const freshRes = await callApi({
-        url: `/projects/global/${project.slug || projectSlug}`,
-      });
-      if (freshRes.success) {
-        // We need to import setProject from projectSlice to dispatch this
-        dispatch({ type: "project/setProject", payload: freshRes.data });
-      }
+      showAlert(res.data?.message, 'success');
+      console.log("Proejct settings response", res.data);
+      dispatch(updateProjectSettings(res.data?.project))
     } else {
-      enqueueSnackbar(res.message || "Failed to update project", {
-        variant: "error",
-      });
+      console.error("error is here", res.error);
     }
     setSaving(false);
   };
@@ -99,98 +94,104 @@ export default function ProjectSettings() {
   }
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 800, mx: "auto" }}>
-      <Typography variant="h5" fontWeight={700} mb={3}>
-        Project Settings
-      </Typography>
+    <ProjectPermissionGate
+      permission="canManageProject"
+      title="You do not have permission to manage project settings"
+      message="Ask a project admin to update settings."
+    >
+      <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 800, mx: "auto" }}>
+        <Typography variant="h5" fontWeight={700} mb={3}>
+          Project Settings
+        </Typography>
 
-      <Card variant="outlined" sx={{ borderRadius: 3 }}>
-        <CardContent sx={{ p: 4 }}>
-          <Stack spacing={4}>
-            {/* Avatar Upload */}
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary" mb={1}>
-                Project Logo / Avatar
-              </Typography>
-              <Stack direction="row" spacing={3} alignItems="center">
-                <Box position="relative">
-                  <Avatar
-                    src={avatarPreview}
-                    sx={{ width: 80, height: 80, fontSize: 32 }}
-                  >
-                    {name ? name[0] : "P"}
-                  </Avatar>
-                  <IconButton
-                    color="primary"
-                    sx={{
-                      position: "absolute",
-                      bottom: -8,
-                      right: -8,
-                      bgcolor: "background.paper",
-                      boxShadow: 1,
-                      "&:hover": { bgcolor: "background.paper" },
-                    }}
-                    onClick={() => fileInputRef.current.click()}
-                  >
-                    <PhotoCamera fontSize="small" />
-                  </IconButton>
-                </Box>
-                <Box>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => fileInputRef.current.click()}
-                  >
-                    Change Logo
-                  </Button>
-                  <Typography variant="caption" display="block" color="text.secondary" mt={1}>
-                    Recommended size: 400x400px. JPG, PNG or WEBP.
-                  </Typography>
-                </Box>
-                <input
-                  type="file"
-                  hidden
-                  ref={fileInputRef}
-                  accept="image/png, image/jpeg, image/webp"
-                  onChange={handleAvatarChange}
+        <Card variant="outlined" sx={{ borderRadius: 3 }}>
+          <CardContent sx={{ p: 4 }}>
+            <Stack spacing={4}>
+              {/* Avatar Upload */}
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary" mb={1}>
+                  Project Logo / Avatar
+                </Typography>
+                <Stack direction="row" spacing={3} alignItems="center">
+                  <Box position="relative">
+                    <Avatar
+                      src={getImageUrl(avatarPreview)}
+                      sx={{ width: 80, height: 80, fontSize: 32 }}
+                    >
+                      {name ? name[0] : "P"}
+                    </Avatar>
+                    <IconButton
+                      color="primary"
+                      sx={{
+                        position: "absolute",
+                        bottom: -8,
+                        right: -8,
+                        bgcolor: "background.paper",
+                        boxShadow: 1,
+                        "&:hover": { bgcolor: "background.paper" },
+                      }}
+                      onClick={() => fileInputRef.current.click()}
+                    >
+                      <PhotoCamera fontSize="small" />
+                    </IconButton>
+                  </Box>
+                  <Box>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => fileInputRef.current.click()}
+                    >
+                      Change Logo
+                    </Button>
+                    <Typography variant="caption" display="block" color="text.secondary" mt={1}>
+                      Recommended size: 400x400px. JPG, PNG or WEBP.
+                    </Typography>
+                  </Box>
+                  <input
+                    type="file"
+                    hidden
+                    ref={fileInputRef}
+                    accept="image/png, image/jpeg, image/webp"
+                    onChange={handleAvatarChange}
+                  />
+                </Stack>
+              </Box>
+
+              {/* Basic Info */}
+              <Box>
+                <TextField
+                  fullWidth
+                  label="Project Name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  sx={{ mb: 3 }}
                 />
-              </Stack>
-            </Box>
+                <TextField
+                  fullWidth
+                  label="Project Description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  multiline
+                  rows={4}
+                />
+              </Box>
 
-            {/* Basic Info */}
-            <Box>
-              <TextField
-                fullWidth
-                label="Project Name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                sx={{ mb: 3 }}
-              />
-              <TextField
-                fullWidth
-                label="Project Description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                multiline
-                rows={4}
-              />
-            </Box>
-
-            {/* Actions */}
-            <Box display="flex" justifyContent="flex-end">
-              <Button
-                variant="contained"
-                startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <Save />}
-                onClick={handleSave}
-                disabled={saving}
-                sx={{ borderRadius: 2 }}
-              >
-                Save Changes
-              </Button>
-            </Box>
-          </Stack>
-        </CardContent>
-      </Card>
-    </Box>
+              {/* Actions */}
+              <Box display="flex" justifyContent="flex-end">
+                <Button
+                  variant="contained"
+                  startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <Save />}
+                  onClick={handleSave}
+                  disabled={saving}
+                  sx={{ borderRadius: 2 }}
+                >
+                  Save Changes
+                </Button>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Box>
+    </ProjectPermissionGate>
   );
 }

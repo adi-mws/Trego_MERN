@@ -64,13 +64,6 @@ const taskSchema = new mongoose.Schema(
 
     blockedReason: String,
 
-    assignees: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
-
     dependencies: [
       {
         type: mongoose.Schema.Types.ObjectId,

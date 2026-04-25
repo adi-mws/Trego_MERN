@@ -16,7 +16,6 @@ import {
   updateProject,
 } from "./project.service.js";
 
-// ── Create Project ─────────────────────────────────────────────────────────────
 export const createProjectController = async (req, res, next) => {
   try {
     const { name, description, workspaceId } = req.body;
@@ -36,11 +35,10 @@ export const createProjectController = async (req, res, next) => {
   }
 };
 
-// ── Update Project ─────────────────────────────────────────────────────────────
 export const updateProjectController = async (req, res, next) => {
   try {
     const { projectId } = req.params;
-    
+
     const updateData = { ...req.body };
     if (req.file) {
       updateData.avatar = await saveFile(req.file, "projects/avatar");
@@ -58,19 +56,22 @@ export const updateProjectController = async (req, res, next) => {
   }
 };
 
-// ── Project Global State ───────────────────────────────────────────────────────
+
+
 export const getProjectGlobalStateBySlugController = async (req, res, next) => {
   try {
     const { slug } = req.params;
+    const { workspaceSlug } = req.query;
+
+
     const userId = req.user?.userId;
-    const data = await getProjectGlobalStateBySlug({ slug, userId });
+    const data = await getProjectGlobalStateBySlug({ slug, userId, workspaceSlug });
     return res.status(200).json({ ...data });
   } catch (error) {
     next(error);
   }
 };
 
-// ── Project Roles ──────────────────────────────────────────────────────────────
 export const createProjectRoleController = async (req, res, next) => {
   try {
     const { name, permissions } = req.body;

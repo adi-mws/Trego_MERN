@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   Box,
   Popover,
@@ -25,7 +25,6 @@ import {
 
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
-import { useEffect } from 'react'
 import { callApi } from '../../../../api/api'
 import { WORKSPACE_ROUTES } from '../../../../lib/routes'
 import CreateWorkspaceDialog from './CreateWorkspaceDialog'
@@ -39,8 +38,7 @@ export default function WorkspaceSwitcher() {
   const [loading, setLoading] = useState(false);
   const [openCreateWorkspaceDialog, setOpenCreateWorkspaceDialog] = useState(false);
   const navigate = useNavigate()
-  const { currentWorkspace, isLoading: isWorkspaceChanging } = useSelector((state) => state?.workspace)
-  const fetchWorkspaces = async () => {
+  const fetchWorkspaces = useCallback(async () => {
     setLoading(true);
     const res = await callApi({
       method: "GET",
@@ -59,11 +57,17 @@ export default function WorkspaceSwitcher() {
     }
 
     setLoading(false);
-  }
+  }, [workspaceSearch]);
 
   useEffect(() => {
-    fetchWorkspaces()
-  }, [workspaceSearch]);
+    if (!anchorEl) return;
+
+    const timer = window.setTimeout(() => {
+      void fetchWorkspaces();
+    }, 250);
+
+    return () => window.clearTimeout(timer);
+  }, [anchorEl, fetchWorkspaces]);
 
 
 
@@ -97,8 +101,19 @@ export default function WorkspaceSwitcher() {
   const open = Boolean(anchorEl)
 
 
-  const handleWorkspaceCreation = () => {
+  const handleWorkspaceCreation = (createdWorkspace) => {
+    if (createdWorkspace?.slug) {
+      setWorkspaces((prev) => {
+        const next = prev.filter((item) => item.slug !== createdWorkspace.slug)
+        return [createdWorkspace, ...next]
+      })
+      navigate(WORKSPACE_ROUTES.workspace(createdWorkspace.slug))
+      setAnchorEl(null)
+      setWorkspaceSearch("")
+      return
+    }
 
+    void fetchWorkspaces()
   }
   // removed early return to prevent unmounting and losing focus
 
