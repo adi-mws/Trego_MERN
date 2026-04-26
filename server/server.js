@@ -13,6 +13,7 @@ import projectRoutes from "./features/projects/project.routes.js"
 import workflowRoutes from "./features/workflows/workflow.route.js"
 import taskRoutes from "./features/tasks/task.route.js"
 import searchRoutes from "./features/search/search.route.js"
+import notificationRoutes from "./features/notifications/notification.route.js"
 connectDB();
 
 // CRON JOBS
@@ -26,7 +27,12 @@ const PORT = process.env.PORT || 3000;
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "http://127.0.0.1:5173",
+      "http://127.0.0.1:3000",
+    ],
     credentials: true, // allows cookies
   })
 );
@@ -47,6 +53,7 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/workflows", workflowRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/search", searchRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 
 app.use((err, req, res, next) => {

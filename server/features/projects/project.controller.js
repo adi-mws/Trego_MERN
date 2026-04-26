@@ -15,6 +15,8 @@ import {
   updateProjectMemberRoles,
   updateProject,
 } from "./project.service.js";
+import { Workspace } from "../workspaces/workspace.model.js";
+import { createProjectCreationNotification } from "../notifications/notification.service.js";
 
 export const createProjectController = async (req, res, next) => {
   try {
@@ -28,6 +30,17 @@ export const createProjectController = async (req, res, next) => {
     }
 
     const project = await createProject({ name, description, avatar: avatarUrl, workspaceId, userId });
+
+    const workspace = await Workspace.findById(workspaceId).select("_id name slug").lean();
+
+    await createProjectCreationNotification({
+      project,
+      workspace,
+      userId,
+      sourceSessionId: req.user?.sessionId,
+    }).catch((err) => {
+      console.warn("Failed to create project notification:", err.message);
+    });
 
     return res.status(201).json({ success: true, message: "Project created successfully", project });
   } catch (error) {

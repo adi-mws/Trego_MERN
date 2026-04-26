@@ -1,13 +1,14 @@
 
-import { AppBar, Toolbar, Box, IconButton, Tooltip } from "@mui/material";
+import { AppBar, Toolbar, Box, IconButton, Tooltip, Badge } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { AutoAwesomeOutlined, InboxOutlined, NotificationsOutlined } from "@mui/icons-material";
+import { AutoAwesomeOutlined, ColorLens, InboxOutlined, NotificationsOutlined } from "@mui/icons-material";
 import { useNavigate, useParams } from "react-router-dom";
 import GlobalSearchBar from "./GlobalSearchBar";
 import { useNotificationsDrawer } from "../../../contexts/NotificationDrawerContext";
 import { useHeader } from "../../../contexts/HeaderContext";
 import { useSelector } from "react-redux";
 import { resolveWorkspaceRole } from "../../../utils/workspaceRole.utils";
+import { useAccountDialog } from "../../../contexts/AccountDialogContext";
 export default function Header() {
   const { headerTitle, headerRightActions, headerLeftContent } = useHeader();
   const { openDrawer: openNotifications } = useNotificationsDrawer();
@@ -15,8 +16,11 @@ export default function Header() {
   const navigate = useNavigate();
   const workspace = useSelector((state) => state.workspace);
   const authUser = useSelector((state) => state.auth?.data);
+  const unreadCount = useSelector((state) => state.notifications?.unreadCount || 0);
   const workspaceRole = resolveWorkspaceRole(workspace, authUser);
   const isWorkspaceAdmin = ["ADMIN", "OWNER"].includes(workspaceRole);
+
+  const { openDialog } = useAccountDialog();
   return (
     <AppBar
       position="sticky"
@@ -75,17 +79,17 @@ export default function Header() {
             </span>
           </Tooltip>
 
-        
           {/* Notifications */}
           <IconButton
-            onClick={() => openNotifications()}
+
+            onClick={() => openDialog('preferences')}
             size="medium"
             sx={{
               color: "text.secondary",
               "&:hover": { color: "text.primary" },
             }}
           >
-            <InboxOutlined sx={{ fontSize: 18 }} />
+            <ColorLens sx={{ fontSize: 18 }} />
           </IconButton>
           <IconButton
             onClick={() => openNotifications()}
@@ -95,7 +99,14 @@ export default function Header() {
               "&:hover": { color: "text.primary" },
             }}
           >
-            <NotificationsOutlined sx={{ fontSize: 20 }} />
+            <Badge
+              badgeContent={unreadCount}
+              color="error"
+              overlap="circular"
+              invisible={!unreadCount}
+            >
+              <NotificationsOutlined sx={{ fontSize: 20 }} />
+            </Badge>
           </IconButton>
 
 

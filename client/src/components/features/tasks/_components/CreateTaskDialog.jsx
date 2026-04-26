@@ -29,6 +29,12 @@ function toDateOrNull(value) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function getStartOfToday() {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
 export default function CreateTaskDialog({
   open,
   onClose,
@@ -100,10 +106,21 @@ export default function CreateTaskDialog({
   }, [open, projectId, defaultCategoryId, mode, task]);
 
   const selectedCategory = categories.find((c) => c._id === form.categoryId);
+  const today = getStartOfToday();
 
   const handleSubmit = async () => {
     if (!form.title.trim()) {
       setError("Title is required");
+      return;
+    }
+
+    if (mode === "create" && form.startDate && new Date(form.startDate) < today) {
+      setError("Start date cannot be in the past");
+      return;
+    }
+
+    if (mode === "create" && form.deadline && new Date(form.deadline) < today) {
+      setError("Deadline cannot be in the past");
       return;
     }
 
@@ -201,12 +218,14 @@ export default function CreateTaskDialog({
               label="Start Date"
               value={form.startDate}
               onChange={(v) => setForm((f) => ({ ...f, startDate: v }))}
+              disablePast={mode === "create"}
+              minDate={mode === "create" ? today : undefined}
               maxDate={form.deadline || undefined}
               slotProps={{
                 textField: {
                   size: "small",
                   sx: { flex: 1 },
-                  helperText: "When this task begins",
+                  helperText: mode === "create" ? "Today or later" : "When this task begins",
                 },
               }}
             />
@@ -214,12 +233,13 @@ export default function CreateTaskDialog({
               label="Deadline"
               value={form.deadline}
               onChange={(v) => setForm((f) => ({ ...f, deadline: v }))}
-              minDate={form.startDate || undefined}
+              disablePast={mode === "create"}
+              minDate={mode === "create" ? (form.startDate || today) : (form.startDate || undefined)}
               slotProps={{
                 textField: {
                   size: "small",
                   sx: { flex: 1 },
-                  helperText: "Due date",
+                  helperText: mode === "create" ? "Today or later" : "Due date",
                 },
               }}
             />

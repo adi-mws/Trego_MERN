@@ -176,7 +176,42 @@ export default function ProjectOverview() {
                     highlightScope: { faded: "global", highlighted: "item" },
                   }]}
                   height={200}
-                  legend={{ hidden: false, direction: "column", position: { vertical: "middle", horizontal: "right" } }}
+                  slotProps={{
+                    legend: {
+                      direction: "column",
+                      position: { vertical: "middle", horizontal: "right" },
+                      sx: {
+                        // container box
+                        backgroundColor: "rgba(255,255,255,0.8)",
+                        backdropFilter: "blur(6px)",
+                        borderRadius: "12px",
+                        padding: "6px 10px",
+                        border: "1px solid #e0e0e0",
+
+                        // spacing between items
+                        gap: 4,
+
+                        // each legend item
+                        "& .MuiChartsLegend-item": {
+                          gap: 6,
+                        },
+
+                        // label text
+                        "& .MuiChartsLegend-label": {
+                          fontSize: "11px",
+                          fontWeight: 500,
+                          color: "#555",
+                        },
+
+                        // color box (marker)
+                        "& .MuiChartsLegend-mark": {
+                          width: 8,
+                          height: 8,
+                          borderRadius: "2px",
+                        },
+                      },
+                    },
+                  }}
                 />
               ) : (
                 <Box display="flex" justifyContent="center" alignItems="center" height={200}>
@@ -210,63 +245,63 @@ export default function ProjectOverview() {
       {/* ── Bottom Stat Row ── */}
       {!clientProjectViewer && (
         <Grid container spacing={2}>
-        <Grid size={{ xs: 12, sm: 4 }}>
-          <Card
-            variant="outlined"
-            sx={{ borderRadius: 3, cursor: "pointer", "&:hover": { boxShadow: 2 } }}
-            onClick={() => navigate(PROJECT_ROUTES.projectMembers(workspaceSlug, projectSlug))}
-          >
-            <CardContent>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: "#722ed118", color: "#722ed1" }}>
-                  <GroupOutlined />
-                </Box>
-                <Box>
-                  <Typography variant="h5" fontWeight={700}>{metrics?.members ?? 0}</Typography>
-                  <Typography variant="body2" color="text.secondary">Members</Typography>
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 4 }}>
-          <Card
-            variant="outlined"
-            sx={{ borderRadius: 3, cursor: "pointer", "&:hover": { boxShadow: 2 } }}
-            onClick={() => navigate(PROJECT_ROUTES.projectTaskCategories(workspaceSlug, projectSlug))}
-          >
-            <CardContent>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: "#13c2c218", color: "#13c2c2" }}>
-                  <CategoryOutlined />
-                </Box>
-                <Box>
-                  <Typography variant="h5" fontWeight={700}>{metrics?.categories ?? 0}</Typography>
-                  <Typography variant="body2" color="text.secondary">Categories</Typography>
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 4 }}>
-          <Card
-            variant="outlined"
-            sx={{ borderRadius: 3, cursor: "pointer", "&:hover": { boxShadow: 2 } }}
-            onClick={() => navigate(PROJECT_ROUTES.projectWorkflows(workspaceSlug, projectSlug))}
-          >
-            <CardContent>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: "#fa541c18", color: "#fa541c" }}>
-                  <AccountTreeOutlined />
-                </Box>
-                <Box>
-                  <Typography variant="h5" fontWeight={700}>{metrics?.workflows ?? 0}</Typography>
-                  <Typography variant="body2" color="text.secondary">Workflows</Typography>
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <Card
+              variant="outlined"
+              sx={{ borderRadius: 3, cursor: "pointer", "&:hover": { boxShadow: 2 } }}
+              onClick={() => navigate(PROJECT_ROUTES.projectMembers(workspaceSlug, projectSlug))}
+            >
+              <CardContent>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: "#722ed118", color: "#722ed1" }}>
+                    <GroupOutlined />
+                  </Box>
+                  <Box>
+                    <Typography variant="h5" fontWeight={700}>{metrics?.members ?? 0}</Typography>
+                    <Typography variant="body2" color="text.secondary">Members</Typography>
+                  </Box>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <Card
+              variant="outlined"
+              sx={{ borderRadius: 3, cursor: "pointer", "&:hover": { boxShadow: 2 } }}
+              onClick={() => navigate(PROJECT_ROUTES.projectTaskCategories(workspaceSlug, projectSlug))}
+            >
+              <CardContent>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: "#13c2c218", color: "#13c2c2" }}>
+                    <CategoryOutlined />
+                  </Box>
+                  <Box>
+                    <Typography variant="h5" fontWeight={700}>{metrics?.categories ?? 0}</Typography>
+                    <Typography variant="body2" color="text.secondary">Categories</Typography>
+                  </Box>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <Card
+              variant="outlined"
+              sx={{ borderRadius: 3, cursor: "pointer", "&:hover": { boxShadow: 2 } }}
+              onClick={() => navigate(PROJECT_ROUTES.projectWorkflows(workspaceSlug, projectSlug))}
+            >
+              <CardContent>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: "#fa541c18", color: "#fa541c" }}>
+                    <AccountTreeOutlined />
+                  </Box>
+                  <Box>
+                    <Typography variant="h5" fontWeight={700}>{metrics?.workflows ?? 0}</Typography>
+                    <Typography variant="body2" color="text.secondary">Workflows</Typography>
+                  </Box>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
       )}
     </Box>

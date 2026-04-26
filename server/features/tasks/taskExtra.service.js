@@ -107,6 +107,15 @@ export const deleteComment = async (commentId, userId) => {
 // SUBTASKS (TaskObjective)
 // ─────────────────────────────────────────────────────────────────────────────
 export const addSubtask = async ({ taskId, workflowStageId, title, description, userId }) => {
+  const task = await Task.findById(taskId).select("workflowId").lean();
+  if (!task) {
+    throw new Error("Task not found");
+  }
+
+  if (!task.workflowId) {
+    throw new Error("Attach a workflow before creating subtasks");
+  }
+
   const count = await TaskObjective.countDocuments({ taskId, workflowStageId });
   const subtask = new TaskObjective({
     taskId,

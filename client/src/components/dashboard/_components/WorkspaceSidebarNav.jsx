@@ -24,16 +24,18 @@ import { callApi } from '../../../api/api';
 import { useDispatch, useSelector } from 'react-redux';
 import { PROJECT_ROUTES, WORKSPACE_ROUTES } from '../../../lib/routes';
 import UserMenu from '../../features/account/UserMenu';
-import { setProjects } from '../../../redux/slices/workspaceSlice';
+import { addProject, setProjects } from '../../../redux/slices/workspaceSlice';
 import CreateProjectDialog from '../../features/projects/_components/CreateProjectDialog';
 import { getImageUrl } from '../../../utils/image.utils';
 import { resolveWorkspaceRole } from '../../../utils/workspaceRole.utils';
 import { isAdmin } from '../../../utils/permissions.utils';
+import { useSocketEvent } from '../../../lib/socket';
 
 export default function WorkspaceSidebarNav() {
     const [openCreateProjectDialog, setOpenCreateProjectDialog] = useState(false);
     const workspace = useSelector((state) => state.workspace);
     const authUser = useSelector((state) => state.auth?.data);
+    const currentSessionId = authUser?.currentSessionId || authUser?.sessionId || null;
     const { workspaceSlug: routeWorkspaceSlug } = useParams();
     const workspaceSlug = routeWorkspaceSlug || workspace?.slug || workspace?.currentWorkspace?.slug;
     const workspaceRole = resolveWorkspaceRole(workspace, authUser);
@@ -41,15 +43,11 @@ export default function WorkspaceSidebarNav() {
     const canOpenAgent = userIsAdmin;
     const canViewWorkspaceMembers = userIsAdmin;
 
-    const activeWorkspaceSlug = routeWorkspaceSlug || workspace?.currentWorkspace?.slug || workspace?.slug || null;
-    const activeWorkspace =
-        String(workspace?.currentWorkspace?.slug || workspace?.slug || "") === String(activeWorkspaceSlug)
-            ? (workspace?.currentWorkspace || workspace)
-            : null;
     const loadedWorkspaceSlugRef = useRef(null);
+    const workspaceProjectsCountRef = useRef(0);
 
-    const workspaceProjects = Array.isArray(activeWorkspace?.projects)
-        ? activeWorkspace.projects
+    const workspaceProjects = Array.isArray(workspace?.projects)
+        ? workspace.projects
         : [];
 
     const menuGroups = [
@@ -85,11 +83,15 @@ export default function WorkspaceSidebarNav() {
         }))
     }
 
+    useEffect(() => {
+        workspaceProjectsCountRef.current = workspaceProjects.length;
+    }, [workspaceProjects.length]);
+
     //  PROJECTS
     const dispatch = useDispatch();
-    const fetchProjects = useCallback(async () => {
+    const fetchProjects = useCallback(async (forceRefresh = false) => {
         if (!workspaceSlug) return
-        if (loadedWorkspaceSlugRef.current === workspaceSlug && workspaceProjects.length > 0) return
+        if (!forceRefresh && loadedWorkspaceSlugRef.current === workspaceSlug && workspaceProjectsCountRef.current > 0) return
 
         try {
             const res = await callApi({
@@ -102,7 +104,7 @@ export default function WorkspaceSidebarNav() {
         } catch (err) {
             console.error('Failed to fetch projects', err)
         }
-    }, [dispatch, workspaceProjects.length, workspaceSlug])
+    }, [dispatch, workspaceSlug])
 
     useEffect(() => {
         const timer = window.setTimeout(() => {
@@ -110,6 +112,32 @@ export default function WorkspaceSidebarNav() {
         }, 0)
         return () => window.clearTimeout(timer)
     }, [fetchProjects])
+
+    const handleProjectCreated = useCallback((payload) => {
+        if (!payload?.project?._id) return;
+
+        if (
+            payload.sourceSessionId &&
+            String(payload.sourceSessionId) === String(currentSessionId)
+        ) {
+            return;
+        }
+
+        if (
+            payload.workspace?.slug &&
+            String(payload.workspace.slug) !== String(workspaceSlug)
+        ) {
+            return;
+        }
+
+        dispatch(addProject(payload.project));
+    }, [currentSessionId, dispatch, workspaceSlug]);
+
+    useSocketEvent(
+        "workspace:project-created",
+        handleProjectCreated,
+        userIsAdmin && !!workspaceSlug && !!authUser?._id && !!currentSessionId
+    );
 
     const { _id: projectId } = useSelector((state) => state.project)
 

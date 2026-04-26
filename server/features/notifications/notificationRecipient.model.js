@@ -16,6 +16,13 @@ const notificationRecipientSchema = new mongoose.Schema(
       index: true,
     },
 
+    sessionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Session",
+      required: true,
+      index: true,
+    },
+
     isRead: {
       type: Boolean,
       default: false,
@@ -35,10 +42,15 @@ const notificationRecipientSchema = new mongoose.Schema(
 
 /* Indexes (CRITICAL for performance) */
 notificationRecipientSchema.index({ userId: 1, isRead: 1 });
+notificationRecipientSchema.index({ userId: 1, sessionId: 1, isRead: 1 });
 notificationRecipientSchema.index({ userId: 1, createdAt: -1 });
 notificationRecipientSchema.index(
-  { notificationId: 1, userId: 1 },
+  { notificationId: 1, userId: 1, sessionId: 1 },
   { unique: true } // prevent duplicates
+);
+notificationRecipientSchema.index(
+  { createdAt: 1 },
+  { expireAfterSeconds: 10 * 24 * 60 * 60 }
 );
 
 export default mongoose.model(

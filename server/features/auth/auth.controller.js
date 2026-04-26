@@ -1,10 +1,18 @@
-import { nextTick } from "process";
 import {
   signInWithGoogle, signInLocally, signUpLocally, signOutSession,
   signOutSpecificSession,
   signOutAllSession,
   verifyAuthData,
 } from "./auth.service.js";
+
+function getAuthCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+  };
+}
 
 
 export const signInController = async (req, res) => {
@@ -18,11 +26,7 @@ export const signInController = async (req, res) => {
     });
 
     // Set cookie
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
-    });
+    res.cookie("token", token, getAuthCookieOptions());
 
     return res.json({
       success: true,
@@ -80,21 +84,17 @@ export const signInGoogleController = async (req, res) => {
       os: "unknown",
     };
 
-    const { token, user } = await signInWithGoogle({
+    const { token, data } = await signInWithGoogle({
       idToken,
       deviceInfo,
     });
 
     // Set cookie
-    res.cookie("accessToken", token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
-    });
+    res.cookie("token", token, getAuthCookieOptions());
 
     return res.json({
       success: true,
-      user,
+      data,
     });
   } catch (err) {
     console.error("Google login error:", err);
@@ -116,12 +116,16 @@ export const signInGoogleController = async (req, res) => {
  */
 export const signOut = async (req, res) => {
   try {
-    const { sessionId } = req.user;
+    const { sessionId, userId } = req.user;
 
-    await signOutSession(sessionId);
+    await signOutSession({
+      sessionId,
+      userId,
+      deviceInfo: req.session,
+    });
 
     // clear cookie
-    res.clearCookie("accessToken");
+    res.clearCookie("token", getAuthCookieOptions());
 
     return res.json({
       success: true,
@@ -162,12 +166,16 @@ export const signOutDevice = async (req, res) => {
  */
 export const signOutAll = async (req, res, next) => {
   try {
-    const { userId } = req.user;
+    const { userId, sessionId } = req.user;
 
-    await signOutAllSession(userId);
+    await signOutAllSession({
+      userId,
+      sessionId,
+      deviceInfo: req.session,
+    });
 
     // clear cookie for current device
-    res.clearCookie("accessToken");
+    res.clearCookie("token", getAuthCookieOptions());
 
     return res.json({
       success: true,
@@ -184,7 +192,7 @@ export const authVerifyController = async (req, res, next) => {
     if (!req.user || !req.user?.userId) {
       return res.status(401).json({ sucess: false, message: "Unauthorized, User not found" });
     }
-    const data = verifyAuthData(req.user?.userId);
+    const data = await verifyAuthData(req.user?.userId, req.user?.sessionId);
     return res.status(200).json({ success: true, message: "Verified successfully", data: data });
   }
   catch (error) {

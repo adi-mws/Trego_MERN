@@ -7,9 +7,17 @@ import { checkWorkspaceMembership } from "../features/workspaces/workspace.servi
 let io = null;
 
 export function initSocket(server) {
+  const devOrigins = [
+    process.env.CLIENT_URL,
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+  ].filter(Boolean);
+
   io = new Server(server, {
     cors: {
-      origin: "*",
+      origin: devOrigins,
       credentials: true,
     },
   });
@@ -19,12 +27,11 @@ export function initSocket(server) {
   io.on("connection", (socket) => {
     console.log("🔌 Socket connected:", socket.id);
 
-    const userId = socket.auth?.data?._id;
-    const sessionId = socket.auth?.data?.sessionId;
+    const userId = socket.auth?.userId || socket.auth?.data?._id;
+    const sessionId = socket.auth?.sessionId || socket.auth?.data?.sessionId;
 
     if (!userId || !sessionId) {
-      console.log(" Invalid socket auth");
-      socket.disconnect();
+      console.log(" Invalid socket auth, keeping socket idle");
       return;
     }
 
@@ -104,7 +111,7 @@ export function getIO() {
 export function emitToUser(userId, event, payload) {
   if (!io) return;
 
-  io.to(`user:${userId}`).emit(event, payload);
+  io.to(`user:${String(userId || "")}`).emit(event, payload);
 }
 
 /**
@@ -113,7 +120,7 @@ export function emitToUser(userId, event, payload) {
 export function emitToWorkspace(workspaceId, event, payload) {
   if (!io) return;
 
-  io.to(`workspace:${workspaceId}`).emit(event, payload);
+  io.to(`workspace:${String(workspaceId || "")}`).emit(event, payload);
 }
 
 /**
@@ -122,10 +129,12 @@ export function emitToWorkspace(workspaceId, event, payload) {
 export function emitToUserExceptSession(userId, sessionId, event, payload) {
   if (!io) return;
 
-  const sessions = socketStore.getUserSessions(userId);
-  const currentSockets = sessions.get(sessionId) || new Set();
+  const normalizedUserId = String(userId || "");
+  const normalizedSessionId = String(sessionId || "");
+  const sessions = socketStore.getUserSessions(normalizedUserId);
+  const currentSockets = sessions.get(normalizedSessionId) || new Set();
 
-  const allSockets = socketStore.getUserAllSockets(userId);
+  const allSockets = socketStore.getUserAllSockets(normalizedUserId);
 
   for (const socketId of allSockets) {
     if (currentSockets.has(socketId)) continue;

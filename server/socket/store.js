@@ -5,20 +5,27 @@ export const socketStore = {
   // userId -> Map(sessionId -> Set(socketId))
   users: new Map(),
 
+  normalizeId(value) {
+    return String(value || "");
+  },
+
 
   // * Add user socket
   addUser(userId, sessionId, socketId) {
-    if (!this.users.has(userId)) {
-      this.users.set(userId, new Map());
+    const normalizedUserId = this.normalizeId(userId);
+    const normalizedSessionId = this.normalizeId(sessionId);
+
+    if (!this.users.has(normalizedUserId)) {
+      this.users.set(normalizedUserId, new Map());
     }
 
-    const sessions = this.users.get(userId);
+    const sessions = this.users.get(normalizedUserId);
 
-    if (!sessions.has(sessionId)) {
-      sessions.set(sessionId, new Set());
+    if (!sessions.has(normalizedSessionId)) {
+      sessions.set(normalizedSessionId, new Set());
     }
 
-    sessions.get(sessionId).add(socketId);
+    sessions.get(normalizedSessionId).add(socketId);
   },
 
   // * Remove socket on disconnect
@@ -48,7 +55,7 @@ export const socketStore = {
 
   // Get all sessions of user
   getUserSessions(userId) {
-    return this.users.get(userId) || new Map();
+    return this.users.get(this.normalizeId(userId)) || new Map();
   },
 
   // Get all sockets of user (all sessions)
@@ -65,7 +72,7 @@ export const socketStore = {
 
   // Get sockets of a specific session
   getUserSessionSockets(userId, sessionId) {
-    return this.getUserSessions(userId).get(sessionId) || new Set();
+    return this.getUserSessions(userId).get(this.normalizeId(sessionId)) || new Set();
   },
 
   // Check if user is online

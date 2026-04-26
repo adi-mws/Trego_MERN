@@ -3,6 +3,7 @@ import { WorkspaceMember } from "./workspaceMember.model.js";
 import * as workspaceService from "./workspace.service.js";
 import mongoose from "mongoose";
 import { saveFile } from "../../utils/upload.utils.js";
+import { createWorkspaceCreationNotification } from "../notifications/notification.service.js";
 
 /*  CREATE WORKSPACE  */
 export const createWorkspaceController = async (req, res, next) => {
@@ -24,6 +25,14 @@ export const createWorkspaceController = async (req, res, next) => {
       avatar,
       about,
       ownerId: req.user.userId,
+    });
+
+    await createWorkspaceCreationNotification({
+      workspace,
+      userId: req.user.userId,
+      sourceSessionId: req.user.sessionId,
+    }).catch((err) => {
+      console.warn("Failed to create workspace notification:", err.message);
     });
 
     return res.status(201).json({

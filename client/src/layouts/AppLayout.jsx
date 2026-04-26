@@ -10,6 +10,7 @@ import { NotificationsDrawerProvider } from "../contexts/NotificationDrawerConte
 import NotificationsDrawer from "../components/features/notifications/NotificationsDrawer";
 import { HeaderProvider } from "../contexts/HeaderContext";
 import ConfirmDialog from "../components/global/ConfirmDialog";
+import { SocketProvider } from "../contexts/SocketContext";
 
 export default function AppLayout() {
     const { setUser, setLoading, loading, setError } = useUserGlobal();
@@ -31,7 +32,7 @@ export default function AppLayout() {
         };
 
         fetchUser();
-    }, []);
+    }, [setError, setLoading, setUser]);
 
 
     if (loading) return <LoadingPage message="Loading Data" />
@@ -39,14 +40,16 @@ export default function AppLayout() {
         <>
             <AppThemeProvider type='dashboard'>
                 <HeaderProvider>
-                    <NotificationsDrawerProvider>
-                        <AccountDialogProvider>
-                            <AccountDialog />
-                            <ConfirmDialog />
-                            <NotificationsDrawer />
-                            <Outlet />
-                        </AccountDialogProvider>
-                    </NotificationsDrawerProvider>
+                    <SocketProvider>
+                        <NotificationsDrawerProvider>
+                            <AccountDialogProvider>
+                                <AccountDialog />
+                                <ConfirmDialog />
+                                <NotificationsDrawer />
+                                <Outlet />
+                            </AccountDialogProvider>
+                        </NotificationsDrawerProvider>
+                    </SocketProvider>
                 </HeaderProvider>
             </AppThemeProvider>
 

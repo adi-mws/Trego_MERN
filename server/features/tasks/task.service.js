@@ -5,6 +5,21 @@ import { WorkflowTemplate } from "../workflows/workflowTemplate.model.js";
 import { WorkflowStage } from "../workflows/workflowStage.model.js";
 import { TaskStageAssignee } from "./taskStageAssignee.model.js";
 
+function getIstDateKey(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+
+    const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    }).formatToParts(date);
+
+    const map = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+    return `${map.year}-${map.month}-${map.day}`;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // TASK CATEGORY SERVICES
 // ─────────────────────────────────────────────────────────────────────────────
@@ -275,6 +290,21 @@ export const createTask = async ({ projectId, title, description, createdBy, cat
 
     let resolvedWorkflowId = workflowId || null;
     let currentStageId = null;
+    const todayKey = getIstDateKey(new Date());
+
+    if (startDate) {
+        const startKey = getIstDateKey(startDate);
+        if (startKey && startKey < todayKey) {
+            throw new Error("Start date cannot be in the past");
+        }
+    }
+
+    if (deadline) {
+        const deadlineKey = getIstDateKey(deadline);
+        if (deadlineKey && deadlineKey < todayKey) {
+            throw new Error("Deadline cannot be in the past");
+        }
+    }
 
     if (categoryId && !resolvedWorkflowId) {
         const category = await TaskCategory.findById(categoryId).lean();
@@ -391,7 +421,13 @@ export const switchTaskWorkflow = async (taskId, newWorkflowId) => {
 };
 
 export const deleteTask = async (taskId) => {
-    const task = await Task.findByIdAndDelete(taskId);
+    const task = await Task.findById(taskId);
     if (!task) throw new Error("Task not found");
+
+    if (!task.isBlocked) {
+        throw new Error("Task must be blocked before it can be deleted");
+    }
+
+    await Task.findByIdAndDelete(taskId);
     return { success: true };
 };

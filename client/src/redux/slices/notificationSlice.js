@@ -25,6 +25,10 @@ const notificationSlice = createSlice({
     addNotification: (state, action) => {
       const notif = action.payload;
 
+      if (state.items.some((item) => item._id === notif._id)) {
+        return;
+      }
+
       state.items.unshift(notif);
 
       if (!notif.isRead) {
@@ -40,6 +44,13 @@ const notificationSlice = createSlice({
         notif.isRead = true;
         state.unreadCount = Math.max(0, state.unreadCount - 1);
       }
+    },
+
+    markAllAsRead: (state) => {
+      state.items.forEach((notif) => {
+        notif.isRead = true;
+      });
+      state.unreadCount = 0;
     },
 
     // CLEAR SINGLE NOTIFICATION
@@ -77,6 +88,7 @@ export const {
   setNotifications,
   addNotification,
   markAsRead,
+  markAllAsRead,
   clearNotification,
   clearAllNotifications,
   setLoading,

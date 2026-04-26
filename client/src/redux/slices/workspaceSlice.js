@@ -165,7 +165,12 @@ const workspaceSlice = createSlice({
     },
 
     setProjects: (state, action) => {
-      state.projects = normalizeProjects(action.payload);
+      const nextProjects = normalizeProjects(action.payload);
+      state.projects = nextProjects;
+
+      if (state.currentWorkspace) {
+        state.currentWorkspace.projects = nextProjects;
+      }
     },
   },
 })

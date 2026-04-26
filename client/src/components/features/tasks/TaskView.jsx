@@ -32,9 +32,12 @@ import PersonIcon from "@mui/icons-material/Person";
 import SendIcon from "@mui/icons-material/Send";
 import ShieldIcon from "@mui/icons-material/Shield";
 import BlockIcon from "@mui/icons-material/Block";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { callApi } from "../../../api/api";
+import { useConfirm } from "../../../hooks/useConfirm";
+import { useAlert } from "../../../hooks/useAlert";
+import { PROJECT_ROUTES } from "../../../lib/routes";
 import CreateTaskDialog from "../tasks/_components/CreateTaskDialog";
 import BlockTaskDialog from "../tasks/_components/BlockTaskDialog";
 import { resolveWorkspaceRole } from "../../../utils/workspaceRole.utils";
@@ -266,10 +269,13 @@ function TimelineEntry({ entry }) {
 }
 
 export default function TaskView() {
-  const { taskId } = useParams();
+  const { workspaceSlug, projectSlug, taskId } = useParams();
+  const confirm = useConfirm();
+  const showAlert = useAlert();
   const { _id: projectId, memberships = [] } = useSelector((state) => state.project);
   const workspaceState = useSelector((state) => state.workspace);
   const authUser = useSelector((state) => state.auth?.data);
+  const navigate = useNavigate();
   const currentUser = normalizeCurrentUser(authUser);
   const workspaceRole = resolveWorkspaceRole(workspaceState, authUser);
   const userIsAdmin = checkIsAdmin(workspaceRole);
@@ -282,6 +288,7 @@ export default function TaskView() {
   const [transitionComment, setTransitionComment] = useState("");
   const [newSubtask, setNewSubtask] = useState("");
   const [addingSubtask, setAddingSubtask] = useState(false);
+  const [subtaskError, setSubtaskError] = useState("");
   const [blockOpen, setBlockOpen] = useState(false);
   const [stageAssigneeDrafts, setStageAssigneeDrafts] = useState({});
   const [savingStageId, setSavingStageId] = useState(null);
@@ -351,6 +358,9 @@ export default function TaskView() {
 
   const currentStage = task?.currentStageId || null;
   const currentStageId = getId(currentStage);
+  const taskCompleted = Boolean(currentStage?.isEnd);
+  const hasWorkflow = Boolean(task?.workflowId);
+  const canCreateSubtask = hasWorkflow;
 
   const projectRoleIds = useMemo(() => {
     const member = memberships.find((entry) => {
@@ -563,6 +573,10 @@ export default function TaskView() {
 
   const handleAddSubtask = async () => {
     if (!newSubtask.trim()) return;
+    if (!canCreateSubtask) {
+      setSubtaskError("Attach a workflow before creating subtasks for this task.");
+      return;
+    }
 
     const tempId = `temp-subtask-${Date.now()}`;
     const optimisticSubtask = {
@@ -598,7 +612,9 @@ export default function TaskView() {
       });
       setNewSubtask("");
       setAddingSubtask(false);
+      setSubtaskError("");
     } else {
+      setSubtaskError(res.error?.message || "Failed to add subtask");
       setData((prev) =>
         prev
           ? ({ ...prev, subtasks: safeArray(prev.subtasks).filter((subtask) => subtask._id !== tempId) })
@@ -705,6 +721,28 @@ export default function TaskView() {
     });
   };
 
+  const handleDeleteTask = async () => {
+    if (!task?.isBlocked) {
+      showAlert("Block the task before deleting it.", "info");
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: "Delete task",
+      message: `This will permanently delete "${task.title}". This action cannot be undone.`,
+    });
+
+    if (!confirmed) return;
+
+    const res = await callApi({ method: "delete", url: `/tasks/${taskId}` });
+    if (res.success) {
+      showAlert(res.data?.message || "Task deleted successfully", "success");
+      navigate(PROJECT_ROUTES.projectTasks(workspaceSlug, projectSlug));
+    } else {
+      showAlert(res.error?.message || "Failed to delete task", "error");
+    }
+  };
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="100%">
@@ -785,6 +823,15 @@ export default function TaskView() {
                   color={priorityMeta.color}
                   variant="outlined"
                 />
+                {taskCompleted && (
+                  <Chip
+                    size="small"
+                    icon={<CheckCircleIcon sx={{ fontSize: "13px !important" }} />}
+                    label="Completed"
+                    color="success"
+                    variant="filled"
+                  />
+                )}
                 {task.isBlocked && (
                   <Chip size="small" label={`Blocked: ${task.blockedReason || "No reason"}`} color="error" />
                 )}
@@ -813,6 +860,18 @@ export default function TaskView() {
                 >
                   {task.isBlocked ? <CheckCircleIcon /> : <BlockIcon />}
                 </IconButton>
+              </Tooltip>
+              <Tooltip title={task.isBlocked ? "Delete task" : "Block task before deleting"}>
+                <span>
+                  <IconButton
+                    onClick={handleDeleteTask}
+                    disabled={!task.isBlocked}
+                    color="error"
+                    size="small"
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </span>
               </Tooltip>
             </Stack>
           </Stack>
@@ -846,19 +905,26 @@ export default function TaskView() {
           <Divider />
 
           <Box>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" mb={1}>
-              <Typography variant="overline" color="text.secondary" fontWeight={700}>
-                Subtasks {subtasks.length > 0 ? `(${doneCount}/${subtasks.length})` : ""}
-              </Typography>
-              <Button
-                size="small"
-                startIcon={<AddIcon />}
-                onClick={() => setAddingSubtask((value) => !value)}
-                sx={{ textTransform: "none", fontSize: 12 }}
-              >
-                Add
-              </Button>
-            </Stack>
+              <Stack direction="row" alignItems="center" justifyContent="space-between" mb={1}>
+                <Typography variant="overline" color="text.secondary" fontWeight={700}>
+                  Subtasks {subtasks.length > 0 ? `(${doneCount}/${subtasks.length})` : ""}
+                </Typography>
+                <Button
+                  size="small"
+                  startIcon={<AddIcon />}
+                  onClick={() => setAddingSubtask((value) => !value)}
+                  disabled={!canCreateSubtask}
+                  sx={{ textTransform: "none", fontSize: 12 }}
+                >
+                  Add
+                </Button>
+              </Stack>
+
+            {!canCreateSubtask && (
+              <Alert severity="info" variant="outlined" sx={{ mb: 1.25 }}>
+                Attach a workflow before adding subtasks.
+              </Alert>
+            )}
 
             {subtasks.length > 0 && (
               <Box mb={1}>
@@ -902,9 +968,17 @@ export default function TaskView() {
               </Stack>
             )}
 
+            {subtaskError && (
+              <Alert severity="warning" variant="outlined" sx={{ mt: 1 }}>
+                {subtaskError}
+              </Alert>
+            )}
+
             {subtasks.length === 0 && !addingSubtask && (
               <Typography variant="caption" color="text.disabled">
-                No subtasks yet. Add one to track progress.
+                {canCreateSubtask
+                  ? "No subtasks yet. Add one to track progress."
+                  : "No subtasks yet. A workflow must be assigned first."}
               </Typography>
             )}
           </Box>
@@ -1189,7 +1263,7 @@ export default function TaskView() {
 
                 {transitions.length === 0 ? (
                   <>
-                    <Alert severity="success">Task completed sucessfully </Alert>
+                    {taskCompleted && <Alert severity="success">Task completed successfully.</Alert>}
                     <Alert severity="info">No more transitions available to advance to next stage</Alert>
                   </>
                 ) : (

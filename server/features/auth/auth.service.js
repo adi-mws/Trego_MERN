@@ -6,6 +6,21 @@ import { Account } from "../auth/account.model.js";
 import { OAuth2Client } from "google-auth-library";
 import { User } from "../user/user.model.js";
 import { Session } from "../session/session.model.js";
+import { createSessionActivityNotification } from "../notifications/notification.service.js";
+
+async function getOtherSessionIds(userId, sessionId, { includeRevoked = false } = {}) {
+  const query = {
+    userId,
+    _id: { $ne: sessionId },
+  };
+
+  if (!includeRevoked) {
+    query.status = "ACTIVE";
+  }
+
+  const sessions = await Session.find(query).select("_id").lean();
+  return sessions.map((session) => session._id);
+}
 
 export const signInLocally = async ({
   email,
@@ -27,6 +42,11 @@ export const signInLocally = async ({
 
   if (!isMatch) {
     throw new Error("Invalid credentials");
+  }
+
+  const user = await User.findById(account.userId);
+  if (!user) {
+    throw new Error("User not found");
   }
 
   // Create session
@@ -54,14 +74,29 @@ export const signInLocally = async ({
     { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
   );
 
+  const recipientSessionIds = await getOtherSessionIds(account.userId, session._id);
+  if (recipientSessionIds.length > 0) {
+    await createSessionActivityNotification({
+      userId: user._id,
+      sourceSessionId: session._id,
+      recipientSessionIds,
+      action: "LOGIN",
+      deviceInfo,
+    }).catch((err) => {
+      console.warn("Failed to create login notification:", err.message);
+    });
+  }
+
   return {
     token,
     data: {
-      name: account.userId.name,
-      email: account.userId.email,
-      avatar: account.userId.avatar,
-      about: account.userId.about,
-      lastOnline: account.userId.lastOnline
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      avatar: user.avatar,
+      about: user.about,
+      lastOnline: user.lastOnline,
+      currentSessionId: session._id,
     }
   };
 };
@@ -160,6 +195,10 @@ export const signInWithGoogle = async ({
     });
   }
 
+  if (!user) {
+    throw new Error("User not found");
+  }
+
   // Create session
   const session = await Session.create({
     userId: user._id,
@@ -185,7 +224,30 @@ export const signInWithGoogle = async ({
     { expiresIn: "7d" }
   );
 
-  return { token, data: { name: user.name, email: user.email, avatar: user.avatar, lastOnline: user.lastOnline } };
+  const recipientSessionIds = await getOtherSessionIds(user._id, session._id);
+  if (recipientSessionIds.length > 0) {
+    await createSessionActivityNotification({
+      userId: user._id,
+      sourceSessionId: session._id,
+      recipientSessionIds,
+      action: "LOGIN",
+      deviceInfo,
+    }).catch((err) => {
+      console.warn("Failed to create google login notification:", err.message);
+    });
+  }
+
+  return {
+    token,
+    data: {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      avatar: user.avatar,
+      lastOnline: user.lastOnline,
+      currentSessionId: session._id,
+    },
+  };
 };
 
 
@@ -195,13 +257,26 @@ export const signInWithGoogle = async ({
 /**
  * Logout current session
  */
-export const signOutSession = async (sessionId) => {
+export const signOutSession = async ({ sessionId, userId, deviceInfo }) => {
   const session = await Session.findById(sessionId);
 
   if (!session) return;
 
   session.status = "REVOKED";
   await session.save();
+
+  const recipientSessionIds = await getOtherSessionIds(userId, sessionId);
+  if (recipientSessionIds.length > 0) {
+    await createSessionActivityNotification({
+      userId,
+      sourceSessionId: sessionId,
+      recipientSessionIds,
+      action: "LOGOUT",
+      deviceInfo,
+    }).catch((err) => {
+      console.warn("Failed to create logout notification:", err.message);
+    });
+  }
 };
 
 /**
@@ -219,12 +294,38 @@ export const signOutSpecificSession = async (sessionId, userId) => {
 
   session.status = "REVOKED";
   await session.save();
+
+  const recipientSessionIds = await getOtherSessionIds(userId, session._id, { includeRevoked: true });
+  if (recipientSessionIds.length > 0) {
+    await createSessionActivityNotification({
+      userId,
+      sourceSessionId: session._id,
+      recipientSessionIds,
+      action: "LOGOUT",
+      deviceInfo: session,
+    }).catch((err) => {
+      console.warn("Failed to create device logout notification:", err.message);
+    });
+  }
 };
 
 /**
  * Logout all sessions
  */
-export const signOutAllSession = async (userId) => {
+export const signOutAllSession = async ({ userId, sessionId, deviceInfo }) => {
+  const recipientSessionIds = await getOtherSessionIds(userId, sessionId, { includeRevoked: true });
+  if (recipientSessionIds.length > 0) {
+    await createSessionActivityNotification({
+      userId,
+      sourceSessionId: sessionId,
+      recipientSessionIds,
+      action: "LOGOUT",
+      deviceInfo,
+    }).catch((err) => {
+      console.warn("Failed to create logout-all notification:", err.message);
+    });
+  }
+
   await Session.updateMany(
     { userId, status: "ACTIVE" },
     { status: "REVOKED" }
@@ -233,7 +334,7 @@ export const signOutAllSession = async (userId) => {
 
 
 
-export const verifyAuthData = async (userId) => {
+export const verifyAuthData = async (userId, sessionId = null) => {
   const user = await User.findById(userId);
 
   if (!user) {
@@ -241,10 +342,12 @@ export const verifyAuthData = async (userId) => {
   }
 
   return {
+    _id: user._id,
     name: user.name,
     email: user.email,
     avatar: user.avatar,
     about: user.about,
-    lastOnline: user.lastOnline
+    lastOnline: user.lastOnline,
+    currentSessionId: sessionId,
   }
 }

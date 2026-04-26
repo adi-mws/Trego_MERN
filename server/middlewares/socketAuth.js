@@ -24,11 +24,14 @@ export default function authenticateSocket(socket, next) {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Attach decoded token payload (NOT full DB model)
-    // Expect decoded to include: { role, data... }
     socket.auth = {
-      role: decoded.role, // all the objects whether it is request object or it is socket object
-      data: decoded.data  // they all will follow the same pattern storing the auth values
+      userId: decoded.userId,
+      sessionId: decoded.sessionId,
+      role: decoded.role || null,
+      data: {
+        _id: decoded.userId,
+        sessionId: decoded.sessionId,
+      },
     };
     return next();
   } catch (err) {

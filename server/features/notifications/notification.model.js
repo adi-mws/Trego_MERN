@@ -27,6 +27,12 @@ const notificationSchema = new mongoose.Schema(
       required: true,
     },
 
+    iconKey: {
+      type: String,
+      enum: ["INFO", "LOGIN", "LOGOUT", "TASK", "PROJECT", "WORKFLOW", "ALERT", "SYSTEM"],
+      default: "INFO",
+    },
+
     important: {
       type: Boolean,
       default: false,
@@ -55,6 +61,42 @@ const notificationSchema = new mongoose.Schema(
       required: true,
     },
 
+    workspaceId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Workspace",
+      default: null,
+    },
+
+    workspaceName: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    workspaceSlug: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    projectId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Project",
+      default: null,
+    },
+
+    projectName: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    projectSlug: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
     entityType: {
       type: String,
       enum: [
@@ -77,6 +119,12 @@ const notificationSchema = new mongoose.Schema(
     },
 
     link: String,
+
+    sourceSessionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Session",
+      default: null,
+    },
   },
   { timestamps: true }
 );

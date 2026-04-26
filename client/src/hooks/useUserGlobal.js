@@ -1,4 +1,5 @@
 // hooks/useUserGlobal.js
+import { useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
     setUserGlobal,
@@ -18,40 +19,40 @@ export const useUserGlobal = () => {
     );
 
     // Set full user
-    const setUser = (data) => {
+    const setUser = useCallback((data) => {
         dispatch(setUserGlobal(data));
-    };
+    }, [dispatch]);
 
 
     // Update user (generic)
-    const updateUser = (data) => {
+    const updateUser = useCallback((data) => {
         dispatch(updateUserGlobal(data));
-    };
+    }, [dispatch]);
 
     // Preferences
-    const updatePrefs = (data) => {
+    const updatePrefs = useCallback((data) => {
         dispatch(updatePreferences(data));
-    };
+    }, [dispatch]);
 
-    const updateUserProfile = (data) => {   
+    const updateUserProfile = useCallback((data) => {
         dispatch(updateProfile(data));
-    };
+    }, [dispatch]);
 
     // Status
-    const setLoading = (val) => {
+    const setLoading = useCallback((val) => {
         dispatch(setUserLoading(val));
-    };
+    }, [dispatch]);
 
-    const setError = (err) => {
+    const setError = useCallback((err) => {
         dispatch(setUserError(err));
-    };
+    }, [dispatch]);
 
     // Reset
-    const reset = () => {
+    const reset = useCallback(() => {
         dispatch(resetUserGlobal());
-    };
+    }, [dispatch]);
 
-    return {
+    return useMemo(() => ({
         user,
         loading,
         error,
@@ -62,5 +63,16 @@ export const useUserGlobal = () => {
         setLoading,
         setError,
         reset,
-    };
+    }), [
+        user,
+        loading,
+        error,
+        setUser,
+        updateUser,
+        updatePrefs,
+        updateUserProfile,
+        setLoading,
+        setError,
+        reset,
+    ]);
 };
