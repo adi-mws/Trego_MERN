@@ -24,6 +24,9 @@ export default function ConfirmDialog() {
       transitionDuration={300}
       keepMounted
       fullWidth
+      sx={{
+        zIndex: (theme) => theme.zIndex.modal + 20,
+      }}
       PaperProps={{
         sx: {
           position: "absolute",
@@ -33,13 +36,16 @@ export default function ConfirmDialog() {
           m: 0,
           borderRadius: 3,
           px: 1,
-          zIndex: 1000000,
           boxShadow: 3,
         },
       }}
-      // Must disable backdrop click
-      hideBackdrop
-      disablePortal
+      ModalProps={{
+        BackdropProps: {
+          sx: {
+            backgroundColor: "rgba(0, 0, 0, 0.18)",
+          },
+        },
+      }}
     >
       <DialogTitle sx={{ fontWeight: 600 }}>{title}</DialogTitle>
 

@@ -1,6 +1,12 @@
 import { User } from "./user.model.js";
 import { profileCompleteVerification } from "../../utils/user.utils.js"
 import { getUserSessionsSafe } from "../session/session.service.js";
+import { emitToUserExceptSession } from "../../socket/index.js";
+
+function toPlainUser(userDoc) {
+  if (!userDoc) return null;
+  return typeof userDoc.toObject === "function" ? userDoc.toObject() : userDoc;
+}
 
 export const getUserGlobalData = async (req, res, next) => {
   try {
@@ -102,9 +108,16 @@ export const updateProfile = async (req, res, next) => {
       }
     ).select("-__v");
 
+    const payload = toPlainUser(updatedUser);
+
+    emitToUserExceptSession(userId, req.user?.sessionId, "user:updated", {
+      user: payload,
+      sourceSessionId: req.user?.sessionId,
+    });
+
     return res.status(200).json({
       success: true,
-      data: updatedUser,
+      data: payload,
     });
 
   } catch (error) {
@@ -148,9 +161,16 @@ export const updatePreferences = async (req, res, next) => {
       { new: true, runValidators: true }
     ).select("-__v");
 
+    const payload = toPlainUser(user);
+
+    emitToUserExceptSession(userId, req.user?.sessionId, "user:updated", {
+      user: payload,
+      sourceSessionId: req.user?.sessionId,
+    });
+
     res.status(200).json({
       success: true,
-      data: user,
+      data: payload,
     });
 
   } catch (error) {

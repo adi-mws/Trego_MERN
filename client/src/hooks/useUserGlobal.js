@@ -6,6 +6,9 @@ import {
     updateUserGlobal,
     updatePreferences,
     updateProfile,
+    setUserSessions,
+    addUserSession,
+    removeUserSession,
     setUserLoading,
     setUserError,
     resetUserGlobal,
@@ -38,6 +41,18 @@ export const useUserGlobal = () => {
         dispatch(updateProfile(data));
     }, [dispatch]);
 
+    const updateSessions = useCallback((sessions) => {
+        dispatch(setUserSessions(sessions));
+    }, [dispatch]);
+
+    const addSession = useCallback((session) => {
+        dispatch(addUserSession(session));
+    }, [dispatch]);
+
+    const removeSession = useCallback((sessionId) => {
+        dispatch(removeUserSession(sessionId));
+    }, [dispatch]);
+
     // Status
     const setLoading = useCallback((val) => {
         dispatch(setUserLoading(val));
@@ -60,6 +75,9 @@ export const useUserGlobal = () => {
         updateUser,
         updatePrefs,
         updateUserProfile,
+        updateSessions,
+        addSession,
+        removeSession,
         setLoading,
         setError,
         reset,
@@ -71,6 +89,9 @@ export const useUserGlobal = () => {
         updateUser,
         updatePrefs,
         updateUserProfile,
+        updateSessions,
+        addSession,
+        removeSession,
         setLoading,
         setError,
         reset,

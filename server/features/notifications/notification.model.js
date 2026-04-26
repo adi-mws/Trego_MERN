@@ -104,6 +104,7 @@ const notificationSchema = new mongoose.Schema(
         "PROJECT",
         "WORKSPACE",
         "ACCOUNT",
+        "PROJECT_MEMBER",
         "LABEL",
         "SYSTEM",
         "SUBTASK",

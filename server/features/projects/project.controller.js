@@ -1,4 +1,5 @@
 import { saveFile } from "../../utils/upload.utils.js";
+import { Project } from "./project.model.js";
 import {
   createProject, createProjectRole,
   createMultipleProjectRole,
@@ -16,7 +17,12 @@ import {
   updateProject,
 } from "./project.service.js";
 import { Workspace } from "../workspaces/workspace.model.js";
-import { createProjectCreationNotification } from "../notifications/notification.service.js";
+import {
+  createProjectCreationNotification,
+  createProjectMemberAddedNotification,
+  createProjectMemberRemovedNotification,
+} from "../notifications/notification.service.js";
+import { emitToUser } from "../../socket/index.js";
 
 export const createProjectController = async (req, res, next) => {
   try {
@@ -159,12 +165,32 @@ export const createProjectMemberController = async (req, res, next) => {
   try {
     const { projectId } = req.params;
     const { userId, roleIds } = req.body;
+    const actorUserId = req.user?.userId;
 
     if (!userId || !Array.isArray(roleIds) || roleIds.length === 0) {
       return res.status(400).json({ success: false, message: "User ID and roleIds array are required" });
     }
 
     const member = await createProjectMember({ projectId, userId, roleIds });
+
+    const project = await Project.findById(projectId)
+      .select("_id name slug workspace")
+      .lean();
+
+    const workspace = project?.workspace
+      ? await Workspace.findById(project.workspace).select("_id name slug").lean()
+      : null;
+
+    await createProjectMemberAddedNotification({
+      project,
+      workspace,
+      userId: actorUserId,
+      targetUserId: userId,
+      sourceSessionId: req.user?.sessionId,
+    }).catch((err) => {
+      console.warn("Failed to create project member notification:", err.message);
+    });
+
     return res.status(201).json({ success: true, message: "Member added to project", member });
   } catch (error) {
     next(error);
@@ -211,7 +237,49 @@ export const updateProjectMemberRolesController = async (req, res, next) => {
 export const removeProjectMemberController = async (req, res, next) => {
   try {
     const { projectId, memberId } = req.params;
+    const actorUserId = req.user?.userId;
+    const sourceSessionId = req.user?.sessionId;
+
     const member = await removeProjectMember({ projectId, memberId });
+
+    const project = await Project.findById(projectId)
+      .select("_id name slug workspace")
+      .lean();
+
+    const workspace = project?.workspace
+      ? await Workspace.findById(project.workspace).select("_id name slug").lean()
+      : null;
+
+    await createProjectMemberRemovedNotification({
+      project,
+      workspace,
+      userId: actorUserId,
+      sourceSessionId,
+    }).catch((err) => {
+      console.warn("Failed to create project member removal notification:", err.message);
+    });
+
+    const targetUserId = member?.user ? String(member.user) : null;
+    if (targetUserId && project && workspace) {
+      emitToUser(targetUserId, "workspace:project-member-removed", {
+        project: {
+          _id: project._id,
+          name: project.name,
+          slug: project.slug,
+          workspace: workspace._id,
+          workspaceSlug: workspace.slug,
+          workspaceName: workspace.name,
+        },
+        workspace: {
+          _id: workspace._id,
+          name: workspace.name,
+          slug: workspace.slug,
+        },
+        targetUserId,
+        sourceSessionId,
+      });
+    }
+
     return res.status(200).json({ success: true, message: "Member removed from project", member });
   } catch (error) {
     next(error);

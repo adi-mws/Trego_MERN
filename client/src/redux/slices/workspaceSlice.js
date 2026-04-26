@@ -164,6 +164,21 @@ const workspaceSlice = createSlice({
       }
     },
 
+    removeProject: (state, action) => {
+      const projectId = String(action.payload || "");
+
+      if (!projectId) return;
+
+      state.projects = state.projects.filter((project) => String(project?._id) !== projectId);
+
+      if (state.currentWorkspace) {
+        const currentWorkspaceProjects = normalizeProjects(state.currentWorkspace.projects);
+        state.currentWorkspace.projects = currentWorkspaceProjects.filter(
+          (project) => String(project?._id) !== projectId
+        );
+      }
+    },
+
     setProjects: (state, action) => {
       const nextProjects = normalizeProjects(action.payload);
       state.projects = nextProjects;
@@ -184,6 +199,7 @@ export const {
   addMember,
   removeMember,
   addProject,
+  removeProject,
   setProjects,
 } = workspaceSlice.actions
 

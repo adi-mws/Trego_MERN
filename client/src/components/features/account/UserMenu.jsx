@@ -25,7 +25,7 @@ export default function UserMenu() {
   const open = Boolean(anchorEl);
 
   const { openDialog } = useAccountDialog();
-  const { user } = useUserGlobal();
+  const { user, reset } = useUserGlobal();
   const { logout } = useAuth();
   const navigate = useNavigate();
   const showAlert = useAlert();
@@ -38,6 +38,7 @@ export default function UserMenu() {
 
     if (response.success) {
       logout();
+      reset();
       navigate(AUTH_ROUTES.signIn);
       showAlert(response.data?.message || "Signed out successfully", "success");
     } else {

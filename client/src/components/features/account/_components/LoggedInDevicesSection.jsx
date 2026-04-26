@@ -23,9 +23,11 @@ import EmailIcon from "@mui/icons-material/Email";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useConfirm } from "../../../../hooks/useConfirm";
+import useAuth from "../../../../hooks/useAuth";
 
 function LoggedInDevicesSection() {
-    const { user, updateUser } = useUserGlobal();
+    const { user, removeSession, reset } = useUserGlobal();
+    const { logout } = useAuth();
     const [loadingId, setLoadingId] = useState(null);
     const showConfirm = useConfirm();
     const sessions = user?.sessions || [];
@@ -79,17 +81,12 @@ function LoggedInDevicesSection() {
 
 
             if (res?.success) {
-                const updatedSessions = sessions.filter((s) => s.id !== sessionId);
-                if (user?.currentSessionId === sessionId) {
-                    // If the user is logging out of the current session, we should also update
-                    //  the global user state to reflect that there is no active session.
-                    updateUser({});
+                if (String(user?.currentSessionId || "") === String(sessionId || "")) {
+                    logout();
+                    reset();
                     navigate("/sign-in");
                 } else {
-                    updateUser({
-                        ...user,
-                        sessions: updatedSessions,
-                    });
+                    removeSession(sessionId);
                 }
 
 

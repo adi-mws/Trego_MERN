@@ -7,6 +7,7 @@ import { OAuth2Client } from "google-auth-library";
 import { User } from "../user/user.model.js";
 import { Session } from "../session/session.model.js";
 import { createSessionActivityNotification } from "../notifications/notification.service.js";
+import { emitToUserExceptSession } from "../../socket/index.js";
 
 async function getOtherSessionIds(userId, sessionId, { includeRevoked = false } = {}) {
   const query = {
@@ -20,6 +21,32 @@ async function getOtherSessionIds(userId, sessionId, { includeRevoked = false } 
 
   const sessions = await Session.find(query).select("_id").lean();
   return sessions.map((session) => session._id);
+}
+
+function toSessionPayload(session, { provider = "UNKNOWN" } = {}) {
+  if (!session) return null;
+
+  const expiresAt = session.expiresAt ? new Date(session.expiresAt) : null;
+
+  return {
+    id: String(session._id || session.id || ""),
+    deviceId: session.deviceId,
+    browser: session.browser,
+    os: session.os,
+    ipAddress: session.ipAddress,
+    provider,
+    status: session.status,
+    isExpired: expiresAt ? expiresAt < new Date() : false,
+    loggedInAt: session.loggedInAt,
+    lastActiveAt: session.lastActiveAt,
+    expiresAt: session.expiresAt,
+    isCurrent: false,
+  };
+}
+
+function toPlainUser(userDoc) {
+  if (!userDoc) return null;
+  return typeof userDoc.toObject === "function" ? userDoc.toObject() : userDoc;
 }
 
 export const signInLocally = async ({
@@ -74,7 +101,16 @@ export const signInLocally = async ({
     { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
   );
 
+  const sessionPayload = toSessionPayload(session, { provider: account.provider });
   const recipientSessionIds = await getOtherSessionIds(account.userId, session._id);
+  if (recipientSessionIds.length > 0) {
+    emitToUserExceptSession(account.userId, session._id, "auth:session-added", {
+      session: sessionPayload,
+      sourceSessionId: String(session._id),
+      userId: String(account.userId),
+    });
+  }
+
   if (recipientSessionIds.length > 0) {
     await createSessionActivityNotification({
       userId: user._id,
@@ -144,25 +180,66 @@ export const signUpLocally = async ({
 };
 
 
-// Login with Google 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const googleClient = new OAuth2Client({
+  clientId: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+});
 
-export const signInWithGoogle = async ({
-  idToken,
-  deviceInfo,
-}) => {
-  // Verify token with Google
-  const ticket = await client.verifyIdToken({
+async function getGoogleProfileFromIdToken(idToken) {
+  const ticket = await googleClient.verifyIdToken({
     idToken,
     audience: process.env.GOOGLE_CLIENT_ID,
   });
 
   const payload = ticket.getPayload();
 
-  const googleId = payload.sub;
-  const email = payload.email;
-  const name = payload.name;
-  const avatar = payload.picture;
+  return {
+    googleId: payload.sub,
+    email: payload.email,
+    name: payload.name,
+    avatar: payload.picture,
+  };
+}
+
+async function getGoogleProfileFromCode(code) {
+  const { tokens } = await googleClient.getToken(code);
+  googleClient.setCredentials(tokens);
+
+  if (tokens?.id_token) {
+    return getGoogleProfileFromIdToken(tokens.id_token);
+  }
+
+  const response = await googleClient.request({
+    url: "https://www.googleapis.com/oauth2/v2/userinfo",
+  });
+
+  const profile = response.data || {};
+
+  return {
+    googleId: profile.id || profile.sub,
+    email: profile.email,
+    name: profile.name,
+    avatar: profile.picture,
+  };
+}
+
+export const signInWithGoogle = async ({
+  idToken,
+  code,
+  deviceInfo,
+}) => {
+  if (!process.env.GOOGLE_CLIENT_ID) {
+    throw new Error("Google client ID is not configured");
+  }
+
+  const googleProfile = code
+    ? await getGoogleProfileFromCode(code)
+    : await getGoogleProfileFromIdToken(idToken);
+
+  const googleId = googleProfile.googleId;
+  const email = googleProfile.email;
+  const name = googleProfile.name;
+  const avatar = googleProfile.avatar;
 
   // 2. Check if account exists
   let account = await Account.findOne({
@@ -185,6 +262,9 @@ export const signInWithGoogle = async ({
         email,
         avatar,
       });
+    } else if (avatar && !String(user.avatar || "").trim()) {
+      user.avatar = avatar;
+      await user.save();
     }
 
     // Create account
@@ -197,6 +277,22 @@ export const signInWithGoogle = async ({
 
   if (!user) {
     throw new Error("User not found");
+  }
+
+  let needsSave = false;
+
+  if (avatar && !String(user.avatar || "").trim()) {
+    user.avatar = avatar;
+    needsSave = true;
+  }
+
+  if (name && !String(user.name || "").trim()) {
+    user.name = name;
+    needsSave = true;
+  }
+
+  if (needsSave) {
+    await user.save();
   }
 
   // Create session
@@ -224,7 +320,16 @@ export const signInWithGoogle = async ({
     { expiresIn: "7d" }
   );
 
+  const sessionPayload = toSessionPayload(session, { provider: "GOOGLE" });
   const recipientSessionIds = await getOtherSessionIds(user._id, session._id);
+  if (recipientSessionIds.length > 0) {
+    emitToUserExceptSession(user._id, session._id, "auth:session-added", {
+      session: sessionPayload,
+      sourceSessionId: String(session._id),
+      userId: String(user._id),
+    });
+  }
+
   if (recipientSessionIds.length > 0) {
     await createSessionActivityNotification({
       userId: user._id,
@@ -237,14 +342,16 @@ export const signInWithGoogle = async ({
     });
   }
 
+  const userData = toPlainUser(user);
+
   return {
     token,
     data: {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      avatar: user.avatar,
-      lastOnline: user.lastOnline,
+      _id: userData._id,
+      name: userData.name,
+      email: userData.email,
+      avatar: userData.avatar,
+      lastOnline: userData.lastOnline,
       currentSessionId: session._id,
     },
   };
@@ -262,8 +369,13 @@ export const signOutSession = async ({ sessionId, userId, deviceInfo }) => {
 
   if (!session) return;
 
-  session.status = "REVOKED";
-  await session.save();
+  await Session.deleteOne({ _id: sessionId });
+
+  emitToUserExceptSession(userId, sessionId, "auth:session-removed", {
+    removedSessionIds: [String(sessionId)],
+    sourceSessionId: sessionId,
+    userId: String(userId),
+  });
 
   const recipientSessionIds = await getOtherSessionIds(userId, sessionId);
   if (recipientSessionIds.length > 0) {
@@ -282,7 +394,7 @@ export const signOutSession = async ({ sessionId, userId, deviceInfo }) => {
 /**
  * Logout specific session (admin/device UI)
  */
-export const signOutSpecificSession = async (sessionId, userId) => {
+export const signOutSpecificSession = async (sessionId, userId, sourceSessionId = null) => {
   const session = await Session.findOne({
     _id: sessionId,
     userId,
@@ -292,8 +404,13 @@ export const signOutSpecificSession = async (sessionId, userId) => {
     throw new Error("Session not found");
   }
 
-  session.status = "REVOKED";
-  await session.save();
+  await Session.deleteOne({ _id: sessionId, userId });
+
+  emitToUserExceptSession(userId, sourceSessionId || sessionId, "auth:session-removed", {
+    removedSessionIds: [String(session._id)],
+    sourceSessionId: sourceSessionId || sessionId,
+    userId: String(userId),
+  });
 
   const recipientSessionIds = await getOtherSessionIds(userId, session._id, { includeRevoked: true });
   if (recipientSessionIds.length > 0) {
@@ -313,7 +430,20 @@ export const signOutSpecificSession = async (sessionId, userId) => {
  * Logout all sessions
  */
 export const signOutAllSession = async ({ userId, sessionId, deviceInfo }) => {
-  const recipientSessionIds = await getOtherSessionIds(userId, sessionId, { includeRevoked: true });
+  const activeSessions = await Session.find({ userId, status: "ACTIVE" }).select("_id").lean();
+  const removedSessionIds = activeSessions.map((session) => String(session._id));
+  const recipientSessionIds = activeSessions
+    .map((session) => session._id)
+    .filter((id) => String(id) !== String(sessionId));
+
+  await Session.deleteMany({ userId, status: "ACTIVE" });
+
+  emitToUserExceptSession(userId, sessionId, "auth:session-removed", {
+    removedSessionIds,
+    sourceSessionId: sessionId,
+    userId: String(userId),
+  });
+
   if (recipientSessionIds.length > 0) {
     await createSessionActivityNotification({
       userId,
@@ -325,11 +455,6 @@ export const signOutAllSession = async ({ userId, sessionId, deviceInfo }) => {
       console.warn("Failed to create logout-all notification:", err.message);
     });
   }
-
-  await Session.updateMany(
-    { userId, status: "ACTIVE" },
-    { status: "REVOKED" }
-  );
 };
 
 

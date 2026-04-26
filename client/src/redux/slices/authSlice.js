@@ -22,13 +22,23 @@ const authSlice = createSlice({
     logout(state) {
       state.isAuthenticated = false;
       state.data = null;
+      state.loading = false;
     },
 
     setLoading(state, action) {
       state.loading = action.payload;
     },
+
+    updateAuthData(state, action) {
+      if (!state.data) return;
+
+      state.data = {
+        ...state.data,
+        ...action.payload,
+      };
+    },
   },
 });
 
-export const { setAuth, logout, setLoading } = authSlice.actions;
+export const { setAuth, logout, setLoading, updateAuthData } = authSlice.actions;
 export default authSlice.reducer;

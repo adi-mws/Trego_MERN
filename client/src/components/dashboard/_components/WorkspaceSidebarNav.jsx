@@ -19,7 +19,7 @@ import {
     AutoGraphOutlined,
 } from '@mui/icons-material';
 import WorkspaceSwitcher from '../../features/workspaces/_components/WorkspaceSwitcher';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { callApi } from '../../../api/api';
 import { useDispatch, useSelector } from 'react-redux';
 import { PROJECT_ROUTES, WORKSPACE_ROUTES } from '../../../lib/routes';
@@ -30,6 +30,7 @@ import { getImageUrl } from '../../../utils/image.utils';
 import { resolveWorkspaceRole } from '../../../utils/workspaceRole.utils';
 import { isAdmin } from '../../../utils/permissions.utils';
 import { useSocketEvent } from '../../../lib/socket';
+import { removeProject } from '../../../redux/slices/workspaceSlice';
 
 export default function WorkspaceSidebarNav() {
     const [openCreateProjectDialog, setOpenCreateProjectDialog] = useState(false);
@@ -70,6 +71,7 @@ export default function WorkspaceSidebarNav() {
     ]
 
     const navigate = useNavigate()
+    const location = useLocation()
 
     const [expandedGroups, setExpandedGroups] = useState({
         workspace: true,
@@ -137,6 +139,60 @@ export default function WorkspaceSidebarNav() {
         "workspace:project-created",
         handleProjectCreated,
         userIsAdmin && !!workspaceSlug && !!authUser?._id && !!currentSessionId
+    );
+
+    const handleProjectMemberAdded = useCallback((payload) => {
+        if (!payload?.project?._id) return;
+
+        if (
+            payload.sourceSessionId &&
+            String(payload.sourceSessionId) === String(currentSessionId)
+        ) {
+            return;
+        }
+
+        if (
+            payload.workspace?.slug &&
+            String(payload.workspace.slug) !== String(workspaceSlug)
+        ) {
+            return;
+        }
+
+        dispatch(addProject(payload.project));
+    }, [currentSessionId, dispatch, workspaceSlug]);
+
+    useSocketEvent(
+        "workspace:project-member-added",
+        handleProjectMemberAdded,
+        !!workspaceSlug && !!authUser?._id && !!currentSessionId
+    );
+
+    const handleProjectMemberRemoved = useCallback((payload) => {
+        const targetUserId = payload?.targetUserId ? String(payload.targetUserId) : "";
+        const currentUserId = authUser?._id ? String(authUser._id) : "";
+        const projectId = payload?.project?._id ? String(payload.project._id) : "";
+        const projectSlug = payload?.project?.slug || "";
+
+        if (!targetUserId || !currentUserId || targetUserId !== currentUserId) {
+            return;
+        }
+
+        if (!projectId) return;
+
+        dispatch(removeProject(projectId));
+
+        if (
+            projectSlug &&
+            location.pathname.includes(`/projects/${projectSlug}`)
+        ) {
+            navigate(WORKSPACE_ROUTES.workspace(workspaceSlug));
+        }
+    }, [authUser?._id, dispatch, location.pathname, navigate, workspaceSlug]);
+
+    useSocketEvent(
+        "workspace:project-member-removed",
+        handleProjectMemberRemoved,
+        !!workspaceSlug && !!authUser?._id && !!currentSessionId
     );
 
     const { _id: projectId } = useSelector((state) => state.project)

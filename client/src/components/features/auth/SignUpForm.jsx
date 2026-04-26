@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -10,20 +10,26 @@ import {
   InputAdornment,
   IconButton,
   Alert,
-  Link
+  Link,
 } from "@mui/material";
 import { Link as NavLink, useNavigate, useSearchParams } from "react-router-dom";
-import { AUTH_ROUTES } from "../../../lib/routes"
+import { APP_ROUTES, AUTH_ROUTES } from "../../../lib/routes";
 import { Visibility, VisibilityOff, PersonAddOutlined } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
 import { useAlert } from "../../../hooks/useAlert";
 import { callApi } from "../../../api/api";
+import useAuth from "../../../hooks/useAuth";
+import { useDeviceInfo } from "../../../hooks/useDeviceInfo";
+import { useGoogleIdentity } from "../../../hooks/useGoogleIdentity";
+
 export default function SignUpForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const deviceInfo = useDeviceInfo();
+  const { login } = useAuth();
   const {
     register,
     watch,
@@ -36,17 +42,59 @@ export default function SignUpForm() {
   const password = watch("password");
   const navigate = useNavigate();
   const showAlert = useAlert();
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+  const handleGoogleCredential = useCallback(async (code) => {
+    setGoogleLoading(true);
+
+    try {
+      const response = await callApi({
+        method: "POST",
+        url: "/auth/google",
+        data: {
+          code,
+          deviceInfo: {
+            deviceId: deviceInfo.deviceId,
+            ip: deviceInfo.ipAddress,
+            browser: deviceInfo.browser,
+            os: deviceInfo.os,
+            userAgent: deviceInfo.userAgent,
+          },
+        },
+      });
+
+      if (response.success) {
+        login(response?.data?.data || response?.data);
+        showAlert(response.data?.message || "Signed in with Google", "success");
+        navigate(redirect || APP_ROUTES.root);
+      } else {
+        setError(response?.error?.message || "Google sign-in failed");
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  }, [deviceInfo.browser, deviceInfo.deviceId, deviceInfo.ipAddress, deviceInfo.os, deviceInfo.userAgent, login, navigate, redirect, showAlert]);
+
+  const { ready: googleReady, promptGoogle, error: googleError } = useGoogleIdentity({
+    clientId,
+    onCredential: handleGoogleCredential,
+  });
+
+  useEffect(() => {
+    if (deviceInfo.deviceId) {
+      setError(null);
+    }
+  }, [deviceInfo.deviceId]);
+
   const onSubmit = async (data) => {
     setLoading(true);
     const response = await callApi({
       method: "POST",
       url: "/auth/sign-up",
-      data: data,
-    })
-
+      data,
+    });
 
     if (response.success) {
-
       if (redirect) navigate(`${AUTH_ROUTES.signIn}?redirect=${redirect}`);
       else navigate(AUTH_ROUTES.signIn);
       showAlert(response.data?.message, "success");
@@ -76,7 +124,6 @@ export default function SignUpForm() {
           borderColor: "divider",
         }}
       >
-        {/* Header */}
         <Box textAlign="center" mb={2}>
           <Box
             mx="auto"
@@ -102,17 +149,26 @@ export default function SignUpForm() {
           </Typography>
         </Box>
 
-        {/* Google */}
         <Button
           fullWidth
           variant="outlined"
           size="small"
-          onClick={() => setGoogleLoading(true)}
-          disabled={googleLoading}
+          onClick={() => {
+            setGoogleLoading(true);
+            const started = promptGoogle();
+            if (!started) setGoogleLoading(false);
+          }}
+          disabled={!deviceInfo.deviceId || !googleReady || googleLoading}
           sx={{ height: 40, textTransform: "none", fontWeight: 500 }}
         >
-          {googleLoading ? <CircularProgress size={18} /> : "Sign up with Google"}
+          {googleLoading ? <CircularProgress size={18} /> : "Continue with Google"}
         </Button>
+
+        {googleError && (
+          <Alert severity="error" sx={{ mt: 1 }}>
+            {googleError}
+          </Alert>
+        )}
 
         <Divider sx={{ my: 1.8 }}>
           <Typography variant="caption" color="text.secondary">
@@ -126,7 +182,6 @@ export default function SignUpForm() {
           </Alert>
         )}
 
-        {/* Form */}
         <Box component="form" onSubmit={handleSubmit(onSubmit)}>
           <TextField
             size="small"
@@ -176,7 +231,7 @@ export default function SignUpForm() {
                 <InputAdornment position="end">
                   <IconButton
                     size="small"
-                    onClick={() => setShowPassword(v => !v)}
+                    onClick={() => setShowPassword((v) => !v)}
                   >
                     {showPassword ? (
                       <VisibilityOff fontSize="small" />
@@ -198,8 +253,7 @@ export default function SignUpForm() {
             fullWidth
             {...register("confirmPassword", {
               required: "Please confirm your password",
-              validate: value =>
-                value === password || "Passwords do not match",
+              validate: (value) => value === password || "Passwords do not match",
             })}
             error={!!errors.confirmPassword}
             helperText={errors.confirmPassword?.message}
@@ -208,7 +262,7 @@ export default function SignUpForm() {
                 <InputAdornment position="end">
                   <IconButton
                     size="small"
-                    onClick={() => setShowConfirmPassword(v => !v)}
+                    onClick={() => setShowConfirmPassword((v) => !v)}
                   >
                     {showConfirmPassword ? (
                       <VisibilityOff fontSize="small" />
@@ -220,8 +274,6 @@ export default function SignUpForm() {
               ),
             }}
           />
-
-
 
           <Button
             type="submit"
@@ -239,22 +291,19 @@ export default function SignUpForm() {
           </Button>
         </Box>
 
-        {/* Footer */}
         <Box textAlign="center" mt={2}>
-          <Box textAlign="center" mt={2}>
-            <Typography variant="caption" color="text.secondary">
-              Already have an account?{" "}
-              <Link
-                component={NavLink}
-                to={AUTH_ROUTES.signIn}
-                variant="caption"
-                underline="none"
-                sx={{ fontWeight: 600 }}
-              >
-                Sign in
-              </Link>
-            </Typography>
-          </Box>
+          <Typography variant="caption" color="text.secondary">
+            Already have an account?{" "}
+            <Link
+              component={NavLink}
+              to={AUTH_ROUTES.signIn}
+              variant="caption"
+              underline="none"
+              sx={{ fontWeight: 600 }}
+            >
+              Sign in
+            </Link>
+          </Typography>
         </Box>
       </Paper>
     </Box>

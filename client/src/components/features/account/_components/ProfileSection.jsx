@@ -19,8 +19,11 @@ import { useState, useEffect } from "react";
 import SectionHeader from "./SectionHeader";
 import { useUserGlobal } from "../../../../hooks/useUserGlobal";
 import { callApi } from "../../../../api/api";
+import { useDispatch } from "react-redux";
+import { updateAuthData } from "../../../../redux/slices/authSlice";
 function ProfileSection() {
   const { user, updateUser } = useUserGlobal();
+  const dispatch = useDispatch();
 
   const [form, setForm] = useState({
     name: "",
@@ -100,6 +103,7 @@ function ProfileSection() {
 
       if (res?.success) {
         updateUser(res.data.data);
+        dispatch(updateAuthData(res.data.data));
         setIsDirty(false);
       }
     } catch (err) {

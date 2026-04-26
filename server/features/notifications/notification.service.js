@@ -274,6 +274,142 @@ export async function createProjectCreationNotification({
   return payload;
 }
 
+export async function createProjectMemberAddedNotification({
+  project,
+  workspace,
+  userId,
+  targetUserId,
+  sourceSessionId,
+}) {
+  if (!project?._id || !workspace?._id || !userId || !targetUserId) {
+    return null;
+  }
+
+  const projectData =
+    typeof project.toObject === "function" ? project.toObject() : project;
+  const workspaceData =
+    typeof workspace.toObject === "function" ? workspace.toObject() : workspace;
+
+  const workspaceMemberIds = await WorkspaceMember.distinct("userId", {
+    workspaceId: workspaceData._id,
+    role: { $in: ["OWNER", "ADMIN"] },
+  });
+
+  const activeSessions = await getActiveSessionsByUserIds([
+    ...workspaceMemberIds,
+    targetUserId,
+  ]);
+
+  const recipientSessions = activeSessions.map((session) => ({
+    userId: String(session.userId),
+    sessionId: String(session._id),
+  }));
+
+  const payload = await createNotificationForSessions({
+    title: "Project member added",
+    message: `A member was added to ${projectData.name} in ${workspaceData.name}.`,
+    toastMessage: `${projectData.name} was updated with a new member.`,
+    type: "ACTION",
+    iconKey: "PROJECT",
+    important: true,
+    triggeredByType: "USER",
+    triggeredBy: userId,
+    scopeType: "WORKSPACE",
+    scopeId: workspaceData._id,
+    workspaceId: workspaceData._id,
+    workspaceName: workspaceData.name,
+    workspaceSlug: workspaceData.slug,
+    projectId: projectData._id,
+    projectName: projectData.name,
+    projectSlug: projectData.slug,
+    entityType: "PROJECT_MEMBER",
+    entityId: targetUserId,
+    link: `/app/${workspaceData.slug}/projects/${projectData.slug}/members`,
+    sourceSessionId,
+    recipientSessions,
+  });
+
+  if (payload) {
+    const eventPayload = {
+      project: {
+        ...projectData,
+        workspace: workspaceData._id,
+        workspaceId: workspaceData._id,
+        workspaceSlug: workspaceData.slug,
+        workspaceName: workspaceData.name,
+      },
+      workspace: {
+        _id: workspaceData._id,
+        name: workspaceData.name,
+        slug: workspaceData.slug,
+      },
+      targetUserId: String(targetUserId),
+      sourceSessionId,
+      notification: payload,
+    };
+
+    const emittedUsers = new Set();
+    for (const recipient of recipientSessions) {
+      if (emittedUsers.has(recipient.userId)) continue;
+      emittedUsers.add(recipient.userId);
+      emitToUser(recipient.userId, "workspace:project-member-added", eventPayload);
+    }
+  }
+
+  return payload;
+}
+
+export async function createProjectMemberRemovedNotification({
+  project,
+  workspace,
+  userId,
+  sourceSessionId,
+}) {
+  if (!project?._id || !workspace?._id || !userId) {
+    return null;
+  }
+
+  const projectData =
+    typeof project.toObject === "function" ? project.toObject() : project;
+  const workspaceData =
+    typeof workspace.toObject === "function" ? workspace.toObject() : workspace;
+
+  const workspaceMemberIds = await WorkspaceMember.distinct("userId", {
+    workspaceId: workspaceData._id,
+    role: { $in: ["OWNER", "ADMIN"] },
+  });
+
+  const activeSessions = await getActiveSessionsByUserIds(workspaceMemberIds);
+  const recipientSessions = activeSessions.map((session) => ({
+    userId: String(session.userId),
+    sessionId: String(session._id),
+  }));
+
+  return await createNotificationForSessions({
+    title: "Project member removed",
+    message: `${projectData.name} no longer has one of its members.`,
+    toastMessage: `${projectData.name} membership was updated.`,
+    type: "ACTION",
+    iconKey: "PROJECT",
+    important: true,
+    triggeredByType: "USER",
+    triggeredBy: userId,
+    scopeType: "WORKSPACE",
+    scopeId: workspaceData._id,
+    workspaceId: workspaceData._id,
+    workspaceName: workspaceData.name,
+    workspaceSlug: workspaceData.slug,
+    projectId: projectData._id,
+    projectName: projectData.name,
+    projectSlug: projectData.slug,
+    entityType: "PROJECT_MEMBER",
+    entityId: projectData._id,
+    link: `/app/${workspaceData.slug}/projects/${projectData.slug}/members`,
+    sourceSessionId,
+    recipientSessions,
+  });
+}
+
 export async function createSessionActivityNotification({
   userId,
   sourceSessionId,

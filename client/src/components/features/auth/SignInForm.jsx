@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -12,7 +12,6 @@ import {
   Alert,
   Link,
 } from "@mui/material";
-import crypto from "crypto";
 import { Visibility, VisibilityOff, LockOutlined } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
 import { Link as NavLink, useNavigate, useSearchParams } from "react-router-dom";
@@ -20,56 +19,20 @@ import { APP_ROUTES, AUTH_ROUTES } from "../../../lib/routes";
 import { callApi } from "../../../api/api";
 import { useAlert } from "../../../hooks/useAlert";
 import useAuth from "../../../hooks/useAuth";
+import { useDeviceInfo } from "../../../hooks/useDeviceInfo";
+import { useGoogleIdentity } from "../../../hooks/useGoogleIdentity";
 
 export default function SignInForm() {
-
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const [deviceId, setDeviceId] = useState("");
-  const [ipAddress, setIpAddress] = useState("");
-  const [browser, setBrowser] = useState("");
-  const [os, setOs] = useState("");
-  const [userAgent, setUserAgent] = useState("");
+  const deviceInfo = useDeviceInfo();
   const { login } = useAuth();
   const navigate = useNavigate();
   const showAlert = useAlert();
-  useEffect(() => {
-    let id = localStorage.getItem("deviceId");
-
-    if (!id) {
-      id = crypto.randomUUID(); // modern browsers
-      localStorage.setItem("deviceId", id);
-    }
-
-    setDeviceId(id);
-    // User Agent
-    const ua = navigator.userAgent;
-    setUserAgent(ua);
-
-    // Detect OS
-    if (ua.includes("Windows")) setOs("Windows");
-    else if (ua.includes("Mac")) setOs("MacOS");
-    else if (ua.includes("Linux")) setOs("Linux");
-    else if (ua.includes("Android")) setOs("Android");
-    else if (ua.includes("iPhone")) setOs("iOS");
-    else setOs("Unknown");
-
-    // Detect Browser
-    if (ua.includes("Chrome")) setBrowser("Chrome");
-    else if (ua.includes("Firefox")) setBrowser("Firefox");
-    else if (ua.includes("Safari")) setBrowser("Safari");
-    else if (ua.includes("Edge")) setBrowser("Edge");
-    else setBrowser("Unknown");
-
-    // Fetch IP
-    fetch("https://api.ipify.org?format=json")
-      .then(res => res.json())
-      .then(data => setIpAddress(data.ip))
-      .catch(() => setIpAddress("Unknown"));
-  }, []);
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
   const {
     register,
@@ -79,7 +42,48 @@ export default function SignInForm() {
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get("redirect");
 
-  //  Credentials Sign In
+  const handleGoogleCredential = useCallback(async (code) => {
+    setGoogleLoading(true);
+
+    try {
+      const response = await callApi({
+        method: "POST",
+        url: "/auth/google",
+        data: {
+          code,
+          deviceInfo: {
+            deviceId: deviceInfo.deviceId,
+            ip: deviceInfo.ipAddress,
+            browser: deviceInfo.browser,
+            os: deviceInfo.os,
+            userAgent: deviceInfo.userAgent,
+          },
+        },
+      });
+
+      if (response.success) {
+        login(response?.data?.data || response?.data);
+        showAlert(response.data?.message || "Signed in with Google", "success");
+        navigate(redirect || APP_ROUTES.root);
+      } else {
+        setError(response?.error?.message || "Google sign-in failed");
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  }, [deviceInfo.browser, deviceInfo.deviceId, deviceInfo.ipAddress, deviceInfo.os, deviceInfo.userAgent, login, navigate, redirect, showAlert]);
+
+  const { ready: googleReady, promptGoogle, error: googleError } = useGoogleIdentity({
+    clientId,
+    onCredential: handleGoogleCredential,
+  });
+
+  useEffect(() => {
+    if (deviceInfo.deviceId) {
+      setError(null);
+    }
+  }, [deviceInfo.deviceId]);
+
   const onSubmit = async (data) => {
     setLoading(true);
     const response = await callApi({
@@ -88,34 +92,26 @@ export default function SignInForm() {
       data: {
         ...data,
         deviceInfo: {
-          deviceId,
-          ip: ipAddress,
-          browser,
-          os,
-          userAgent
-        }
+          deviceId: deviceInfo.deviceId,
+          ip: deviceInfo.ipAddress,
+          browser: deviceInfo.browser,
+          os: deviceInfo.os,
+          userAgent: deviceInfo.userAgent,
+        },
       },
-    })
+    });
 
     if (response.success) {
-      login(response?.data);
+      login(response?.data?.data || response?.data);
       showAlert(response.data?.message, "success");
-
       navigate(redirect || APP_ROUTES.root);
-    }
-    else {
-      console.log(response.error)
+    } else {
       setError(response?.error?.message || "An error occurred. Please try again.");
     }
 
     setLoading(false);
-  }
+  };
 
-
-  // todo: Google Sign IN 
-
-  const handleGoogleSignIn = async () => {
-  }
   return (
     <Box
       minHeight="100dvh"
@@ -136,7 +132,6 @@ export default function SignInForm() {
           borderColor: "divider",
         }}
       >
-        {/* Header */}
         <Box textAlign="center" mb={2}>
           <Box
             mx="auto"
@@ -162,17 +157,26 @@ export default function SignInForm() {
           </Typography>
         </Box>
 
-        {/* Google */}
         <Button
           fullWidth
           variant="outlined"
           size="small"
-          onClick={handleGoogleSignIn}
-          disabled={googleLoading}
+          onClick={() => {
+            setGoogleLoading(true);
+            const started = promptGoogle();
+            if (!started) setGoogleLoading(false);
+          }}
+          disabled={!deviceInfo.deviceId || !googleReady || googleLoading}
           sx={{ height: 40, textTransform: "none", fontWeight: 500 }}
         >
           {googleLoading ? <CircularProgress size={18} /> : "Continue with Google"}
         </Button>
+
+        {googleError && (
+          <Alert severity="error" sx={{ mt: 1 }}>
+            {googleError}
+          </Alert>
+        )}
 
         <Divider sx={{ my: 1.8 }}>
           <Typography variant="caption" color="text.secondary">
@@ -186,7 +190,6 @@ export default function SignInForm() {
           </Alert>
         )}
 
-        {/* Form */}
         <Box component="form" onSubmit={handleSubmit(onSubmit)}>
           <TextField
             label="Email"
@@ -212,7 +215,7 @@ export default function SignInForm() {
                 <InputAdornment position="end">
                   <IconButton
                     size="small"
-                    onClick={() => setShowPassword(v => !v)}
+                    onClick={() => setShowPassword((v) => !v)}
                   >
                     {showPassword ? (
                       <VisibilityOff fontSize="small" />
@@ -254,15 +257,16 @@ export default function SignInForm() {
           </Button>
         </Box>
 
-        {/* Footer */}
         <Box textAlign="center" mt={2}>
           <Typography variant="caption" color="text.secondary">
             New here?{" "}
             <Link
               component={NavLink}
               to={
-                redirect ? 
-                `${AUTH_ROUTES.signUp}?redirect=${redirect}` : AUTH_ROUTES.signUp}
+                redirect
+                  ? `${AUTH_ROUTES.signUp}?redirect=${redirect}`
+                  : AUTH_ROUTES.signUp
+              }
               variant="caption"
               underline="none"
               color="primary.main"

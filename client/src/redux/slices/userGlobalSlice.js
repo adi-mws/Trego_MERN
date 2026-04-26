@@ -40,9 +40,58 @@ const userGlobalSlice = createSlice({
       if (!state.user) return;
 
       state.user.preferences = {
-        ...state.user.prefrences,
+        ...state.user.preferences,
         ...action.payload,
       };
+    },
+
+    setUserSessions: (state, action) => {
+      if (!state.user) return;
+
+      state.user.sessions = Array.isArray(action.payload) ? action.payload : [];
+    },
+
+    addUserSession: (state, action) => {
+      if (!state.user) return;
+
+      const incoming = action.payload;
+      const sessionId = String(incoming?.id || incoming?._id || "");
+      if (!sessionId) return;
+
+      const sessions = Array.isArray(state.user.sessions)
+        ? [...state.user.sessions]
+        : [];
+
+      const normalizedSession = {
+        ...incoming,
+        id: sessionId,
+      };
+
+      const existingIndex = sessions.findIndex((session) =>
+        String(session?.id || session?._id) === sessionId
+      );
+
+      if (existingIndex >= 0) {
+        sessions[existingIndex] = {
+          ...sessions[existingIndex],
+          ...normalizedSession,
+        };
+      } else {
+        sessions.unshift(normalizedSession);
+      }
+
+      state.user.sessions = sessions;
+    },
+
+    removeUserSession: (state, action) => {
+      if (!state.user?.sessions) return;
+
+      const sessionId = String(action.payload || "");
+      if (!sessionId) return;
+
+      state.user.sessions = state.user.sessions.filter((session) =>
+        String(session?.id || session?._id) !== sessionId
+      );
     },
 
 
@@ -58,7 +107,7 @@ const userGlobalSlice = createSlice({
     },
 
     // Reset (logout)
-    resetUserGlobal: () => initialState,
+    resetUserGlobal: () => ({ ...initialState }),
   },
 });
 
@@ -67,6 +116,9 @@ export const {
   updateUserGlobal,
   updateProfile,
   updatePreferences,
+  setUserSessions,
+  addUserSession,
+  removeUserSession,
   setUserLoading,
   setUserError,
   resetUserGlobal,

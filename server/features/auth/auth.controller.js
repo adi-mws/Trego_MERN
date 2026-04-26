@@ -67,16 +67,16 @@ export const signUpController = async (req, res) => {
 // googleLogin 
 export const signInGoogleController = async (req, res) => {
   try {
-    const { idToken } = req.body;
+    const { idToken, code, deviceInfo: clientDeviceInfo } = req.body;
 
-    if (!idToken) {
+    if (!idToken && !code) {
       return res.status(400).json({
         success: false,
-        message: "Missing Google token",
+        message: "Missing Google authorization payload",
       });
     }
 
-    const deviceInfo = {
+    const deviceInfo = clientDeviceInfo || {
       deviceId: req.headers["x-device-id"] || "unknown",
       ip: req.ip,
       userAgent: req.headers["user-agent"],
@@ -86,6 +86,7 @@ export const signInGoogleController = async (req, res) => {
 
     const { token, data } = await signInWithGoogle({
       idToken,
+      code,
       deviceInfo,
     });
 
@@ -95,6 +96,7 @@ export const signInGoogleController = async (req, res) => {
     return res.json({
       success: true,
       data,
+      message: "Signed in with Google",
     });
   } catch (err) {
     console.error("Google login error:", err);
@@ -147,7 +149,7 @@ export const signOutDevice = async (req, res) => {
     const { sessionId } = req.params;
     const userId = req.user.userId;
 
-    await signOutSpecificSession(sessionId, userId);
+    await signOutSpecificSession(sessionId, userId, req.user.sessionId);
 
     return res.json({
       success: true,

@@ -16,7 +16,6 @@ import searchRoutes from "./features/search/search.route.js"
 import notificationRoutes from "./features/notifications/notification.route.js"
 connectDB();
 
-// CRON JOBS
 
 const app = express();
 const server = http.createServer(app);
