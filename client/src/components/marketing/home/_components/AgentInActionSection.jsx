@@ -11,7 +11,7 @@ export default function AgentInActionSection() {
   return (
     <Box sx={{ py: 10 }}>
       <Stack spacing={2} textAlign="center" mb={6}>
-        <Typography variant="h4" fontWeight={700}>
+        <Typography variant="h4" fontWeight={500}>
           AI That Actually Works For You
         </Typography>
         <Typography color="text.secondary">

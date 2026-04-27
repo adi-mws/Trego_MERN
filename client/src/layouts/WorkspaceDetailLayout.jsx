@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import WorkspaceSidebarNav from '../components/dashboard/_components/WorkspaceSidebarNav'
 import Header from '../components/dashboard/_components/Header'
 import RightSidebar from '../components/dashboard/_components/RightSidebar'
-import { Box, Stack, Avatar, Chip } from '@mui/material'
+import { Box, Drawer, Stack, Avatar, Chip, useMediaQuery, useTheme } from '@mui/material'
+import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined'
 import { Outlet, useLocation, useParams } from 'react-router-dom'
 
 import { useHeader } from '../contexts/HeaderContext'
@@ -27,6 +28,9 @@ export default function WorkspaceDetailLayout() {
   const { setHeaderLeftContent, setHeaderTitle } = useHeader()
   const { workspaceSlug, projectSlug } = useParams()
   const location = useLocation()
+  const theme = useTheme()
+  const isDesktop = useMediaQuery(theme.breakpoints.up('md'))
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   const dispatch = useDispatch()
   const workspace = useSelector((state) => state?.workspace)
@@ -136,25 +140,44 @@ export default function WorkspaceDetailLayout() {
     )
   }, [authUser, location.pathname, projectSlug, setHeaderLeftContent, setHeaderTitle, workspace, workspaceSlug])
 
-  const isProjectView = Boolean(projectSlug)
-
   return (
     <Box
       sx={{
-        display: 'grid',
-        gridTemplateColumns: isProjectView
-          ? '240px 1fr auto'
-          : '240px 1fr auto',
-        gridTemplateRows: 'auto 1fr',
-        height: '100vh',
+        height: '100dvh',
+        maxHeight: '100dvh',
+        display: 'flex',
+        alignItems: 'stretch',
+        bgcolor: 'background.default',
+        overflow: 'hidden',
+        position: 'relative',
       }}
     >
+      <Drawer
+        open={!isDesktop && mobileSidebarOpen}
+        onClose={() => setMobileSidebarOpen(false)}
+        variant="temporary"
+        ModalProps={{ keepMounted: true }}
+        PaperProps={{
+          sx: {
+            width: 290,
+            maxWidth: '100vw',
+          },
+        }}
+      >
+        <WorkspaceSidebarNav onNavigate={() => setMobileSidebarOpen(false)} />
+      </Drawer>
+
       {/* LEFT SIDEBAR */}
       <Box
         sx={{
-          gridRow: '1 / span 2',
+          display: { xs: 'none', md: 'block' },
+          width: 260,
+          flexShrink: 0,
           borderRight: '1px solid',
           borderColor: 'divider',
+          minWidth: 0,
+          height: '100dvh',
+          overflow: 'hidden',
         }}
       >
         <WorkspaceSidebarNav />
@@ -163,45 +186,52 @@ export default function WorkspaceDetailLayout() {
       {/* HEADER (ONLY CENTER) */}
       <Box
         sx={{
-          gridColumn: '2',
-          gridRow: '1',
-          borderBottom: '1px solid',
-          borderColor: 'divider',
+          flex: 1,
+          minWidth: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100dvh',
+          overflow: 'hidden',
         }}
       >
-        <Header />
-      </Box>
+        <Header
+          onMenuClick={() => setMobileSidebarOpen(true)}
+          menuIcon={<MenuOutlinedIcon />}
+        />
 
-      {/* MAIN CONTENT */}
-      <Box
-        sx={{
-          gridColumn: '2',
-          gridRow: '2',
-          display: "flex",
-          flexDirection: "column",
-          height: "100%",
-          minHeight: 0,
-          overflow: "hidden",
-          p: 2,
-          gap: 1.5,
-        }}
-      >
-        <Box sx={{ flex: 1, minHeight: 0, overflow: "auto" }}>
-          <Outlet context={{ workspace }} />
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            flex: 1,
+            minHeight: 0,
+            overflow: "hidden",
+            p: { xs: 1.5, sm: 2 },
+            gap: 1.5,
+            minWidth: 0,
+          }}
+        >
+          <Box sx={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+            <Outlet context={{ workspace }} />
+          </Box>
         </Box>
       </Box>
 
-      {/* RIGHT SIDEBAR */}
-
       <Box
         sx={{
-          gridColumn: "3",
-          gridRow: "1 / span 2",
-          borderLeft: "1px solid",
-          borderColor: "divider",
+          display: 'flex',
+          flexShrink: 0,
+          alignSelf: 'stretch',
+          borderLeft: '1px solid',
+          borderColor: 'divider',
+          position: 'sticky',
+          top: 0,
+          height: '100dvh',
+          maxHeight: '100dvh',
+          overflow: 'hidden',
         }}
       >
-        <RightSidebar />
+        <RightSidebar key={projectSlug || workspaceSlug} />
       </Box>
     </Box>
   )

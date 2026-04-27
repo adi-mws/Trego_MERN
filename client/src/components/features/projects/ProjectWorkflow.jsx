@@ -209,12 +209,12 @@ function WorkflowBuilderInner() {
   );
 
   useEffect(() => {
-    if (workflowNodes.length === 0) {
-      setFlowNodes([]);
-      return;
-    }
-
     const timer = window.setTimeout(() => {
+      if (workflowNodes.length === 0) {
+        setFlowNodes([]);
+        return;
+      }
+
       const nextNodes = workflowNodes.map((node) => ({ ...node }));
 
       if (isInitialLayout.current) {
@@ -386,10 +386,10 @@ function WorkflowBuilderInner() {
       title="You do not have permission to manage workflows"
       message="Ask a project admin to edit the workflow designer."
     >
-    <Box sx={{ display: "flex", height: "100%", overflow: 'hidden', minHeight: 0, flexDirection: "column" }}>
+    <Box sx={{ display: "flex", height: "100%", overflow: 'hidden', minHeight: 0, flexDirection: { xs: "column", lg: "row" }, minWidth: 0 }}>
       <Box
         sx={{
-          px: 1.75,
+          px: { xs: 1.5, md: 1.75 },
           py: 0.75,
           borderBottom: "1px solid",
           borderColor: "divider",
@@ -399,9 +399,10 @@ function WorkflowBuilderInner() {
           justifyContent: "space-between",
           gap: 2,
           flexShrink: 0,
+          flexWrap: "wrap",
         }}
       >
-        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ minWidth: 0 }}>
           <Button
             variant="text"
             size="small"
@@ -426,8 +427,8 @@ function WorkflowBuilderInner() {
           )}
         </Stack>
       </Box>
-      <Box sx={{ flex: 1, display: "flex", minHeight: 0 }}>
-        <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <Box sx={{ flex: 1, display: "flex", minHeight: 0, minWidth: 0, flexDirection: { xs: "column", lg: "row" } }}>
+        <Box sx={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
           <Box sx={{ flex: 1, minHeight: 0 }}>
           <ReactFlow
             nodes={canvasNodes}

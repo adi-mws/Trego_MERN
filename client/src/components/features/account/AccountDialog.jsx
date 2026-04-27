@@ -5,6 +5,8 @@ import {
   Stack,
   Divider,
   IconButton,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import PersonIcon from "@mui/icons-material/Person";
@@ -44,6 +46,8 @@ const SECTIONS = [
 
 export default function AccountDialog() {
   const { open, closeDialog, setActive, active } = useAccountDialog();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const profile = {};
 
   const avatarUrl = "";
@@ -71,8 +75,30 @@ export default function AccountDialog() {
   };
 
   return (
-    <Dialog open={open} onClose={closeDialog} maxWidth="lg" fullWidth>
-      <Box sx={{ display: "flex", height: 580, overflow: "hidden", position: "relative" }}>
+    <Dialog
+      open={open}
+      onClose={closeDialog}
+      maxWidth="lg"
+      fullWidth
+      fullScreen={isMobile}
+      PaperProps={{
+        sx: {
+          height: { xs: "100dvh", sm: 620 },
+          maxHeight: { xs: "100dvh", sm: "90dvh" },
+          borderRadius: { xs: 0, sm: 3 },
+          overflow: "hidden",
+        },
+      }}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: { xs: "column", md: "row" },
+          height: "100%",
+          overflow: "hidden",
+          position: "relative",
+        }}
+      >
 
         <IconButton
           onClick={closeDialog}
@@ -81,6 +107,7 @@ export default function AccountDialog() {
             top: 10,
             right: 10,
             zIndex: 10,
+            bgcolor: "background.paper",
           }}
         >
           <CloseIcon />
@@ -89,13 +116,15 @@ export default function AccountDialog() {
         {/* Sidebar */}
         <Box
           sx={{
-            width: 240,
-            borderRight: "1px solid #e0e0e0",
-            p: 2,
+            width: { xs: "100%", md: 240 },
+            borderRight: { xs: "none", md: "1px solid #e0e0e0" },
+            borderBottom: { xs: "1px solid #e0e0e0", md: "none" },
+            p: { xs: 1.25, md: 2 },
             bgcolor: "background.paper",
             display: "flex",
             flexDirection: "column",
-            gap: 2,
+            gap: 1.5,
+            flexShrink: 0,
           }}
         >
           <Typography
@@ -106,7 +135,14 @@ export default function AccountDialog() {
             Settings
           </Typography>
 
-          <Stack gap={0.5}>
+          <Stack
+            direction={{ xs: "row", md: "column" }}
+            gap={0.75}
+            sx={{
+              overflowX: { xs: "auto", md: "visible" },
+              pb: { xs: 0.5, md: 0 },
+            }}
+          >
             {SECTIONS.map((item) => {
               const isActive = active === item.key;
 
@@ -124,6 +160,8 @@ export default function AccountDialog() {
                     cursor: "pointer",
                     fontSize: 14,
                     fontWeight: isActive ? 600 : 500,
+                    minWidth: { xs: 110, md: "auto" },
+                    flexShrink: 0,
 
                     bgcolor: isActive ? "primary.main" : "transparent",
                     color: isActive
@@ -167,11 +205,12 @@ export default function AccountDialog() {
           sx={{
             flex: 1,
             overflowY: "auto",
-            p: 3,
+            p: { xs: 2, sm: 3 },
             bgcolor: "background.default",
+            minWidth: 0,
           }}
         >
-          <Stack spacing={3}>{renderContent()}</Stack>
+          <Stack spacing={{ xs: 2, sm: 3 }}>{renderContent()}</Stack>
         </Box>
       </Box>
     </Dialog>

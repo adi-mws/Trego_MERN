@@ -24,7 +24,13 @@ export default function ProjectTaskStateHistory() {
     setLoading(false);
   }, [projectId]);
 
-  useEffect(() => { fetchHistory(); }, [fetchHistory]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void fetchHistory();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [fetchHistory]);
 
   const filtered = history.filter(h => {
     if (!search) return true;
@@ -52,7 +58,7 @@ export default function ProjectTaskStateHistory() {
   );
 
   return (
-    <Box sx={{ p: 3, width: "100%", maxWidth: "none", mx: 0 }}>
+    <Box sx={{ p: { xs: 1.5, md: 3 }, width: "100%", maxWidth: "none", mx: 0, minWidth: 0 }}>
       <Box mb={3}>
         <Typography variant="h5" fontWeight={500}>Task State History</Typography>
         <Typography variant="body2" color="text.secondary" mt={0.5}>
@@ -91,7 +97,7 @@ export default function ProjectTaskStateHistory() {
               >
                 {/* Task header */}
                 <Box sx={{ px: 2.5, py: 1.5, bgcolor: `${color}10`, borderBottom: "1px solid", borderColor: "divider" }}>
-                  <Stack direction="row" alignItems="center" spacing={1.5}>
+                  <Stack direction={{ xs: "column", sm: "row" }} alignItems={{ xs: "flex-start", sm: "center" }} spacing={1.5}>
                     <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: color, flexShrink: 0 }} />
                     <Typography fontWeight={700}>{task?.title || "Unknown Task"}</Typography>
                     {totalDelayed > 0 && (

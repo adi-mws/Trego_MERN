@@ -216,6 +216,8 @@ export const getWorkspacesInfinite = async ({
   userId,
   cursor,
   limit = 10,
+  role,
+  ownership,
 }) => {
   try {
     /* VALIDATION */
@@ -240,10 +242,79 @@ export const getWorkspacesInfinite = async ({
       };
     }
 
+    const [memberships, ownershipDocs] = await Promise.all([
+      WorkspaceMember.find({
+        workspaceId: { $in: workspaceIds },
+        userId: userObjectId,
+      })
+        .select("workspaceId role")
+        .lean(),
+      Workspace.find({
+        _id: { $in: workspaceIds },
+      })
+        .select("_id ownerId")
+        .lean(),
+    ]);
+
+    const membershipRoleByWorkspaceId = new Map(
+      memberships.map((membership) => [
+        String(membership.workspaceId),
+        String(membership.role || "").toUpperCase(),
+      ])
+    );
+
+    const ownerByWorkspaceId = new Map(
+      ownershipDocs.map((workspace) => [
+        String(workspace._id),
+        String(workspace.ownerId || ""),
+      ])
+    );
+
+    const normalizedRole = String(role || "").trim().toUpperCase();
+    const normalizedOwnership = String(ownership || "").trim().toUpperCase();
+
+    let effectiveWorkspaceIds = workspaceIds.filter((workspaceId) => {
+      const workspaceIdString = String(workspaceId);
+      const currentRole = membershipRoleByWorkspaceId.get(workspaceIdString);
+      const ownerId = ownerByWorkspaceId.get(workspaceIdString);
+      const isOwner = String(ownerId || "") === String(userObjectId);
+
+      if (normalizedOwnership === "CREATED_BY_ME" && !isOwner) {
+        return false;
+      }
+
+      if (normalizedOwnership === "SHARED_WITH_ME" && isOwner) {
+        return false;
+      }
+
+      if (!normalizedRole) {
+        return true;
+      }
+
+      const allowedRoles =
+        normalizedRole === "ADMIN"
+          ? ["ADMIN", "OWNER"]
+          : [normalizedRole];
+
+      return allowedRoles.includes(currentRole);
+    });
+
+    const effectiveWorkspaceIdSet = new Set(
+      effectiveWorkspaceIds.map((workspaceId) => String(workspaceId))
+    );
+
+    if (!effectiveWorkspaceIdSet.size) {
+      return {
+        workspaces: [],
+        nextCursor: null,
+        hasMore: false,
+      };
+    }
+
     /* BUILD QUERY */
 
     const query = {
-      _id: { $in: workspaceIds },
+      _id: { $in: [...effectiveWorkspaceIdSet] },
     };
 
     if (cursor) {
@@ -338,6 +409,8 @@ export const getWorkspacesInfinite = async ({
       healthScore: healthMap[ws._id.toString()] || 0,
       totalMembers: memberCountMap[ws._id.toString()] || 0,
       members: memberMap[ws._id.toString()] || [],
+      currentUserRole: membershipRoleByWorkspaceId.get(ws._id.toString()) || null,
+      ownership: String(ws.ownerId || "") === String(userObjectId) ? "CREATED_BY_ME" : "SHARED_WITH_ME",
     }));
 
     const nextCursor =

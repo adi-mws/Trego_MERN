@@ -197,6 +197,7 @@ export const addStageAssignee = async (req, res, next) => {
       stageId,
       projectMemberId,
       assignedBy: req.user.userId,
+      sourceSessionId: req.user?.sessionId || null,
     });
 
     res.status(201).json({ success: true, data });
@@ -223,6 +224,7 @@ export const replaceStageAssignees = async (req, res, next) => {
       stageId,
       projectMemberIds,
       assignedBy: req.user.userId,
+      sourceSessionId: req.user?.sessionId || null,
     });
 
     res.status(200).json({ success: true, data });

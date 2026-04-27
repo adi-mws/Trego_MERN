@@ -131,7 +131,7 @@ function ProfileSection() {
 
   return (
     <Box variant="outlined" sx={{ borderRadius: 3 }}>
-      <Box p={4}>
+      <Box p={{ xs: 2, sm: 3, md: 4 }} sx={{ minWidth: 0 }}>
         <SectionHeader
           title="Profile"
           description="Manage your identity and personal details"
@@ -139,7 +139,7 @@ function ProfileSection() {
 
         <Stack spacing={4}>
           {/* Avatar */}
-          <Stack direction="row" spacing={3} alignItems="center">
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={3} alignItems={{ xs: "flex-start", sm: "center" }}>
             <Box textAlign="center">
               <Avatar
                 src={getImageUrl(form.avatar) || undefined}
@@ -180,7 +180,7 @@ function ProfileSection() {
               />
             </Box>
 
-            <Stack flex={1} spacing={2}>
+            <Stack flex={1} spacing={2} sx={{ width: "100%" }}>
               <TextField
                 label="Full name"
                 size="small"
@@ -231,6 +231,7 @@ function ProfileSection() {
               onChange={(e) =>
                 setForm((p) => ({ ...p, githubUrl: e.target.value }))
               }
+              fullWidth
             />
 
             <TextField
@@ -240,6 +241,7 @@ function ProfileSection() {
               onChange={(e) =>
                 setForm((p) => ({ ...p, linkedinUrl: e.target.value }))
               }
+              fullWidth
             />
 
             <TextField
@@ -249,17 +251,19 @@ function ProfileSection() {
               onChange={(e) =>
                 setForm((p) => ({ ...p, facebookUrl: e.target.value }))
               }
+              fullWidth
             />
           </Stack>
 
           {/* Actions */}
           {isDirty && (
-            <Stack direction="row" spacing={2} justifyContent="flex-end">
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="flex-end">
               <Button
                 size="small"
                 variant="outlined"
                 onClick={handleCancel}
                 disabled={loading}
+                sx={{ width: { xs: "100%", sm: "auto" } }}
               >
                 Cancel
               </Button>
@@ -269,6 +273,7 @@ function ProfileSection() {
                 variant="contained"
                 onClick={handleSave}
                 disabled={loading}
+                sx={{ width: { xs: "100%", sm: "auto" } }}
               >
                 {loading ? (
                   <CircularProgress size={16} color="inherit" />

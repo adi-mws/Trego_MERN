@@ -26,6 +26,7 @@ import WorkspaceMemberPage from "./components/features/workspaces/WorkspaceMembe
 import WorkspaceProjectsPage from "./components/features/workspaces/WorkspaceProjectsPage";
 import ProjectSettings from "./components/features/projects/ProjectSettings";
 import ProjectOverview from "./components/features/projects/ProjectOverview";
+import ProjectClientChatPage from "./components/features/projects/ProjectClientChatPage";
 import ProjectMembers from "./components/features/projects/ProjectMembers";
 import ProjectTaskBoard from "./components/features/projects/ProjectTaskBoard";
 import ProjectTasks from "./components/features/projects/ProjectTasks";
@@ -77,6 +78,7 @@ export default function AppRoutes() {
                 <Route path="projects" element={<WorkspaceProjectsPage />} />
                 <Route path="projects/:projectSlug" element={<ProjectLayout />}>
                   <Route index element={<ProjectOverview />} />
+                  <Route path="chat" element={<ProjectClientChatPage />} />
                   <Route path="tasks" element={<ProjectTasks />} />
                   <Route path="roles" element={<ProjectRoles />} />
                   <Route path="board" element={<ProjectTaskBoard />} />

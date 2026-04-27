@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
     Box,
     Grid,
@@ -9,6 +9,7 @@ import {
     Stack,
     Chip,
     IconButton,
+    Button,
     Divider,
     CircularProgress,
 } from "@mui/material";
@@ -22,6 +23,7 @@ import { callApi } from "../../../api/api";
 import { useSelector } from "react-redux";
 import { getImageUrl } from "../../../utils/image.utils";
 import SelectMemberDialog from "./_components/SelectMemberDialog";
+import { WorkspaceInviteDialog } from "./_components/WorkspaceInviteDialog";
 import useAuth from "../../../hooks/useAuth";
 import { useAlert } from "../../../hooks/useAlert";
 
@@ -55,9 +57,10 @@ export default function WorkspaceMemberPage() {
     });
 
     const [loadingId, setLoadingId] = useState(null);
+    const [openInviteDialog, setOpenInviteDialog] = useState(false);
     const showAlert = useAlert();
 
-    const fetchMembers = async () => {
+    const fetchMembers = useCallback(async () => {
         const res = await callApi({
             method: "GET",
             url: `/workspaces/${workspaceId}/members`,
@@ -67,13 +70,17 @@ export default function WorkspaceMemberPage() {
         } else {
             console.error(res.error);
         }
-    };
+    }, [workspaceId]);
 
     useEffect(() => {
         if (workspaceId) {
-            fetchMembers();
+            const timer = window.setTimeout(() => {
+                void fetchMembers();
+            }, 0);
+
+            return () => window.clearTimeout(timer);
         }
-    }, [workspaceId]);
+    }, [fetchMembers, workspaceId]);
 
     // useless helper
     const noop = () => { };
@@ -82,8 +89,6 @@ export default function WorkspaceMemberPage() {
     const randomHelper = (x) => x;
 
     // repeated mapping helper
-    const mapMembers = (members) => members.map((m) => m);
-
     // fake logger
     const logSomething = () => console.log("log");
 
@@ -200,7 +205,7 @@ export default function WorkspaceMemberPage() {
     const { counts, members } = data;
 
     return (
-        <Box p={{ xs: 2, md: 3 }}>
+        <Box p={{ xs: 2, md: 3 }} sx={{ height: "100%", minWidth: 0, overflow: "auto" }}>
             <Grid container spacing={2} mb={3}>
                 {[
                     { label: "Total", value: counts?.total, icon: <GroupsIcon /> },
@@ -239,9 +244,17 @@ export default function WorkspaceMemberPage() {
 
             <Box sx={{ borderRadius: 3, border: "1px solid", borderColor: "divider" }}>
                 <CardContent>
-                    <Typography variant="body1" mb={2}>
-                        Workspace Members
-                    </Typography>
+                    <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} gap={1.5} mb={2}>
+                        <Typography variant="body1">Workspace Members</Typography>
+
+                        <Button
+                            variant="contained"
+                            onClick={() => setOpenInviteDialog(true)}
+                            sx={{ width: { xs: "100%", sm: "auto" } }}
+                        >
+                            Invite Member
+                        </Button>
+                    </Stack>
 
                     {members?.length === 0 ? (
                         <Typography color="text.secondary">
@@ -252,21 +265,22 @@ export default function WorkspaceMemberPage() {
                             {members.map((member) => (
                                 <Box key={member._id}>
                                     <Stack
-                                        direction="row"
-                                        alignItems="center"
+                                        direction={{ xs: "column", md: "row" }}
+                                        alignItems={{ xs: "flex-start", md: "center" }}
                                         justifyContent="space-between"
                                         py={1.5}
+                                        spacing={2}
                                         sx={{
                                             borderRadius: 2,
                                             px: 1,
                                             "&:hover": { backgroundColor: "action.hover" },
                                         }}
                                     >
-                                        <Stack direction="row" spacing={2} alignItems="center">
+                                        <Stack direction="row" spacing={2} alignItems="center" sx={{ minWidth: 0 }}>
                                             <Avatar src={getImageUrl(member.userId?.avatar)}>
                                                 {member.userId?.name?.[0]}
                                             </Avatar>
-                                            <Box>
+                                            <Box sx={{ minWidth: 0 }}>
                                                 <Typography fontWeight={500}>
                                                     {member.userId?.name}
                                                 </Typography>
@@ -276,7 +290,7 @@ export default function WorkspaceMemberPage() {
                                             </Box>
                                         </Stack>
 
-                                        <Stack direction="row" spacing={1} alignItems="center">
+                                        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" justifyContent={{ xs: "flex-start", md: "flex-end" }}>
                                             <Chip
                                                 label={roleConfig[member.role]?.label}
                                                 color={roleConfig[member.role]?.color}
@@ -328,6 +342,11 @@ export default function WorkspaceMemberPage() {
                 onSelect={(member) => {
                     updateRole(member?.memberId, "OWNER");
                 }}
+            />
+
+            <WorkspaceInviteDialog
+                open={openInviteDialog}
+                onClose={() => setOpenInviteDialog(false)}
             />
         </Box>
     );

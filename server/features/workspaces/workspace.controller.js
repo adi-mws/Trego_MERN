@@ -115,9 +115,9 @@ export const getWorkspaceBySlug = async (req, res) => {
 export const getUserWorkspacesController = async (req, res) => {
   try {
     let searchValue = "";
-    const { search } = req.params;
+    const { search } = req.query;
     if (search) {
-      searchValue = search;
+      searchValue = String(search).trim();
     }
     const workspaces = await workspaceService.getUserWorkspaces(
       req.user.userId, searchValue
@@ -191,10 +191,18 @@ export const deleteWorkspace = async (req, res) => {
 
 export const getWorkspaceListController = async (req, res) => {
   try {
-    let { cursor, limit } = req.query;
+    let { cursor, limit, role, ownership } = req.query;
 
     // sanitize limit
     limit = Math.min(Number(limit) || 10, 20);
+
+    if (role) {
+      role = String(role).toUpperCase();
+    }
+
+    if (ownership) {
+      ownership = String(ownership).toUpperCase();
+    }
 
     // validate cursor if provided
     if (cursor && !mongoose.Types.ObjectId.isValid(cursor)) {
@@ -208,6 +216,8 @@ export const getWorkspaceListController = async (req, res) => {
       userId: req.user.userId,
       cursor,
       limit,
+      role,
+      ownership,
     });
 
     return res.status(200).json({

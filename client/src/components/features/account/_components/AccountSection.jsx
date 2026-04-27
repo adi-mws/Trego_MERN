@@ -39,7 +39,7 @@ function AccountSection() {
 
   return (
     <Box>
-      <Box p={3}>
+      <Box p={{ xs: 2, sm: 3 }} sx={{ minWidth: 0 }}>
         <SectionHeader
           title="Account"
           description="Actions related to your account"
@@ -49,12 +49,13 @@ function AccountSection() {
           Change password
         </Typography>
 
-        <Stack spacing={2} maxWidth={420}>
+        <Stack spacing={2} maxWidth={420} sx={{ width: "100%" }}>
           <TextField
             label="Current password"
             placeholder="Enter current password"
             type={showPassword.current ? "text" : "password"}
             size="small"
+            fullWidth
             InputProps={{
               endAdornment: getAdornment("current"),
             }}
@@ -65,6 +66,7 @@ function AccountSection() {
             placeholder="Enter new password"
             type={showPassword.new ? "text" : "password"}
             size="small"
+            fullWidth
             InputProps={{
               endAdornment: getAdornment("new"),
             }}
@@ -75,14 +77,15 @@ function AccountSection() {
             placeholder="Enter confirm password"
             type={showPassword.confirm ? "text" : "password"}
             size="small"
+            fullWidth
             InputProps={{
               endAdornment: getAdornment("confirm"),
             }}
           />
         </Stack>
 
-        <Stack direction="row" justifyContent="flex-end" mt={3}>
-          <Button size="small" variant="contained">
+        <Stack direction={{ xs: "column", sm: "row" }} justifyContent="flex-end" mt={3}>
+          <Button size="small" variant="contained" sx={{ width: { xs: "100%", sm: "auto" } }}>
             Update password
           </Button>
         </Stack>
@@ -100,9 +103,9 @@ function AccountSection() {
         <Grid container spacing={2} alignItems="center">
           <Grid size={12}>
             <Chip
-              sx={{ px: 2 }}
+              sx={{ px: 2, maxWidth: "100%" }}
               icon={<WarningAmber sx={{ fontSize: 18 }} />}
-              label="Delete Account – This action is permanent"
+              label="Delete Account - This action is permanent"
               color="error"
               variant="outlined"
             />
@@ -118,7 +121,12 @@ function AccountSection() {
 
           <Grid size={12}>
             <Box mt={1}>
-              <Button variant="contained" size="small" color="error">
+              <Button
+                variant="contained"
+                size="small"
+                color="error"
+                sx={{ width: { xs: "100%", sm: "auto" } }}
+              >
                 Delete Account
               </Button>
             </Box>

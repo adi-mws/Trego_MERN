@@ -159,7 +159,7 @@ function CategoryGroup({ label, color, tasks, minDate, dayWidth, onBlock, onAddT
           position: "sticky",
           left: 0,
           zIndex: 3, // slightly above items
-          width: "100vw", // Expand visually
+          width: "100%",
         }}
       >
         <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: color || "#999", flexShrink: 0 }} />
@@ -330,38 +330,38 @@ export default function ProjectTimeline() {
   );
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", minWidth: 0 }}>
       <Box
         sx={{
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "center",
-          px: 2,
+          alignItems: { xs: "flex-start", md: "center" },
+          flexDirection: { xs: "column", md: "row" },
+          px: { xs: 1.5, md: 2 },
           py: 1.5,
           borderBottom: "1px solid",
           borderColor: "divider",
           flexShrink: 0,
-          flexWrap: "wrap",
-          gap: 2
+          gap: 1.5
         }}
       >
-        <Box>
+        <Box sx={{ minWidth: 0 }}>
           <Typography variant="h5" fontWeight={500}>Project Timeline</Typography>
           <Typography variant="caption" color="text.secondary" display="block">
             {currentTime.toLocaleString()} — {tasks.length} tasks
           </Typography>
         </Box>
 
-        <Stack direction="row" spacing={2} alignItems="center">
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center" flexWrap="wrap" sx={{ width: "100%" }}>
           {(userIsAdmin || canCreateTask) && (
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setCreateCategoryId(null); setCreateOpen(true); }} sx={{ borderRadius: 2 }}>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setCreateCategoryId(null); setCreateOpen(true); }} sx={{ borderRadius: 2, width: { xs: "100%", sm: "auto" }, flexShrink: 0 }}>
               New Task
             </Button>
           )}
         </Stack>
 
         {!userIsAdmin && (
-          <Alert severity="info" sx={{ mt: 1.5, borderRadius: 2 }}>
+          <Alert severity="info" sx={{ mt: 1.5, borderRadius: 2, width: "100%" }}>
             You are viewing only the tasks assigned to you across workflow stages.
           </Alert>
         )}
@@ -508,7 +508,7 @@ export default function ProjectTimeline() {
             )}
 
             {tasks.length === 0 && (
-              <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 200, position: "sticky", left: 0, width: "100vw" }}>
+              <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 200, position: "sticky", left: 0, width: "100%" }}>
                 <Typography color="text.secondary">No tasks yet. Create one to see the timeline.</Typography>
               </Box>
             )}

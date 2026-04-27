@@ -34,9 +34,10 @@ function groupMembers(members) {
 const EXPANDED_WIDTH = 240;
 const COLLAPSED_WIDTH = 72;
 
-export default function MembersSidebar({ onBack }) {
-  const [collapsed, setCollapsed] = useState(true);
+export default function MembersSidebar({ onBack, forceCollapsed = false }) {
+  const [collapsedState, setCollapsedState] = useState(true);
   const [search, setSearch] = useState("");
+  const collapsed = forceCollapsed ? true : collapsedState;
 
   const { projectSlug } = useParams();
   const isProjectView = Boolean(projectSlug);
@@ -112,9 +113,11 @@ export default function MembersSidebar({ onBack }) {
             </IconButton>
           )}
 
-          <IconButton size="small" onClick={() => setCollapsed(!collapsed)}>
-            <MenuIcon fontSize="small" />
-          </IconButton>
+          {!forceCollapsed && (
+            <IconButton size="small" onClick={() => setCollapsedState((value) => !value)}>
+              <MenuIcon fontSize="small" />
+            </IconButton>
+          )}
         </Stack>
       </Box>
 

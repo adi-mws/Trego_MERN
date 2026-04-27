@@ -15,6 +15,7 @@ import {
   getProjectGlobalStateBySlugController,
   updateProjectMemberRolesController, 
   updateProjectController,
+  generateProjectChatReplyController,
 } from "./project.controller.js";
 import { getProjectMetrics } from "./projectMetrics.controller.js";
 
@@ -36,6 +37,7 @@ const uploadAvatar = createUploader(
 
 router.post("/", ensureAuth, uploadAvatar, createProjectController);
 router.put("/:projectId", ensureAuth, uploadAvatar, updateProjectController);
+router.post("/:projectId/ai/chat", ensureAuth, generateProjectChatReplyController);
 router.get("/global/:slug", ensureAuth, getProjectGlobalStateBySlugController);
 
 router.post("/:projectId/roles", ensureAuth, createProjectRoleController);

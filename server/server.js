@@ -14,6 +14,7 @@ import workflowRoutes from "./features/workflows/workflow.route.js"
 import taskRoutes from "./features/tasks/task.route.js"
 import searchRoutes from "./features/search/search.route.js"
 import notificationRoutes from "./features/notifications/notification.route.js"
+import agentChatRoutes from "./features/agent/agentChat.route.js"
 connectDB();
 
 
@@ -53,6 +54,7 @@ app.use("/api/workflows", workflowRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/agent", agentChatRoutes);
 
 
 app.use((err, req, res, next) => {

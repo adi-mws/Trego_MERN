@@ -137,9 +137,9 @@ export default function ProjectWorkflowsList() {
       title="You do not have permission to manage workflows"
       message="Ask a project admin to edit workflows."
     >
-      <Box sx={{ p: 3, height: "100%", display: "flex", flexDirection: "column" }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
-          <Box>
+      <Box sx={{ p: { xs: 1.5, md: 3 }, height: "100%", display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3, gap: 1.5, flexDirection: { xs: "column", sm: "row" }, alignItems: { xs: "flex-start", sm: "center" } }}>
+          <Box sx={{ minWidth: 0 }}>
             <Typography variant="h5" fontWeight={500}>
               Workflows
             </Typography>
@@ -147,7 +147,7 @@ export default function ProjectWorkflowsList() {
               Versions are grouped so you can switch between v1, v2, and later revisions in one place.
             </Typography>
           </Box>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={handleCreate}>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleCreate} sx={{ width: { xs: "100%", sm: "auto" } }}>
             Create Workflow
           </Button>
         </Box>
@@ -157,8 +157,8 @@ export default function ProjectWorkflowsList() {
             <CircularProgress />
           </Box>
         ) : (
-          <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3 }}>
-            <Table>
+          <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3, overflowX: "auto" }}>
+            <Table sx={{ minWidth: 900 }}>
               <TableHead sx={{ bgcolor: "background.default" }}>
                 <TableRow>
                   <TableCell>Workflow</TableCell>

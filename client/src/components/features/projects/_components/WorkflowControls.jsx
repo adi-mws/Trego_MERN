@@ -28,11 +28,12 @@ export default function WorkflowControls({ workflowActions }) {
                     border: `1px solid ${theme.palette.divider}`,
                     borderRadius: 2,
                     boxShadow: theme.shadows[4],
+                    maxWidth: "calc(100vw - 16px)",
                 }}
                 justifyContent={'center'}
-                bottom={16}
+                bottom={{ xs: 12, sm: 16 }}
                 spacing={0}
-                px={1}
+                px={{ xs: 0.5, sm: 1 }}
                 direction={"row"}
                 alignItems="center"
             >

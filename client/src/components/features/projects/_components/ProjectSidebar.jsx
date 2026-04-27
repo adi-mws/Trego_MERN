@@ -13,7 +13,7 @@ import {
 
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { MenuOutlined, ChevronRightOutlined, CategoryOutlined, ViewKanbanOutlined, TaskOutlined, GroupOutlined, SettingsOutlined, HistoryOutlined, ShieldOutlined, TimelineOutlined, InsightsOutlined, CommentOutlined } from "@mui/icons-material";
+import { MenuOutlined, ChevronRightOutlined, CategoryOutlined, ViewKanbanOutlined, TaskOutlined, GroupOutlined, SettingsOutlined, HistoryOutlined, ShieldOutlined, TimelineOutlined, InsightsOutlined, CommentOutlined, ChatBubbleOutlineOutlined } from "@mui/icons-material";
 import { PROJECT_ROUTES } from "../../../../lib/routes";
 import { AccountTreeOutlined } from "@mui/icons-material";
 import { canManageProject, canManageProjectMembers, canViewProjectActivity, isClient, isClientProjectRole } from "../../../../utils/permissions.utils";
@@ -22,8 +22,9 @@ import { resolveWorkspaceRole } from "../../../../utils/workspaceRole.utils";
 const EXPANDED_WIDTH = 240;
 const COLLAPSED_WIDTH = 72;
 
-const ProjectSidebar = ({ onOpenMembers }) => {
-  const [collapsed, setCollapsed] = useState(true);
+const ProjectSidebar = ({ onOpenMembers, forceCollapsed = false }) => {
+  const [collapsedState, setCollapsedState] = useState(true);
+  const collapsed = forceCollapsed ? true : collapsedState;
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -42,9 +43,9 @@ const ProjectSidebar = ({ onOpenMembers }) => {
   const menuItems = clientProjectViewer
     ? [
       {
-        label: "Overview",
-        icon: <InsightsOutlined sx={{ fontSize: 20 }} />,
-        path: PROJECT_ROUTES.overview(workspaceSlug, projectSlug),
+        label: "AI Chat",
+        icon: <ChatBubbleOutlineOutlined sx={{ fontSize: 20 }} />,
+        path: PROJECT_ROUTES.projectClientChat(workspaceSlug, projectSlug),
         visible: projectCanViewActivity,
       },
     ]
@@ -150,33 +151,27 @@ const ProjectSidebar = ({ onOpenMembers }) => {
           </Typography>
         )}
 
-        <IconButton
-          size="small"
-          onClick={() => setCollapsed(!collapsed)}
-          sx={{
-            transform: collapsed ? "rotate(180deg)" : "rotate(0deg)",
-            transition: "transform 0.2s ease",
-          }}
-        >
-          {collapsed ? <ChevronRightOutlined /> : <MenuOutlined />}
-        </IconButton>
+        {!forceCollapsed && (
+          <IconButton
+            size="small"
+            onClick={() => setCollapsedState((value) => !value)}
+            sx={{
+              transform: collapsed ? "rotate(180deg)" : "rotate(0deg)",
+              transition: "transform 0.2s ease",
+            }}
+          >
+            {collapsed ? <ChevronRightOutlined /> : <MenuOutlined />}
+          </IconButton>
+        )}
       </Box>
 
       <Divider />
 
       <List sx={{ mt: 1, px: 0.5, flex: 1, minHeight: 0 }}>
         {menuItems.map((item, index) => {
-          const isOverview =
-            index === 0 &&
-            location.pathname === PROJECT_ROUTES.overview(workspaceSlug, projectSlug)
-
           const isActive =
-            isOverview ||
-            (index !== 0 &&
-              (
-                location.pathname === item.path ||
-                location.pathname.startsWith(item.path + '/')
-              ))
+            location.pathname === item.path ||
+            location.pathname.startsWith(item.path + '/')
 
           return (
             <Tooltip

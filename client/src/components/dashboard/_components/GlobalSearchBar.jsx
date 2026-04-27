@@ -16,6 +16,7 @@ import {
   Stack,
   TextField,
   Typography,
+  useMediaQuery,
   useTheme,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
@@ -94,7 +95,7 @@ function SearchResultRow({ item, onClick }) {
       <ListItemText
         primary={
           <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-            <Typography variant="body2" fontWeight={700}>
+            <Typography variant="body2" fontWeight={500}>
               {item.title}
             </Typography>
             <Chip size="small" label={config.label} variant="outlined" sx={{ height: 20 }} />
@@ -110,10 +111,11 @@ function SearchResultRow({ item, onClick }) {
   );
 }
 
-export default function GlobalSearchBar() {
+export default function GlobalSearchBar({ compact = false }) {
   const { workspaceSlug } = useParams();
   const navigate = useNavigate();
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -124,6 +126,9 @@ export default function GlobalSearchBar() {
   const requestIdRef = useRef(0);
 
   const hasWorkspace = Boolean(workspaceSlug);
+  const queryText = query.trim();
+  const showResultsOnlyOnMobile = isMobile && queryText.length > 0;
+  const showFeaturedOnlyOnMobile = isMobile && queryText.length === 0;
 
   const flattenedCount = useMemo(
     () =>
@@ -166,7 +171,7 @@ export default function GlobalSearchBar() {
       const res = await callApi({
         method: "get",
         url: `/search/workspace/${workspaceSlug}`,
-        params: { q: query.trim() },
+        params: { q: queryText },
       });
 
       if (requestId !== requestIdRef.current) return;
@@ -183,7 +188,7 @@ export default function GlobalSearchBar() {
     }, 220);
 
     return () => window.clearTimeout(timer);
-  }, [query, open, hasWorkspace, workspaceSlug]);
+  }, [queryText, open, hasWorkspace, workspaceSlug]);
 
   const handleOpen = () => {
     if (!hasWorkspace) return;
@@ -223,13 +228,16 @@ export default function GlobalSearchBar() {
           border: "1px solid",
           borderColor: "divider",
           borderRadius: 2,
-          px: 2,
-          py: 1,
-          minWidth: 260,
+          px: { xs: 1.5, sm: 2 },
+          py: { xs: 0.9, sm: 1 },
+          minWidth: compact ? { xs: "100%", sm: 220 } : { xs: "100%", sm: 260 },
+          width: compact ? { xs: "100%", sm: "auto" } : { xs: "100%", sm: "auto" },
           justifyContent: "flex-start",
+          justifySelf: "stretch",
           color: "text.secondary",
           opacity: hasWorkspace ? 1 : 0.75,
           fontFamily: theme.typography.fontFamily,
+          flex: compact ? { xs: "1 1 100%", sm: "0 0 auto" } : "0 0 auto",
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -241,6 +249,7 @@ export default function GlobalSearchBar() {
 
         <Box
           sx={{
+            display: { xs: "none", sm: "inline-flex" },
             ml: "auto",
             fontSize: 10,
             px: 0.75,
@@ -263,7 +272,7 @@ export default function GlobalSearchBar() {
         maxWidth="md"
         PaperProps={{
           sx: {
-            width: "min(960px, calc(100vw - 16px))",
+            width: "min(960px, calc(100vw - 12px))",
             height: { xs: "calc(100vh - 16px)", sm: "min(78vh, 720px)" },
             maxHeight: { xs: "calc(100vh - 16px)", sm: "78vh" },
             borderRadius: 4,
@@ -284,9 +293,9 @@ export default function GlobalSearchBar() {
             fontFamily: theme.typography.fontFamily,
           }}
         >
-          <Box sx={{ p: 2.25, pb: 2, borderBottom: "1px solid", borderColor: "divider" }}>
+          <Box sx={{ p: { xs: 1.5, sm: 2.25 }, pb: { xs: 1.5, sm: 2 }, borderBottom: "1px solid", borderColor: "divider" }}>
             <Stack spacing={1.5}>
-              <Stack direction="row" spacing={1} alignItems="center">
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ xs: "stretch", sm: "center" }}>
                 <Box
                   sx={{
                     width: 40,
@@ -301,14 +310,14 @@ export default function GlobalSearchBar() {
                   <SearchIcon sx={{ fontSize: 20 }} />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                  <Typography variant="h6" fontWeight={800} sx={{ fontFamily: theme.typography.fontFamily }}>
+                  <Typography variant="h6" fontWeight={500} sx={{ fontFamily: theme.typography.fontFamily }}>
                     Search everything
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ fontFamily: theme.typography.fontFamily }}>
                     Projects, roles, tasks, and workflows in this workspace.
                   </Typography>
                 </Box>
-                <Chip label="Ctrl + K" variant="outlined" size="small" />
+                <Chip label="Ctrl + K" variant="outlined" size="small" sx={{ alignSelf: { xs: "flex-start", sm: "center" } }} />
               </Stack>
 
               <TextField
@@ -318,7 +327,12 @@ export default function GlobalSearchBar() {
                 placeholder="Type to search..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                sx={{ fontFamily: theme.typography.fontFamily }}
+                sx={{
+              fontFamily: theme.typography.fontFamily,
+              "& .MuiInputBase-root": {
+                minHeight: 44,
+              },
+            }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -343,168 +357,172 @@ export default function GlobalSearchBar() {
               fontFamily: theme.typography.fontFamily,
             }}
           >
-            <Paper
-              variant="outlined"
-              sx={{
-                p: 2,
-                borderRadius: 3,
-                minHeight: 0,
-                overflow: "hidden",
-                display: "flex",
-                flexDirection: "column",
-                gap: 1,
-                fontFamily: theme.typography.fontFamily,
-              }}
-            >
-              <Box>
-                <Typography variant="subtitle2" fontWeight={800}>
-                  Featured items
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Mixed recent items across the workspace.
-                </Typography>
-              </Box>
-
-              <Box
+            {!showResultsOnlyOnMobile && (
+              <Paper
+                variant="outlined"
                 sx={{
-                  flex: 1,
+                  p: { xs: 1.5, sm: 2 },
+                  borderRadius: 3,
                   minHeight: 0,
-                  overflow: "auto",
-                  pr: 0.5,
+                  overflow: "hidden",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 1,
+                  fontFamily: theme.typography.fontFamily,
                 }}
               >
-                {featuredItems.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-                    Open the search to load recent items.
-                  </Typography>
-                ) : (
-                  <List disablePadding>
-                    {featuredItems.map((item) => (
-                      <SearchResultRow
-                        key={`featured-${item.type}-${item.meta?.projectSlug || item.path}-${item.title}`}
-                        item={item}
-                        onClick={() => handleNavigate(item)}
-                      />
-                    ))}
-                  </List>
-                )}
-              </Box>
-            </Paper>
-
-            <Paper
-              variant="outlined"
-              sx={{
-                p: 2,
-                borderRadius: 3,
-                minHeight: 0,
-                overflow: "hidden",
-                display: "flex",
-                flexDirection: "column",
-                fontFamily: theme.typography.fontFamily,
-              }}
-            >
-              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
                 <Box>
-                  <Typography variant="subtitle2" fontWeight={800}>
-                    Results
+                  <Typography variant="subtitle2" fontWeight={500}>
+                    Featured items
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {query.trim().length === 0
-                      ? "Start typing to search"
-                      : `${flattenedCount} result${flattenedCount === 1 ? "" : "s"} found`}
+                    Mixed recent items across the workspace.
                   </Typography>
                 </Box>
-                <Stack direction="row" spacing={0.75} flexWrap="wrap">
-                  {sections.map((section) => (
-                    <Chip key={section.key} label={section.title} size="small" variant="outlined" />
-                  ))}
-                </Stack>
-              </Stack>
 
-              <Box
+                <Box
+                  sx={{
+                    flex: 1,
+                    minHeight: 0,
+                    overflow: "auto",
+                    pr: 0.5,
+                  }}
+                >
+                  {featuredItems.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+                      Open the search to load recent items.
+                    </Typography>
+                  ) : (
+                    <List disablePadding>
+                      {featuredItems.map((item) => (
+                        <SearchResultRow
+                          key={`featured-${item.type}-${item.meta?.projectSlug || item.path}-${item.title}`}
+                          item={item}
+                          onClick={() => handleNavigate(item)}
+                        />
+                      ))}
+                    </List>
+                  )}
+                </Box>
+              </Paper>
+            )}
+
+            {!showFeaturedOnlyOnMobile && (
+              <Paper
+                variant="outlined"
                 sx={{
-                  flex: 1,
+                  p: { xs: 1.5, sm: 2 },
+                  borderRadius: 3,
                   minHeight: 0,
-                  overflow: "auto",
-                  pr: 0.5,
+                  overflow: "hidden",
+                  display: "flex",
+                  flexDirection: "column",
+                  fontFamily: theme.typography.fontFamily,
                 }}
               >
-                {!hasWorkspace ? (
-                  <Typography variant="body2" color="text.secondary">
-                    Open a workspace to search its projects, roles, tasks, and workflows.
-                  </Typography>
-                ) : loading ? (
-                  <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-                    <CircularProgress size={26} />
-                  </Box>
-                ) : query.trim().length === 0 ? (
-                  <Box
-                    sx={{
-                      minHeight: { xs: 180, md: 320 },
-                      display: "grid",
-                      placeItems: "center",
-                      textAlign: "center",
-                      px: 2,
-                    }}
-                  >
-                    <Stack spacing={1.25} alignItems="center" sx={{ maxWidth: 340 }}>
-                      <Box
-                        sx={{
-                          width: 54,
-                          height: 54,
-                          borderRadius: "50%",
-                          display: "grid",
-                          placeItems: "center",
-                          bgcolor: "action.hover",
-                          color: "primary.main",
-                          border: "1px solid",
-                          borderColor: "divider",
-                        }}
-                      >
-                        <SearchIcon />
-                      </Box>
-                      <Typography variant="h6" fontWeight={800}>
-                        Search across the workspace
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Start typing to filter projects, roles, tasks, and workflows.
-                      </Typography>
-                    </Stack>
-                  </Box>
-                ) : flattenedCount === 0 ? (
-                  <Box sx={{ py: 8, textAlign: "center" }}>
-                    <Typography variant="body2" color="text.secondary">
-                      No results found for "{query.trim()}".
+                <Stack direction={{ xs: "column", sm: "row" }} alignItems={{ xs: "stretch", sm: "center" }} justifyContent="space-between" sx={{ mb: 1.5 }} spacing={1}>
+                  <Box>
+                    <Typography variant="subtitle2" fontWeight={500}>
+                      Results
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {queryText.length === 0
+                        ? "Start typing to search"
+                        : `${flattenedCount} result${flattenedCount === 1 ? "" : "s"} found`}
                     </Typography>
                   </Box>
-                ) : (
-                  sections.map((section, index) => {
-                    const items = results[section.key] || [];
-                    if (items.length === 0) return null;
+                  <Stack direction="row" spacing={0.75} flexWrap="wrap">
+                    {sections.map((section) => (
+                      <Chip key={section.key} label={section.title} size="small" variant="outlined" />
+                    ))}
+                  </Stack>
+                </Stack>
 
-                    return (
-                      <Box key={section.key} sx={{ mb: index < sections.length - 1 ? 2 : 0 }}>
-                        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
-                          <Typography variant="subtitle2" fontWeight={800}>
-                            {section.title}
-                          </Typography>
-                          <Chip label={items.length} size="small" variant="outlined" />
-                        </Stack>
-                        <List disablePadding>
-                          {items.map((item) => (
-                            <SearchResultRow
-                              key={`${item.type}-${item.meta?.projectSlug || item.path}-${item.title}`}
-                              item={item}
-                              onClick={() => handleNavigate(item)}
-                            />
-                          ))}
-                        </List>
-                      </Box>
-                    );
-                  })
-                )}
-              </Box>
-            </Paper>
+                <Box
+                  sx={{
+                    flex: 1,
+                    minHeight: 0,
+                    overflow: "auto",
+                    pr: 0.5,
+                  }}
+                >
+                  {!hasWorkspace ? (
+                    <Typography variant="body2" color="text.secondary">
+                      Open a workspace to search its projects, roles, tasks, and workflows.
+                    </Typography>
+                  ) : loading ? (
+                    <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+                      <CircularProgress size={26} />
+                    </Box>
+                  ) : queryText.length === 0 ? (
+                    <Box
+                      sx={{
+                        minHeight: { xs: 180, md: 320 },
+                        display: "grid",
+                        placeItems: "center",
+                        textAlign: "center",
+                        px: 2,
+                      }}
+                    >
+                      <Stack spacing={1.25} alignItems="center" sx={{ maxWidth: 340 }}>
+                        <Box
+                          sx={{
+                            width: 54,
+                            height: 54,
+                            borderRadius: "50%",
+                            display: "grid",
+                            placeItems: "center",
+                            bgcolor: "action.hover",
+                            color: "primary.main",
+                            border: "1px solid",
+                            borderColor: "divider",
+                          }}
+                        >
+                          <SearchIcon />
+                        </Box>
+                        <Typography variant="h6" fontWeight={500}>
+                          Search across the workspace
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Start typing to filter projects, roles, tasks, and workflows.
+                        </Typography>
+                      </Stack>
+                    </Box>
+                  ) : flattenedCount === 0 ? (
+                    <Box sx={{ py: 8, textAlign: "center" }}>
+                      <Typography variant="body2" color="text.secondary">
+                        No results found for "{queryText}".
+                      </Typography>
+                    </Box>
+                  ) : (
+                    sections.map((section, index) => {
+                      const items = results[section.key] || [];
+                      if (items.length === 0) return null;
+
+                      return (
+                        <Box key={section.key} sx={{ mb: index < sections.length - 1 ? 2 : 0 }}>
+                          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+                            <Typography variant="subtitle2" fontWeight={500}>
+                              {section.title}
+                            </Typography>
+                            <Chip label={items.length} size="small" variant="outlined" />
+                          </Stack>
+                          <List disablePadding>
+                            {items.map((item) => (
+                              <SearchResultRow
+                                key={`${item.type}-${item.meta?.projectSlug || item.path}-${item.title}`}
+                                item={item}
+                                onClick={() => handleNavigate(item)}
+                              />
+                            ))}
+                          </List>
+                        </Box>
+                      );
+                    })
+                  )}
+                </Box>
+              </Paper>
+            )}
           </Box>
         </DialogContent>
       </Dialog>

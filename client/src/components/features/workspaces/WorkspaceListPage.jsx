@@ -9,6 +9,7 @@ import { callApi } from "../../../api/api";
 export default function WorkspaceListPage() {
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [filters, setFilters] = useState({});
+  const [view, setView] = useState("card");
 
   const [workspaces, setWorkspaces] = useState([]);
 
@@ -19,15 +20,15 @@ export default function WorkspaceListPage() {
   const [cursor, setCursor] = useState(null);
   const [hasNextPage, setHasNextPage] = useState(true);
 
-  const observerRef = useRef(null);
+  const scrollRootRef = useRef(null);
 
   /*  FETCH FUNCTION  */
 
-  const fetchWorkspaces = async ({
+  const fetchWorkspaces = useCallback(async ({
     cursorValue = null,
     appliedFilters = filters,
     isNextPage = false,
-  }) => {
+  } = {}) => {
     try {
       if (isNextPage) {
         setIsFetchingNextPage(true);
@@ -50,7 +51,6 @@ export default function WorkspaceListPage() {
       if (!response.success) throw new Error(response.error);
 
       const data = response.data.data;
-console.log(data);
       setWorkspaces((prev) =>
         isNextPage ? [...prev, ...data.workspaces] : data.workspaces
       );
@@ -64,53 +64,27 @@ console.log(data);
       setIsLoading(false);
       setIsFetchingNextPage(false);
     }
-  };
+  }, [filters]);
 
-
-  useEffect(() => {
-    fetchWorkspaces({});
-  }, []);
-
-  /*  FILTER CHANGE  */
 
   useEffect(() => {
     setWorkspaces([]);
     setCursor(null);
     setHasNextPage(true);
 
-    fetchWorkspaces({ appliedFilters: filters });
-  }, [filters]);
+    fetchWorkspaces({});
+  }, [fetchWorkspaces]);
 
   /*  FETCH NEXT PAGE  */
 
-  const fetchNextPage = async () => {
+  const fetchNextPage = useCallback(async () => {
     if (!hasNextPage || isFetchingNextPage) return;
 
     await fetchWorkspaces({
       cursorValue: cursor,
-      appliedFilters: filters,
       isNextPage: true,
     });
-  };
-
-  /*  INFINITE SCROLL  */
-
-  const lastElementRef = useCallback(
-    (node) => {
-      if (isFetchingNextPage || isLoading) return;
-
-      if (observerRef.current) observerRef.current.disconnect();
-
-      observerRef.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && hasNextPage) {
-          fetchNextPage();
-        }
-      });
-
-      if (node) observerRef.current.observe(node);
-    },
-    [isFetchingNextPage, isLoading, hasNextPage, cursor]
-  );
+  }, [cursor, fetchWorkspaces, hasNextPage, isFetchingNextPage]);
 
   /*  CREATE WORKSPACE  */
 
@@ -124,48 +98,75 @@ console.log(data);
   return (
     <Container
       maxWidth="lg"
-      sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+      sx={{
+        flex: 1,
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
+        gap: { xs: 1.5, sm: 2 },
+        py: { xs: 1.5, sm: 2 },
+        px: { xs: 1.5, sm: 2 },
+        overflow: "hidden",
+        width: "100%",
+        maxWidth: "100% !important",
+      }}
     >
-      <WorkspaceQuickActions
-        setOpenCreateDialog={setOpenCreateDialog}
-      />
+      <Box sx={{ flexShrink: 0 }}>
+        <WorkspaceQuickActions setOpenCreateDialog={setOpenCreateDialog} />
+      </Box>
 
-      <WorkspacesListHeader
-        filters={filters}
-        onFiltersChange={setFilters}
-      />
+      <Box sx={{ flexShrink: 0 }}>
+        <WorkspacesListHeader
+          filters={filters}
+          onFiltersChange={setFilters}
+          view={view}
+          onViewChange={setView}
+        />
+      </Box>
 
-      {isError && (
-        <Box color="error.main">
-          Failed to load workspaces.
-        </Box>
-      )}
+      <Box
+        ref={scrollRootRef}
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          overflow: "auto",
+          overscrollBehavior: "contain",
+          pr: { xs: 0, sm: 0.5 },
+        }}
+      >
+        {isError && (
+          <Box color="error.main" sx={{ mb: 1.5 }}>
+            Failed to load workspaces.
+          </Box>
+        )}
 
-      <WorkspacesList
-        workspaces={workspaces}
-        lastElementRef={lastElementRef}
-        fetchNextPage={fetchNextPage}
-        hasNextPage={hasNextPage}
-        isFetchingNextPage={isFetchingNextPage}
-      />
+        <WorkspacesList
+          workspaces={workspaces}
+          view={view}
+          scrollRootRef={scrollRootRef}
+          fetchNextPage={fetchNextPage}
+          hasNextPage={hasNextPage}
+          isFetchingNextPage={isFetchingNextPage}
+        />
 
-      {isLoading && (
-        <Box display="flex" justifyContent="center">
-          <CircularProgress />
-        </Box>
-      )}
+        {isLoading && (
+          <Box display="flex" justifyContent="center" sx={{ py: 2 }}>
+            <CircularProgress />
+          </Box>
+        )}
 
-      {isFetchingNextPage && (
-        <Box display="flex" justifyContent="center">
-          <CircularProgress size={24} />
-        </Box>
-      )}
+        {isFetchingNextPage && (
+          <Box display="flex" justifyContent="center" sx={{ py: 1 }}>
+            <CircularProgress size={24} />
+          </Box>
+        )}
 
-      {!hasNextPage && !isLoading && (
-        <Box textAlign="center" color="text.secondary">
-          No more workspaces
-        </Box>
-      )}
+        {!hasNextPage && !isLoading && (
+          <Box textAlign="center" color="text.secondary" sx={{ py: 2 }}>
+            No more workspaces
+          </Box>
+        )}
+      </Box>
 
       <CreateWorkspaceDialog
         open={openCreateDialog}

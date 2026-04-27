@@ -106,15 +106,17 @@ export default function WorkflowSidebar() {
   const { _id: projectId } = useSelector(s => s.project);
   const [tab, setTab] = useState(0);
 
-  return (
+    return (
     <Box
       sx={{
-        width: 300,
-        height: "100%",
+        width: { xs: "100%", lg: 300 },
+        height: { xs: "auto", lg: "100%" },
         display: "flex",
         flexDirection: "column",
-        borderLeft: "1px solid",
+        borderLeft: { xs: "none", lg: "1px solid" },
+        borderTop: { xs: "1px solid", lg: "none" },
         borderColor: "divider",
+        minWidth: 0,
       }}
     >
       <WorkflowSidebarHeader workflowName={"Development Workflow"} />

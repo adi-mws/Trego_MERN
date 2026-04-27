@@ -3,7 +3,7 @@ import { Alert, Box, Button, Stack, Typography } from '@mui/material'
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { canViewProjectActivity, isClient, isClientProjectRole } from '../utils/permissions.utils'
-import { WORKSPACE_ROUTES } from '../lib/routes'
+import { PROJECT_ROUTES, WORKSPACE_ROUTES } from '../lib/routes'
 import { resolveWorkspaceRole } from '../utils/workspaceRole.utils'
 
 export default function ProjectLayout() {
@@ -16,17 +16,17 @@ export default function ProjectLayout() {
   const workspaceRole = resolveWorkspaceRole(workspace, authUser)
   const canViewActivity = canViewProjectActivity(project)
   const clientProjectViewer = isClient(workspaceRole) || isClientProjectRole(project)
-  const overviewPath = `/app/${workspaceSlug}/projects/${projectSlug || project.slug || ""}`
+  const chatPath = PROJECT_ROUTES.projectClientChat(workspaceSlug, projectSlug || project.slug || "")
 
   useEffect(() => {
     if (!project._id || !clientProjectViewer) {
       return
     }
 
-    if (location.pathname !== overviewPath) {
-      navigate(overviewPath, { replace: true })
+    if (location.pathname !== chatPath) {
+      navigate(chatPath, { replace: true })
     }
-  }, [clientProjectViewer, location.pathname, navigate, overviewPath, project._id])
+  }, [chatPath, clientProjectViewer, location.pathname, navigate, project._id])
 
   if (project._id && !canViewActivity) {
     return (

@@ -16,6 +16,7 @@ import {
   updateProjectMemberRoles,
   updateProject,
 } from "./project.service.js";
+import { generateProjectChatReply } from "./projectChat.service.js";
 import { Workspace } from "../workspaces/workspace.model.js";
 import {
   createProjectCreationNotification,
@@ -76,7 +77,6 @@ export const updateProjectController = async (req, res, next) => {
 };
 
 
-
 export const getProjectGlobalStateBySlugController = async (req, res, next) => {
   try {
     const { slug } = req.params;
@@ -86,6 +86,24 @@ export const getProjectGlobalStateBySlugController = async (req, res, next) => {
     const userId = req.user?.userId;
     const data = await getProjectGlobalStateBySlug({ slug, userId, workspaceSlug });
     return res.status(200).json({ ...data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const generateProjectChatReplyController = async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+    const { message, history = [] } = req.body || {};
+
+    const data = await generateProjectChatReply({
+      projectId,
+      userId: req.user?.userId,
+      message,
+      history: Array.isArray(history) ? history : [],
+    });
+
+    return res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
   }
@@ -160,7 +178,6 @@ export const updateProjectRoleController = async (req, res, next) => {
   }
 };
 
-// ── Project Members ────────────────────────────────────────────────────────────
 export const createProjectMemberController = async (req, res, next) => {
   try {
     const { projectId } = req.params;

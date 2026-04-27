@@ -771,15 +771,18 @@ export default function TaskView() {
         minHeight: 0,
         overflow: "hidden",
         bgcolor: "background.default",
+        flexDirection: { xs: "column", md: "row" },
       }}
     >
       <Box
         sx={{
-          flex: "0 0 45%",
-          minWidth: 360,
+          flex: { xs: "1 1 auto", md: "0 0 45%" },
+          width: { xs: "100%", md: "45%" },
+          minWidth: 0,
           display: "flex",
           flexDirection: "column",
-          borderRight: "1px solid",
+          borderRight: { xs: "none", md: "1px solid" },
+          borderBottom: { xs: "1px solid", md: "none" },
           borderColor: "divider",
           overflow: "hidden",
           bgcolor: "background.paper",
@@ -787,15 +790,20 @@ export default function TaskView() {
       >
         <Box
           sx={{
-            px: 3,
-            py: 2.5,
+            px: { xs: 1.5, sm: 2, md: 3 },
+            py: { xs: 1.5, sm: 2, md: 2.5 },
             borderBottom: "1px solid",
             borderColor: "divider",
             background: `linear-gradient(135deg, ${accentColor}18 0%, transparent 100%)`,
           }}
         >
-          <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={2}>
-            <Box flex={1}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            alignItems={{ xs: "flex-start", sm: "flex-start" }}
+            justifyContent="space-between"
+            spacing={1.5}
+          >
+            <Box flex={1} minWidth={0}>
               {task.categoryId && (
                 <Chip
                   size="small"
@@ -811,11 +819,16 @@ export default function TaskView() {
                 />
               )}
 
-              <Typography variant="h5" fontWeight={500} lineHeight={1.25}>
+              <Typography
+                variant="h5"
+                fontWeight={500}
+                lineHeight={1.25}
+                sx={{ fontSize: { xs: 20, sm: 22, md: 24 }, wordBreak: "break-word" }}
+              >
                 {task.title}
               </Typography>
 
-              <Stack direction="row" spacing={1} mt={1} flexWrap="wrap">
+              <Stack direction="row" spacing={1} mt={1} flexWrap="wrap" useFlexGap>
                 <Chip
                   size="small"
                   icon={<FlagIcon sx={{ fontSize: "13px !important" }} />}
@@ -846,7 +859,11 @@ export default function TaskView() {
               </Stack>
             </Box>
 
-            <Stack direction="row" spacing={0.5}>
+            <Stack
+              direction="row"
+              spacing={0.5}
+              sx={{ alignSelf: { xs: "flex-end", sm: "flex-start" }, flexShrink: 0 }}
+            >
               <Tooltip title="Edit task">
                 <IconButton onClick={() => setEditOpen(true)} size="small">
                   <EditIcon />
@@ -881,11 +898,11 @@ export default function TaskView() {
           sx={{
             flex: 1,
             overflowY: "auto",
-            px: 3,
-            py: 2.5,
+            px: { xs: 1.5, sm: 2, md: 3 },
+            py: { xs: 1.5, sm: 2, md: 2.5 },
             display: "flex",
             flexDirection: "column",
-            gap: 3,
+            gap: { xs: 1.5, sm: 2, md: 3 },
           }}
         >
           <Box>
@@ -1096,8 +1113,8 @@ export default function TaskView() {
             borderBottom: "1px solid",
             borderColor: "divider",
             bgcolor: "background.paper",
-            px: 2,
-            py: 1.5,
+            px: { xs: 1, sm: 2 },
+            py: { xs: 1.25, sm: 1.5 },
             flexShrink: 0,
           }}
         >
@@ -1113,7 +1130,14 @@ export default function TaskView() {
           <Tabs
             value={activeTab}
             onChange={(_, value) => setActiveTab(value)}
-            sx={{ minHeight: 40, px: 2 }}
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
+            sx={{
+              minHeight: 40,
+              px: { xs: 0.5, sm: 1, md: 2 },
+              "& .MuiTabs-scroller": { overflowX: "auto !important" },
+            }}
             TabIndicatorProps={{ sx: { height: 2 } }}
           >
             <Tab
@@ -1122,7 +1146,7 @@ export default function TaskView() {
                   Stages & Transitions
                 </Box>
               }
-              sx={{ minHeight: 40, textTransform: "none" }}
+              sx={{ minHeight: 40, textTransform: "none", whiteSpace: "nowrap" }}
             />
             <Tab
               label={
@@ -1132,7 +1156,7 @@ export default function TaskView() {
                   </Box>
                 </Badge>
               }
-              sx={{ minHeight: 40, textTransform: "none" }}
+              sx={{ minHeight: 40, textTransform: "none", whiteSpace: "nowrap" }}
             />
             <Tab
               label={
@@ -1142,7 +1166,7 @@ export default function TaskView() {
                   </Box>
                 </Badge>
               }
-              sx={{ minHeight: 40, textTransform: "none" }}
+              sx={{ minHeight: 40, textTransform: "none", whiteSpace: "nowrap" }}
             />
             <Tab
               label={
@@ -1152,14 +1176,14 @@ export default function TaskView() {
                   </Box>
                 </Badge>
               }
-              sx={{ minHeight: 40, textTransform: "none" }}
+              sx={{ minHeight: 40, textTransform: "none", whiteSpace: "nowrap" }}
             />
           </Tabs>
         </Box>
 
         {activeTab === 0 && (
-          <Box sx={{ flex: 1, overflowY: "auto", p: 2.5, display: "flex", flexDirection: "column", gap: 2.5 }}>
-            <Paper variant="outlined" sx={{ p: 2.25, borderRadius: 2.5 }}>
+          <Box sx={{ flex: 1, overflowY: "auto", p: { xs: 1.5, sm: 2, md: 2.5 }, display: "flex", flexDirection: "column", gap: { xs: 1.5, md: 2.5 } }}>
+            <Paper variant="outlined" sx={{ p: { xs: 1.5, sm: 2, md: 2.25 }, borderRadius: 2.5 }}>
               <Stack spacing={1.5}>
                 <Box>
                   <Typography variant="overline" color="text.secondary" fontWeight={700} display="block" mb={0.5}>
@@ -1207,7 +1231,7 @@ export default function TaskView() {
                 {selectedStage && (
                   <Card variant="outlined" sx={{ borderRadius: 2.5 }}>
                     <CardActionArea onClick={() => setSelectedStageId(selectedStage.id)} sx={{ p: 0 }}>
-                      <CardContent sx={{ p: 2.25 }}>
+                      <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 2.25 } }}>
                         <Stack spacing={1.25}>
                           <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" flexWrap="wrap">
                             <Typography variant="subtitle2" fontWeight={700}>
@@ -1250,7 +1274,7 @@ export default function TaskView() {
               </Stack>
             </Paper>
 
-            <Paper variant="outlined" sx={{ p: 2.25, borderRadius: 2.5 }}>
+            <Paper variant="outlined" sx={{ p: { xs: 1.5, sm: 2, md: 2.25 }, borderRadius: 2.5 }}>
               <Stack spacing={1.5}>
                 <Box>
                   <Typography variant="overline" color="text.secondary" fontWeight={700} display="block" mb={0.5}>
@@ -1289,7 +1313,7 @@ export default function TaskView() {
                           }}
                         >
                           <Stack spacing={1}>
-                            <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" flexWrap="wrap">
+                      <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" flexWrap="wrap">
                               <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
                                 <Chip size="small" label={transition.action || "Move"} variant="outlined" />
                                 <ArrowForwardIcon sx={{ fontSize: 14, color: "text.disabled" }} />
@@ -1359,11 +1383,11 @@ export default function TaskView() {
               sx={{
                 flex: 1,
                 overflowY: "auto",
-                px: 3,
-                py: 2,
+                px: { xs: 1.5, sm: 2, md: 3 },
+                py: { xs: 1.5, sm: 2, md: 2 },
                 display: "flex",
                 flexDirection: "column",
-                gap: 2.5,
+                gap: { xs: 1.5, md: 2.5 },
               }}
             >
               {comments.length === 0 ? (
@@ -1385,20 +1409,20 @@ export default function TaskView() {
 
             <Box
               sx={{
-                px: 3,
-                pb: 2.5,
-                pt: 1.5,
+                px: { xs: 1.5, sm: 2, md: 3 },
+                pb: { xs: 1.5, sm: 2, md: 2.5 },
+                pt: { xs: 1, sm: 1.25, md: 1.5 },
                 borderTop: "1px solid",
                 borderColor: "divider",
                 bgcolor: "background.paper",
                 flexShrink: 0,
               }}
             >
-              <Stack direction="row" spacing={1}>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ xs: "stretch", sm: "flex-end" }}>
                 <TextField
                   fullWidth
                   multiline
-                  maxRows={4}
+                  maxRows={6}
                   size="small"
                   placeholder="Write a comment..."
                   value={newComment}
@@ -1416,7 +1440,7 @@ export default function TaskView() {
                     onClick={handleAddComment}
                     disabled={!newComment.trim() || savingComment}
                     sx={{
-                      alignSelf: "flex-end",
+                      alignSelf: { xs: "flex-end", sm: "center" },
                       bgcolor: "primary.main",
                       color: "#fff",
                       borderRadius: 2,
@@ -1436,7 +1460,7 @@ export default function TaskView() {
         )}
 
         {activeTab === 2 && (
-          <Box sx={{ flex: 1, overflowY: "auto", px: 3, py: 2.5 }}>
+          <Box sx={{ flex: 1, overflowY: "auto", px: { xs: 1.5, sm: 2, md: 3 }, py: { xs: 1.5, sm: 2, md: 2.5 } }}>
             {stateHistory.length === 0 ? (
               <Typography variant="body2" color="text.disabled" textAlign="center" mt={4}>
                 No stage transitions recorded yet.
@@ -1448,7 +1472,7 @@ export default function TaskView() {
         )}
 
         {activeTab === 3 && (
-          <Box sx={{ flex: 1, overflowY: "auto", px: 3, py: 2.5 }}>
+          <Box sx={{ flex: 1, overflowY: "auto", px: { xs: 1.5, sm: 2, md: 3 }, py: { xs: 1.5, sm: 2, md: 2.5 } }}>
             {stageAssignments.length === 0 ? (
               <Typography variant="body2" color="text.disabled" textAlign="center" mt={4}>
                 This task is not attached to a workflow yet.
@@ -1466,9 +1490,9 @@ export default function TaskView() {
 
                   return (
                     <Card key={stageId} variant="outlined" sx={{ borderRadius: 2.5 }}>
-                      <CardContent sx={{ p: 2.25 }}>
+                      <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 2.25 } }}>
                         <Stack spacing={1.75}>
-                          <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={2} flexWrap="wrap">
+                          <Stack direction={{ xs: "column", sm: "row" }} alignItems={{ xs: "flex-start", sm: "flex-start" }} justifyContent="space-between" spacing={2} flexWrap="wrap">
                             <Box>
                               <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
                                 <Chip label={stage.name} color="primary" />
@@ -1581,7 +1605,7 @@ export default function TaskView() {
                                         </Typography>
                                       </Box>
                                     </Stack>
-                                    <Stack direction="row" spacing={0.5} useFlexGap flexWrap="wrap" sx={{ pl: 4.75 }}>
+                                    <Stack direction="row" spacing={0.5} useFlexGap flexWrap="wrap" sx={{ pl: { xs: 0, sm: 4.75 } }}>
                                       {(option.roles || []).map((role) => (
                                         <Chip
                                           key={role._id}

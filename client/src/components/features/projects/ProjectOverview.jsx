@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   Box, Grid, Card, CardContent, Typography, Stack,
-  CircularProgress, LinearProgress, Chip, Avatar, Divider,
+  CircularProgress, LinearProgress, Chip, 
   IconButton, Tooltip,
   useTheme,
 } from "@mui/material";
@@ -13,7 +13,6 @@ import {
   CategoryOutlined,
   AccountTreeOutlined,
   GroupOutlined,
-  TrendingUpOutlined,
   RefreshOutlined,
 } from "@mui/icons-material";
 import { PieChart } from "@mui/x-charts/PieChart";
@@ -25,7 +24,6 @@ import { PROJECT_ROUTES } from "../../../lib/routes";
 import { isClient, isClientProjectRole } from "../../../utils/permissions.utils";
 import { resolveWorkspaceRole } from "../../../utils/workspaceRole.utils";
 
-// ── Stat Card ─────────────────────────────────────────────────────────────────
 function StatCard({ label, value, icon, color, subtitle }) {
   return (
     <Card variant="outlined" sx={{ borderRadius: 3, height: "100%", transition: "0.2s", "&:hover": { transform: "translateY(-2px)", boxShadow: 3 } }}>
@@ -45,17 +43,16 @@ function StatCard({ label, value, icon, color, subtitle }) {
   );
 }
 
-// ── Priority Badge ────────────────────────────────────────────────────────────
 const PRIORITY_COLOR = { HIGH: "#f5222d", MEDIUM: "#faad14", LOW: "#52c41a" };
 
 export default function ProjectOverview() {
   const { _id: projectId } = useSelector(s => s.project);
+  const project = useSelector((state) => state.project);
   const { workspaceSlug, projectSlug } = useParams();
   const navigate = useNavigate();
   const theme = useTheme();
   const workspace = useSelector((state) => state.workspace);
   const authUser = useSelector((state) => state.auth?.data);
-  const project = useSelector((state) => state.project);
   const workspaceRole = resolveWorkspaceRole(workspace, authUser);
   const clientProjectViewer = isClient(workspaceRole) || isClientProjectRole(project);
 
@@ -100,12 +97,13 @@ export default function ProjectOverview() {
     value: metrics?.byPriority?.[p] || 0,
     color: PRIORITY_COLOR[p],
   }));
+  const projectTitle = project?.name ? `${project.name} - Overview` : "Project - Overview";
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, height: "100%", overflowY: "auto" }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-        <Box>
-          <Typography variant="h5" fontWeight={500}>Project Overview</Typography>
+    <Box sx={{ p: { xs: 1.5, md: 3 }, height: "100%", overflowY: "auto", minWidth: 0 }}>
+      <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} mb={3} gap={1.5}>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="h5" fontWeight={500}>{projectTitle}</Typography>
           <Typography variant="body2" color="text.secondary">Real-time metrics and progress</Typography>
         </Box>
         <Tooltip title="Refresh">
@@ -141,7 +139,7 @@ export default function ProjectOverview() {
             sx={{ height: 10, borderRadius: 5, bgcolor: "action.hover" }}
             color={completePct === 100 ? "success" : "primary"}
           />
-          <Stack direction="row" spacing={3} mt={1.5}>
+          <Stack direction="row" spacing={3} mt={1.5} flexWrap="wrap" useFlexGap>
             {[
               { label: "Completed", val: tasks.completed, color: "#52c41a" },
               { label: "In Progress", val: tasks.inProgress, color: theme.palette.primary.main },
@@ -156,9 +154,7 @@ export default function ProjectOverview() {
         </CardContent>
       </Card>
 
-      {/* ── Charts Row ── */}
       <Grid container spacing={2} mb={3}>
-        {/* Category Pie */}
         <Grid size={{ xs: 12, md: 6 }}>
           <Card variant="outlined" sx={{ borderRadius: 3, height: "100%" }}>
             <CardContent>
@@ -186,22 +182,17 @@ export default function ProjectOverview() {
                         padding: "6px 10px",
                         border: "1px solid #e0e0e0",
 
-                        // spacing between items
                         gap: 4,
 
-                        // each legend item
                         "& .MuiChartsLegend-item": {
                           gap: 6,
                         },
 
-                        // label text
                         "& .MuiChartsLegend-label": {
                           fontSize: "11px",
                           fontWeight: 500,
                           color: "#555",
                         },
-
-                        // color box (marker)
                         "& .MuiChartsLegend-mark": {
                           width: 8,
                           height: 8,
@@ -220,7 +211,6 @@ export default function ProjectOverview() {
           </Card>
         </Grid>
 
-        {/* Priority Bar */}
         <Grid size={{ xs: 12, md: 6 }}>
           <Card variant="outlined" sx={{ borderRadius: 3, height: "100%" }}>
             <CardContent>
@@ -240,7 +230,6 @@ export default function ProjectOverview() {
         </Grid>
       </Grid>
 
-      {/* ── Bottom Stat Row ── */}
       {!clientProjectViewer && (
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, sm: 4 }}>

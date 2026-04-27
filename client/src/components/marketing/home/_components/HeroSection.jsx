@@ -46,7 +46,7 @@ export default function HeroSection() {
               variant="h3"
               component="h1"
               sx={{
-                fontWeight: 700,
+                fontWeight: 500,
                 lineHeight: 1.15,
                 letterSpacing: "-0.5px",
               }}
@@ -87,7 +87,7 @@ export default function HeroSection() {
                 variant="contained"
                 size="large"
                 sx={{
-                  fontWeight: 600,
+                  fontWeight: 400,
                   px: 3,
                 }}
               >
@@ -98,7 +98,7 @@ export default function HeroSection() {
                 variant="outlined"
                 size="large"
                 sx={{
-                  fontWeight: 600,
+                  fontWeight: 400,
                   px: 3,
                 }}
               >

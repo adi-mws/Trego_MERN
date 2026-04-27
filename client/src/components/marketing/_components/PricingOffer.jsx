@@ -1,7 +1,7 @@
 import { Box, Chip, Typography, Button } from '@mui/material'
 import React from 'react'
 
-export default function PricingOffer({ }) {
+export default function PricingOffer() {
     return (
         <Box sx={{
             display: { xs: "none", sm: "flex" },
@@ -12,12 +12,12 @@ export default function PricingOffer({ }) {
             alignItems: "center",
             fontSize: 12
         }}>
-            <Chip variant="filled" label="LIMITED OFFER" sx={{ bgcolor: "white", fontSize: "inherit", fontWeight: 700, color: "primary.main" }} />
-            <Typography variant="body2" fontSize={"inherit"} color='white' sx={{ fontWeight: 600 }}>All Plans</Typography>
+            <Chip variant="filled" label="LIMITED OFFER" sx={{ bgcolor: "white", fontSize: "inherit", fontWeight: 500, color: "primary.main" }} />
+            <Typography variant="body2" fontSize={"inherit"} color='white' sx={{ fontWeight: 500 }}>All Plans</Typography>
             <Chip
                 label="30% Off"
                 sx={{
-                    fontWeight: 600,
+                    fontWeight: 500,
                     fontSize: "inherit",
                     color: "#fff",
                     backgroundColor: "rgba(255, 255, 255, 0.15)",
@@ -28,7 +28,7 @@ export default function PricingOffer({ }) {
                     py: 2,
                 }}
             />
-            <Typography variant="body2" fontSize={"inherit"} color='white' sx={{ fontWeight: 600 }}>For Next 7 Days</Typography>
+            <Typography variant="body2" fontSize={"inherit"} color='white' sx={{ fontWeight: 500 }}>For Next 7 Days</Typography>
             <Button
                 variant="contained"
                 onClick={() => {
@@ -37,7 +37,7 @@ export default function PricingOffer({ }) {
                 sx={{
                     fontSize: "inherit",
                     fontVariant: "body2",
-                    fontWeight: 600,
+                    fontWeight: 400,
                     color: "#fff",
                     textTransform: "none",
                     backgroundColor: "rgba(255, 255, 255, 0.15)",

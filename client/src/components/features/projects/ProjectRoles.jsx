@@ -4,6 +4,7 @@ import {
   Typography,
   Paper,
   Table,
+  TableContainer,
   TableHead,
   TableRow,
   TableCell,
@@ -155,21 +156,21 @@ export default function ProjectRoles() {
       title="You do not have permission to manage project roles"
       message="Ask a project admin to update role permissions."
     >
-    <Box>
+    <Box sx={{ minWidth: 0 }}>
       {/*  Header */}
-      <Stack direction="row" justifyContent="space-between" mb={2}>
+      <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} mb={2} gap={1.5}>
         <Typography variant="h5" fontWeight={500}>
           Project Roles
         </Typography>
 
-        <Button variant="outlined" startIcon={<Add />} onClick={handleCreate}>
+        <Button variant="outlined" startIcon={<Add />} onClick={handleCreate} sx={{ width: { xs: "100%", sm: "auto" } }}>
           Add Role
         </Button>
       </Stack>
 
       {/*  Table */}
-      <Paper sx={{ borderRadius: 3, boxShadow: 'none' }}>
-        <Table>
+      <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: 'none', overflowX: "auto" }}>
+        <Table sx={{ minWidth: 720 }}>
           <TableHead>
             <TableRow>
               <TableCell>Name</TableCell>
@@ -223,7 +224,7 @@ export default function ProjectRoles() {
             )}
           </TableBody>
         </Table>
-      </Paper>
+      </TableContainer>
 
       {/*  Dialog */}
       <Dialog

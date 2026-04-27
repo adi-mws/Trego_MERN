@@ -5,6 +5,10 @@ import { ProjectMember } from "../projects/projectMember.model.js";
 import { WorkspaceMember } from "../workspaces/workspaceMember.model.js";
 import { WorkflowStage } from "../workflows/workflowStage.model.js";
 import { TaskStageAssignee } from "./taskStageAssignee.model.js";
+import { Workspace } from "../workspaces/workspace.model.js";
+import {
+  createTaskStageAssigneeNotification,
+} from "../notifications/notification.service.js";
 
 const ADMIN_ROLES = ["OWNER", "ADMIN"];
 const WORKSPACE_MEMBER_ROLE = "MEMBER";
@@ -243,12 +247,13 @@ export async function canUserViewTaskByStageAssignments({ taskId, userId, worksp
   );
 }
 
-export async function addTaskStageAssignee({ taskId, stageId, projectMemberId, assignedBy }) {
+export async function addTaskStageAssignee({ taskId, stageId, projectMemberId, assignedBy, sourceSessionId = null }) {
   const task = await loadTaskScope(taskId);
   const project = await loadTaskProject(task);
   const stage = await loadTaskStage(task, stageId);
   const projectMember = await loadProjectMember(task, projectMemberId);
   await assertEligibleAssignee({ task, stage, projectMember, workspaceId: project.workspace });
+  const workspace = await Workspace.findById(project.workspace).select("_id name slug").lean();
 
   const existing = await TaskStageAssignee.findOne({
     taskId,
@@ -267,7 +272,25 @@ export async function addTaskStageAssignee({ taskId, stageId, projectMemberId, a
     assignedBy,
   });
 
-  return populateStageAssignee(created);
+  const populated = await populateStageAssignee(created);
+
+  try {
+    if (workspace) {
+      await createTaskStageAssigneeNotification({
+        task,
+        project,
+        workspace,
+        stage,
+        projectMember,
+        userId: assignedBy,
+        sourceSessionId,
+      });
+    }
+  } catch (notificationError) {
+    console.warn("Failed to send stage assignee notification:", notificationError?.message || notificationError);
+  }
+
+  return populated;
 }
 
 export async function removeTaskStageAssignee({ taskId, stageId, projectMemberId }) {
@@ -288,11 +311,24 @@ export async function removeTaskStageAssignee({ taskId, stageId, projectMemberId
   return deleted;
 }
 
-export async function replaceTaskStageAssignees({ taskId, stageId, projectMemberIds = [], assignedBy }) {
+export async function replaceTaskStageAssignees({ taskId, stageId, projectMemberIds = [], assignedBy, sourceSessionId = null }) {
   const task = await loadTaskScope(taskId);
   const project = await loadTaskProject(task);
   const stage = await loadTaskStage(task, stageId);
   const uniqueMemberIds = uniqueIdList(projectMemberIds);
+  const workspace = await Workspace.findById(project.workspace).select("_id name slug").lean();
+  const previousAssignments = await TaskStageAssignee.find({
+    taskId,
+    workflowStageId: stage._id,
+  })
+    .populate({
+      path: "projectMemberId",
+      populate: [{ path: "user", select: "name email avatar" }],
+    })
+    .lean();
+  const previousMemberIds = new Set(
+    previousAssignments.map((assignment) => normalizeId(assignment.projectMemberId?._id || assignment.projectMemberId))
+  );
 
   const validatedMembers = [];
   for (const memberId of uniqueMemberIds) {
@@ -316,6 +352,28 @@ export async function replaceTaskStageAssignees({ taskId, stageId, projectMember
       })),
       { ordered: true }
     );
+  }
+
+  try {
+    if (workspace) {
+      for (const member of validatedMembers) {
+        if (previousMemberIds.has(normalizeId(member._id))) {
+          continue;
+        }
+
+        await createTaskStageAssigneeNotification({
+          task,
+          project,
+          workspace,
+          stage,
+          projectMember: member,
+          userId: assignedBy,
+          sourceSessionId,
+        });
+      }
+    }
+  } catch (notificationError) {
+    console.warn("Failed to send stage assignee notifications:", notificationError?.message || notificationError);
   }
 
   return getTaskStageAssignmentBundle(taskId);

@@ -9,6 +9,7 @@ import AppThemeProvider from "../themes/AppThemeProvider";
 import { NotificationsDrawerProvider } from "../contexts/NotificationDrawerContext";
 import NotificationsDrawer from "../components/features/notifications/NotificationsDrawer";
 import { HeaderProvider } from "../contexts/HeaderContext";
+import { AgentChatProvider } from "../contexts/AgentChatContext";
 import ConfirmDialog from "../components/global/ConfirmDialog";
 import { SocketProvider } from "../contexts/SocketContext";
 import { useDispatch, useSelector } from "react-redux";
@@ -141,17 +142,19 @@ export default function AppLayout() {
         <>
             <AppThemeProvider type='dashboard'>
                 <HeaderProvider>
-                    <SocketProvider>
-                        <NotificationsDrawerProvider>
-                            <AccountDialogProvider>
-                                <DashboardRealtimeBridge />
-                                <AccountDialog />
-                                <ConfirmDialog />
-                                <NotificationsDrawer />
-                                <Outlet />
-                            </AccountDialogProvider>
-                        </NotificationsDrawerProvider>
-                    </SocketProvider>
+                    <AgentChatProvider>
+                        <SocketProvider>
+                            <NotificationsDrawerProvider>
+                                <AccountDialogProvider>
+                                    <DashboardRealtimeBridge />
+                                    <AccountDialog />
+                                    <ConfirmDialog />
+                                    <NotificationsDrawer />
+                                    <Outlet />
+                                </AccountDialogProvider>
+                            </NotificationsDrawerProvider>
+                        </SocketProvider>
+                    </AgentChatProvider>
                 </HeaderProvider>
             </AppThemeProvider>
 

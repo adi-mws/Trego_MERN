@@ -28,7 +28,13 @@ export default function ProjectComments() {
     setLoading(false);
   }, [projectId]);
 
-  useEffect(() => { fetchComments(); }, [fetchComments]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void fetchComments();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [fetchComments]);
 
   const handleDelete = async (commentId) => {
     await callApi({ method: "delete", url: `/tasks/comments/${commentId}` });
@@ -52,7 +58,7 @@ export default function ProjectComments() {
   );
 
   return (
-    <Box sx={{ p: 3, width: "100%", maxWidth: "none", mx: 0 }}>
+    <Box sx={{ p: { xs: 1.5, md: 3 }, width: "100%", maxWidth: "none", mx: 0, minWidth: 0 }}>
       <Box mb={3}>
         <Typography variant="h5" fontWeight={500}>Project Comments</Typography>
         <Typography variant="body2" color="text.secondary" mt={0.5}>
@@ -91,7 +97,7 @@ export default function ProjectComments() {
                   "&:hover": { boxShadow: "0 2px 12px rgba(0,0,0,0.08)" },
                 }}
               >
-                <Stack direction="row" spacing={1.5}>
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
                   <Avatar sx={{ width: 34, height: 34, fontSize: 13 }}>
                     {comment.user?.name?.[0] || "?"}
                   </Avatar>
@@ -123,7 +129,7 @@ export default function ProjectComments() {
                   </Box>
                   {isOwn && (
                     <Tooltip title="Delete comment">
-                      <IconButton size="small" color="error" onClick={() => handleDelete(comment._id)} sx={{ alignSelf: "flex-start" }}>
+                      <IconButton size="small" color="error" onClick={() => handleDelete(comment._id)} sx={{ alignSelf: { xs: "flex-end", sm: "flex-start" } }}>
                         <DeleteIcon sx={{ fontSize: 16 }} />
                       </IconButton>
                     </Tooltip>

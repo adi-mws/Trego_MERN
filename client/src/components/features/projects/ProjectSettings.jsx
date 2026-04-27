@@ -15,17 +15,14 @@ import { PhotoCamera, Save } from "@mui/icons-material";
 import { useSelector, useDispatch } from "react-redux";
 import { callApi } from "../../../api/api";
 import { useSnackbar } from "notistack";
-import { useParams } from "react-router-dom";
 import ProjectPermissionGate from "./_components/ProjectPermissionGate";
-import { setProject, updateProjectSettings } from "../../../redux/slices/projectSlice";
+import { updateProjectSettings } from "../../../redux/slices/projectSlice";
 import { getImageUrl } from "../../../utils/image.utils";
-import { showAlert } from "../../../redux/slices/alertSlice";
 import { useAlert } from "../../../hooks/useAlert";
 
 export default function ProjectSettings() {
   const project = useSelector((s) => s.project);
   const dispatch = useDispatch();
-  const { projectSlug } = useParams();
   const { enqueueSnackbar } = useSnackbar();
 
   const [name, setName] = useState("");
@@ -99,20 +96,20 @@ export default function ProjectSettings() {
       title="You do not have permission to manage project settings"
       message="Ask a project admin to update settings."
     >
-      <Box sx={{ p: { xs: 2, md: 4 }, width:"100%", mx: "auto" }}>
+      <Box sx={{ p: { xs: 1.5, md: 4 }, width:"100%", mx: "auto", minWidth: 0, maxWidth: 960 }}>
         <Typography variant="h5" fontWeight={700} mb={3}>
           Project Settings
         </Typography>
 
         <Box variant="outlined" sx={{ borderRadius: 3 }}>
-          <CardContent sx={{ p: 4 }}>
+          <CardContent sx={{ p: { xs: 2, md: 4 } }}>
             <Stack spacing={4}>
               {/* Avatar Upload */}
               <Box>
                 <Typography variant="subtitle2" color="text.secondary" mb={1}>
                   Project Logo / Avatar
                 </Typography>
-                <Stack direction="row" spacing={3} alignItems="center">
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={3} alignItems={{ xs: "flex-start", sm: "center" }}>
                   <Box position="relative">
                     <Avatar
                       src={getImageUrl(avatarPreview)}
@@ -140,6 +137,7 @@ export default function ProjectSettings() {
                       variant="outlined"
                       size="small"
                       onClick={() => fileInputRef.current.click()}
+                      sx={{ width: { xs: "100%", sm: "auto" } }}
                     >
                       Change Logo
                     </Button>
@@ -183,7 +181,7 @@ export default function ProjectSettings() {
                   startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <Save />}
                   onClick={handleSave}
                   disabled={saving}
-                  sx={{ borderRadius: 2 }}
+                  sx={{ borderRadius: 2, width: { xs: "100%", sm: "auto" } }}
                 >
                   Save Changes
                 </Button>

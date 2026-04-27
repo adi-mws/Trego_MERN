@@ -114,8 +114,8 @@ function CategoryColumn({ category, tasks, onBlock, onOpen, onAddTask, onEdit, t
   return (
     <Box
       sx={{
-        minWidth: 270,
-        maxWidth: 290,
+        minWidth: { xs: 240, sm: 270 },
+        maxWidth: { xs: 240, sm: 290 },
         display: "flex",
         flexDirection: "column",
         bgcolor: "background.paper",
@@ -242,23 +242,23 @@ export default function ProjectTaskBoard() {
   );
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", bgcolor: "background.default" }}>
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", bgcolor: "background.default", minWidth: 0, overflow: "hidden" }}>
       <Box
         sx={{
-          px: 3, py: 2,
+          px: { xs: 1.5, md: 3 }, py: 2,
           borderBottom: "1px solid",
           borderColor: "divider",
           bgcolor: "background.paper",
           flexShrink: 0,
         }}
       >
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1.5}>
+        <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} mb={1.5} gap={1.5}>
           <Box>
             <Typography variant="h5" fontWeight={800}>Board</Typography>
             <Typography variant="body2" color="text.secondary">{total} tasks total</Typography>
           </Box>
           {(userIsAdmin || canCreateTask) && (
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setCreateCategoryId(null); setCreateOpen(true); }} sx={{ borderRadius: 2 }}>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setCreateCategoryId(null); setCreateOpen(true); }} sx={{ borderRadius: 2, width: { xs: "100%", sm: "auto" } }}>
               New Task
             </Button>
           )}
@@ -273,7 +273,14 @@ export default function ProjectTaskBoard() {
         <Tabs
           value={tab}
           onChange={(_, v) => setTab(v)}
-          sx={{ minHeight: 36 }}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+          sx={{
+            minHeight: 36,
+            "& .MuiTabs-scroller": { overflowX: "auto !important" },
+            "& .MuiTab-root": { minWidth: "auto" },
+          }}
           TabIndicatorProps={{ sx: { height: 3, borderRadius: 2 } }}
         >
           <Tab label={<Stack direction="row" spacing={0.8} alignItems="center"><span>Pending</span><Chip label={pending} size="small" color="primary" sx={{ height: 18, fontSize: 10 }} /></Stack>} sx={{ minHeight: 36, textTransform: "none", fontWeight: 600 }} />
@@ -283,7 +290,7 @@ export default function ProjectTaskBoard() {
       </Box>
 
       {/* ── Board columns ── */}
-      <Box sx={{ display: "flex", gap: 2.5, p: 2.5, overflowX: "auto", flex: 1, alignItems: "flex-start" }}>
+      <Box sx={{ display: "flex", gap: 2.5, p: { xs: 1.5, md: 2.5 }, overflowX: "auto", flex: 1, alignItems: "flex-start", minWidth: 0, WebkitOverflowScrolling: "touch" }}>
         {categories.map(cat => (
           <CategoryColumn
             key={cat._id}

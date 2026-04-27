@@ -72,7 +72,7 @@ export default function MarketingHeader() {
                     to={item.link}
                     variant="body2"
                     sx={{
-                      fontWeight: 700,
+                      fontWeight: 500,
                       color: "text.secondary",
                       textDecoration: "none",
                       transition: "color 160ms ease",
@@ -93,7 +93,7 @@ export default function MarketingHeader() {
                   sx={{
                     borderRadius: 999,
                     px: 2.5,
-                    fontWeight: 800,
+                    fontWeight: 400,
                     bgcolor: "rgba(255,255,255,0.8)",
                   }}
                 >
@@ -105,7 +105,7 @@ export default function MarketingHeader() {
                   sx={{
                     borderRadius: 999,
                     px: 2.8,
-                    fontWeight: 800,
+                    fontWeight: 400,
                     boxShadow: "0 16px 28px rgba(25,118,210,0.22)",
                   }}
                 >

@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import {
   Avatar,
   Box,
@@ -7,6 +8,8 @@ import {
   Divider,
   Paper,
   Stack,
+  Tab,
+  Tabs,
   Typography,
 } from "@mui/material";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
@@ -34,51 +37,75 @@ const STATS = [
   { value: "24/7", label: "AI agent coverage" },
 ];
 
-const FEATURES = [
+const CORE_FEATURES = [
   {
     icon: <SmartToyOutlinedIcon />,
-    title: "Autonomous planning",
-    text: "Trego converts project goals into intelligent next steps, ownership, and stage-aware actions.",
+    title: "Agentic planning",
+    text: "Turn goals into structured work with workspace-aware suggestions, tasks, and follow-up actions.",
   },
   {
     icon: <TimelineOutlinedIcon />,
-    title: "Live workflow intelligence",
-    text: "Track task movement, blocked states, delays, and stage transitions in one clear operational layer.",
+    title: "Workflow visibility",
+    text: "See task movement, stage transitions, blockers, and history in one operational timeline.",
   },
   {
     icon: <Groups2OutlinedIcon />,
-    title: "Role-aware collaboration",
-    text: "Workspace and project roles shape what the agent can see, suggest, and safely execute.",
+    title: "Role-safe collaboration",
+    text: "Owners, admins, members, and clients all get the right actions and the right level of access.",
   },
   {
     icon: <DashboardCustomizeOutlinedIcon />,
-    title: "Command-style control",
-    text: "Use a Codex-like interface to search context, inspect payloads, and compose structured prompts.",
+    title: "Command center search",
+    text: "Search projects, roles, tasks, and workflows in a compact command-style experience.",
   },
   {
     icon: <WorkOutlineOutlinedIcon />,
-    title: "Project-native context",
-    text: "Project documents, tasks, roles, and comments become first-class context for every answer.",
+    title: "Workspace-native context",
+    text: "Everything the team needs lives inside the workspace, so the agent always has real context.",
   },
   {
     icon: <SecurityOutlinedIcon />,
-    title: "Permission-safe by design",
-    text: "Admin and owner access stays privileged while the rest of the workspace keeps its normal flow.",
+    title: "Permission aware",
+    text: "High-risk actions stay gated while teams still get fast, useful assistance everywhere else.",
   },
 ];
 
-const STEPS = [
+const DEMO_TABS = [
   {
-    title: "Connect your workspace",
-    text: "Bring in projects, roles, and tasks so the agent understands your actual operating structure.",
+    label: "Projects",
+    title: "Overview and progress at a glance",
+    text: "Show live status, completion, and team activity in a layout that looks like the real dashboard.",
+    accent: "#1976d2",
+    preview: [
+      { label: "Total tasks", value: "128" },
+      { label: "Completed", value: "96" },
+      { label: "Overdue", value: "9" },
+    ],
+    chips: ["Health score", "Members", "Workflow"],
   },
   {
-    title: "Select context with precision",
-    text: "Use lightweight context controls to focus on the right projects, roles, or task clusters.",
+    label: "Tasks",
+    title: "Board, list, and timeline views",
+    text: "Highlight execution with a Kanban lane, a table preview, and a timeline strip for scheduled work.",
+    accent: "#0ea5e9",
+    preview: [
+      { label: "Pending", value: "24" },
+      { label: "Blocked", value: "5" },
+      { label: "Due this week", value: "18" },
+    ],
+    chips: ["Board", "Tasks", "Timeline"],
   },
   {
-    title: "Let the agent assist execution",
-    text: "Generate payloads, draft actions, and accelerate decision-making without losing control.",
+    label: "Agent",
+    title: "Guided execution from context",
+    text: "Demonstrate how the agent pulls from roles, comments, and workflows to produce accurate assistance.",
+    accent: "#f59e0b",
+    preview: [
+      { label: "Context", value: "Workspace + Project" },
+      { label: "Mode", value: "Ask / Draft / Execute" },
+      { label: "Safety", value: "Role-aware" },
+    ],
+    chips: ["Context", "Safety", "Payload"],
   },
 ];
 
@@ -91,14 +118,243 @@ const STAGGER = {
   hidden: {},
   show: {
     transition: {
-      staggerChildren: 0.09,
+      staggerChildren: 0.08,
       delayChildren: 0.05,
     },
   },
 };
 
+function MockDashboard({ accent, chips, preview }) {
+  return (
+    <Box
+      sx={{
+        position: "relative",
+        p: { xs: 1.5, sm: 2 },
+        borderRadius: 5,
+        overflow: "hidden",
+        border: "1px solid",
+        borderColor: "rgba(15,23,42,0.08)",
+        background:
+          "linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.92))",
+      }}
+    >
+      <Box
+        sx={{
+          position: "absolute",
+          inset: "auto -40px -60px auto",
+          width: 180,
+          height: 180,
+          borderRadius: "50%",
+          bgcolor: `${accent}22`,
+          filter: "blur(26px)",
+        }}
+      />
+
+      <Stack spacing={1.5} sx={{ position: "relative" }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Box>
+            <Typography variant="caption" color="text.secondary">
+              Dashboard preview
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+              Semi-working mockup
+            </Typography>
+          </Box>
+          <Chip
+            label="Live"
+            size="small"
+            sx={{
+              borderRadius: 999,
+              fontWeight: 500,
+              bgcolor: `${accent}14`,
+              color: accent,
+            }}
+          />
+        </Stack>
+
+        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          {chips.map((chip) => (
+            <Chip
+              key={chip}
+              label={chip}
+              variant="outlined"
+              sx={{
+                borderRadius: 999,
+                fontWeight: 500,
+                bgcolor: "rgba(255,255,255,0.7)",
+              }}
+            />
+          ))}
+        </Stack>
+
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
+            gap: 1.25,
+          }}
+        >
+          {preview.map((item) => (
+            <Paper
+              key={item.label}
+              variant="outlined"
+              sx={{
+                p: 1.5,
+                borderRadius: 3,
+                borderColor: "rgba(15,23,42,0.08)",
+                bgcolor: "rgba(255,255,255,0.86)",
+              }}
+            >
+              <Typography variant="caption" color="text.secondary">
+                {item.label}
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 500, mt: 0.5, lineHeight: 1.1 }}>
+                {item.value}
+              </Typography>
+            </Paper>
+          ))}
+        </Box>
+
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", md: "1.2fr 0.8fr" },
+            gap: 1.25,
+            minHeight: { xs: 220, md: 260 },
+          }}
+        >
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 2,
+              borderRadius: 4,
+              bgcolor: "rgba(17,24,39,0.96)",
+              color: "common.white",
+              overflow: "hidden",
+            }}
+          >
+            <Stack spacing={1.5}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.76)", fontWeight: 500 }}>
+                  Command stream
+                </Typography>
+                <Chip
+                  label="Preview"
+                  size="small"
+                  sx={{
+                    bgcolor: "rgba(255,255,255,0.12)",
+                    color: "white",
+                    fontWeight: 500,
+                  }}
+                />
+              </Stack>
+
+              <Box
+                sx={{
+                  borderRadius: 3,
+                  p: 1.5,
+                  bgcolor: "rgba(255,255,255,0.08)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.72)" }}>
+                  "Show delayed tasks, role permissions, and the next stage transitions."
+                </Typography>
+              </Box>
+
+              <Stack spacing={1}>
+                {[
+                  "Search context is loaded from workspace data.",
+                  "Task board and timeline stay in sync.",
+                  "Action suggestions respect role permissions.",
+                ].map((item) => (
+                  <Stack key={item} direction="row" spacing={1} alignItems="center">
+                    <CheckCircleRoundedIcon sx={{ fontSize: 16, color: "#7CFFB2" }} />
+                    <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.78)" }}>
+                      {item}
+                    </Typography>
+                  </Stack>
+                ))}
+              </Stack>
+            </Stack>
+          </Paper>
+
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 2,
+              borderRadius: 4,
+              bgcolor: "rgba(255,255,255,0.84)",
+              borderColor: "rgba(15,23,42,0.08)",
+              display: "flex",
+              flexDirection: "column",
+              gap: 1.25,
+            }}
+          >
+            <Box
+              sx={{
+                flex: 1,
+                borderRadius: 3,
+                border: "1px solid",
+                borderColor: "divider",
+              background: "linear-gradient(180deg, #fff, #f8fafc)",
+                p: 1.25,
+                display: "flex",
+                flexDirection: "column",
+                gap: 1,
+              }}
+            >
+              {[
+                { label: "Project", value: "Hospital Management" },
+                { label: "View", value: "Board + Timeline" },
+                { label: "Status", value: "2 blockers" },
+              ].map((row) => (
+                <Stack
+                  key={row.label}
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  sx={{
+                    px: 1,
+                    py: 0.75,
+                    borderRadius: 2,
+                    bgcolor: "action.hover",
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary">
+                    {row.label}
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {row.value}
+                  </Typography>
+                </Stack>
+              ))}
+            </Box>
+
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<PlayArrowRoundedIcon />}
+              sx={{
+                borderRadius: 999,
+                fontWeight: 400,
+                textTransform: "none",
+              }}
+            >
+              Play dashboard video
+            </Button>
+          </Paper>
+        </Box>
+      </Stack>
+    </Box>
+  );
+}
+
 export default function HomePage() {
   const reduceMotion = useReducedMotion();
+  const [demoTab, setDemoTab] = useState(0);
+
+  const activeDemo = useMemo(() => DEMO_TABS[demoTab] || DEMO_TABS[0], [demoTab]);
 
   return (
     <Box
@@ -114,7 +370,7 @@ export default function HomePage() {
           inset: 0,
           pointerEvents: "none",
           background:
-            "radial-gradient(circle at 20% 15%, rgba(25, 118, 210, 0.18), transparent 28%), radial-gradient(circle at 80% 10%, rgba(0, 188, 212, 0.16), transparent 22%), radial-gradient(circle at 70% 78%, rgba(255, 193, 7, 0.16), transparent 26%)",
+            "radial-gradient(circle at 14% 16%, rgba(25, 118, 210, 0.16), transparent 26%), radial-gradient(circle at 82% 12%, rgba(14, 165, 233, 0.14), transparent 22%), radial-gradient(circle at 64% 74%, rgba(245, 158, 11, 0.12), transparent 24%)",
         }}
       />
       <Box
@@ -123,43 +379,41 @@ export default function HomePage() {
           inset: 0,
           pointerEvents: "none",
           backgroundImage:
-            "linear-gradient(rgba(15,23,42,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,0.03) 1px, transparent 1px)",
-          backgroundSize: "56px 56px",
-          maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.82), transparent 88%)",
-          WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.82), transparent 88%)",
+            "linear-gradient(rgba(15,23,42,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,0.035) 1px, transparent 1px)",
+          backgroundSize: "54px 54px",
+          maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.8), transparent 88%)",
+          WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.8), transparent 88%)",
         }}
       />
 
-      <Container maxWidth="xl" sx={{ position: "relative", zIndex: 1, py: { xs: 6, md: 8, lg: 10 } }}>
+      <Container maxWidth="xl" sx={{ position: "relative", zIndex: 1, py: { xs: 5, md: 8, lg: 10 } }}>
         <MotionBox
           variants={STAGGER}
           initial={reduceMotion ? false : "hidden"}
           animate={reduceMotion ? false : "show"}
-          sx={{ display: "flex", flexDirection: "column", gap: { xs: 9, md: 11 } }}
+          sx={{ display: "flex", flexDirection: "column", gap: { xs: 8, md: 10 } }}
         >
           <MotionBox
-            id="product"
             variants={HERO_VARIANTS}
             transition={{ duration: 0.5, ease: "easeOut" }}
             sx={{
               display: "grid",
-              gridTemplateColumns: { xs: "1fr", lg: "1.1fr 0.9fr" },
-              gap: { xs: 5, lg: 7 },
+              gridTemplateColumns: { xs: "1fr", lg: "1.03fr 0.97fr" },
+              gap: { xs: 4, lg: 6 },
               alignItems: "center",
-              minHeight: { xs: "auto", lg: "78vh" },
+              minHeight: { xs: "auto", lg: "76vh" },
             }}
           >
             <Stack spacing={3.25}>
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ rowGap: 1 }}>
                 <Chip
                   icon={<AutoAwesomeOutlinedIcon sx={{ fontSize: "16px !important" }} />}
-                  label="Agentic AI powered project management"
+                  label="Agentic project management"
                   sx={{
                     bgcolor: "rgba(25,118,210,0.08)",
                     color: "primary.main",
-                    fontWeight: 700,
+                    fontWeight: 500,
                     borderRadius: 999,
-                    px: 0.5,
                   }}
                 />
                 <Chip
@@ -167,49 +421,48 @@ export default function HomePage() {
                   sx={{
                     bgcolor: "rgba(15,23,42,0.04)",
                     color: "text.secondary",
-                    fontWeight: 600,
+                    fontWeight: 500,
                     borderRadius: 999,
                   }}
                 />
               </Stack>
 
-              <Stack spacing={2.2}>
+              <Stack spacing={2.1}>
                 <Typography
                   component="h1"
                   variant="h2"
                   sx={{
-                    fontWeight: 850,
+                    fontWeight: 500,
                     lineHeight: 1.02,
                     letterSpacing: "-0.04em",
-                    maxWidth: 820,
-                    fontSize: { xs: "3rem", sm: "3.8rem", md: "4.6rem" },
+                    maxWidth: 860,
+                    fontSize: { xs: "2.8rem", sm: "3.55rem", md: "4.35rem" },
                   }}
                 >
-                  Agentic AI Powered{" "}
+                  A premium workspace for{" "}
                   <Box
                     component="span"
                     sx={{
-                      background: "linear-gradient(90deg, #1976d2 0%, #00acc1 42%, #ff8f00 100%)",
+                      background: "linear-gradient(90deg, #1976d2 0%, #00acc1 45%, #f59e0b 100%)",
                       WebkitBackgroundClip: "text",
                       WebkitTextFillColor: "transparent",
                     }}
                   >
-                    Project Management
-                  </Box>{" "}
-                  SaaS
+                    projects, tasks, and AI-assisted execution
+                  </Box>
                 </Typography>
 
                 <Typography
                   variant="h6"
                   sx={{
                     color: "text.secondary",
-                    maxWidth: 680,
-                    lineHeight: 1.7,
-                    fontWeight: 500,
+                    maxWidth: 720,
+                    lineHeight: 1.75,
+                    fontWeight: 400,
                   }}
                 >
-                  Trego turns work into a guided system: projects, tasks, roles, workflows, and state history all
-                  flow through one agentic workspace that helps teams move faster without losing control.
+                  Trego brings projects, workflows, roles, tasks, and comments into one polished system. Show the
+                  board, timeline, and command center as a single product story instead of a collection of screens.
                 </Typography>
               </Stack>
 
@@ -222,10 +475,11 @@ export default function HomePage() {
                   endIcon={<ArrowForwardRoundedIcon />}
                   sx={{
                     px: 3,
-                    py: 1.4,
+                    py: 1.35,
                     borderRadius: 999,
-                    fontWeight: 800,
-                    boxShadow: "0 16px 32px rgba(25,118,210,0.24)",
+                    fontWeight: 400,
+                    boxShadow: "0 16px 32px rgba(25,118,210,0.18)",
+                    textTransform: "none",
                   }}
                 >
                   Start free
@@ -238,12 +492,13 @@ export default function HomePage() {
                   startIcon={<PlayArrowRoundedIcon />}
                   sx={{
                     px: 3,
-                    py: 1.4,
+                    py: 1.35,
                     borderRadius: 999,
-                    fontWeight: 800,
+                    fontWeight: 400,
                     borderColor: "divider",
-                    bgcolor: "rgba(255,255,255,0.65)",
+                    bgcolor: "rgba(255,255,255,0.68)",
                     backdropFilter: "blur(14px)",
+                    textTransform: "none",
                   }}
                 >
                   Watch demo
@@ -258,8 +513,8 @@ export default function HomePage() {
                     variant="outlined"
                     sx={{
                       borderRadius: 999,
-                      fontWeight: 600,
-                      bgcolor: "rgba(255,255,255,0.7)",
+                      fontWeight: 500,
+                      bgcolor: "rgba(255,255,255,0.72)",
                     }}
                   />
                 ))}
@@ -269,15 +524,16 @@ export default function HomePage() {
             <MotionBox
               variants={HERO_VARIANTS}
               transition={{ duration: 0.65, ease: "easeOut" }}
-              sx={{ position: "relative", minHeight: { xs: 480, md: 620 } }}
+              sx={{ position: "relative", minHeight: { xs: 520, md: 680 } }}
             >
               <Box
                 sx={{
                   position: "absolute",
-                  inset: 24,
+                  inset: 18,
                   borderRadius: 8,
                   background:
-                    "linear-gradient(180deg, rgba(25,118,210,0.12), rgba(255,255,255,0.92) 40%, rgba(255,255,255,0.78))",
+                    "linear-gradient(180deg, rgba(25,118,210,0.10), rgba(255,255,255,0.92) 42%, rgba(255,255,255,0.78))",
+                  filter: "blur(0px)",
                 }}
               />
 
@@ -287,7 +543,7 @@ export default function HomePage() {
                   inset: 0,
                   borderRadius: 8,
                   background:
-                    "linear-gradient(135deg, rgba(25,118,210,0.18), rgba(0,172,193,0.1) 38%, rgba(255,255,255,0.12))",
+                    "linear-gradient(135deg, rgba(25,118,210,0.16), rgba(0,172,193,0.08) 38%, rgba(255,255,255,0.12))",
                   boxShadow: "0 30px 80px rgba(15,23,42,0.12)",
                   border: "1px solid",
                   borderColor: "rgba(255,255,255,0.55)",
@@ -297,13 +553,13 @@ export default function HomePage() {
                 <Box
                   sx={{
                     position: "absolute",
-                    width: 220,
-                    height: 220,
+                    width: 240,
+                    height: 240,
                     borderRadius: "50%",
                     bgcolor: "rgba(25,118,210,0.22)",
-                    filter: "blur(40px)",
-                    top: -40,
-                    right: -20,
+                    filter: "blur(44px)",
+                    top: -50,
+                    right: -30,
                   }}
                 />
 
@@ -315,7 +571,7 @@ export default function HomePage() {
                           <AutoAwesomeOutlinedIcon sx={{ fontSize: 18 }} />
                         </Avatar>
                         <Box>
-                          <Typography variant="subtitle2" fontWeight={800}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 500 }}>
                             Trego Command Center
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
@@ -323,7 +579,12 @@ export default function HomePage() {
                           </Typography>
                         </Box>
                       </Stack>
-                      <Chip label="Live" color="success" size="small" sx={{ fontWeight: 800, borderRadius: 999 }} />
+                      <Chip
+                        label="Live"
+                        color="success"
+                        size="small"
+                        sx={{ fontWeight: 500, borderRadius: 999 }}
+                      />
                     </Stack>
 
                     <Stack spacing={1.25} sx={{ flex: 1, minHeight: 0 }}>
@@ -343,11 +604,15 @@ export default function HomePage() {
                             <Typography variant="caption" color="text.secondary">
                               Workspace
                             </Typography>
-                            <Typography variant="subtitle1" fontWeight={800}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
                               Sprint Horizon
                             </Typography>
                           </Box>
-                          <Chip label="Agent aware" size="small" sx={{ borderRadius: 999 }} />
+                          <Chip
+                            label="Agent aware"
+                            size="small"
+                            sx={{ borderRadius: 999, fontWeight: 500 }}
+                          />
                         </Stack>
                         <Divider sx={{ my: 1.5 }} />
                         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ rowGap: 1 }}>
@@ -356,7 +621,7 @@ export default function HomePage() {
                               key={item}
                               label={item}
                               variant="outlined"
-                              sx={{ borderRadius: 999, bgcolor: "rgba(255,255,255,0.7)" }}
+                              sx={{ borderRadius: 999, fontWeight: 500, bgcolor: "rgba(255,255,255,0.7)" }}
                             />
                           ))}
                         </Stack>
@@ -377,7 +642,7 @@ export default function HomePage() {
                           <Typography variant="caption" color="text.secondary">
                             Chat
                           </Typography>
-                          <Typography sx={{ mt: 0.75, fontWeight: 700, lineHeight: 1.65 }}>
+                          <Typography sx={{ mt: 0.75, fontWeight: 500, lineHeight: 1.7 }}>
                             "Show delayed tasks, project roles, and the next stage transitions."
                           </Typography>
                           <Box
@@ -431,7 +696,7 @@ export default function HomePage() {
                           >
                             <Stack direction="row" spacing={1} alignItems="center">
                               <CheckCircleRoundedIcon color="success" fontSize="small" />
-                              <Typography variant="body2" fontWeight={700}>
+                              <Typography variant="body2" sx={{ fontWeight: 500 }}>
                                 Permission-safe
                               </Typography>
                             </Stack>
@@ -464,7 +729,7 @@ export default function HomePage() {
             >
               {STATS.map((stat) => (
                 <Box key={stat.label} sx={{ flex: 1 }}>
-                  <Typography variant="h4" fontWeight={850} sx={{ lineHeight: 1 }}>
+                  <Typography variant="h4" sx={{ fontWeight: 500, lineHeight: 1 }}>
                     {stat.value}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
@@ -475,14 +740,14 @@ export default function HomePage() {
             </Stack>
           </MotionBox>
 
-          <MotionBox id="how-it-works" variants={HERO_VARIANTS} transition={{ duration: 0.5, ease: "easeOut" }}>
+          <MotionBox variants={HERO_VARIANTS} transition={{ duration: 0.5, ease: "easeOut" }}>
             <Stack spacing={2.25}>
               <Stack spacing={1}>
-                <Typography variant="overline" letterSpacing={3} color="text.secondary" fontWeight={800}>
+                <Typography variant="overline" letterSpacing={3} color="text.secondary" sx={{ fontWeight: 500 }}>
                   Product DNA
                 </Typography>
-                <Typography variant="h3" fontWeight={850} sx={{ maxWidth: 680, lineHeight: 1.08 }}>
-                  A premium surface for teams that want AI, control, and clarity in one place.
+                <Typography variant="h3" sx={{ maxWidth: 720, lineHeight: 1.08, fontWeight: 500 }}>
+                  Every feature is presented like part of a polished product story.
                 </Typography>
               </Stack>
 
@@ -493,7 +758,7 @@ export default function HomePage() {
                   gap: 2,
                 }}
               >
-                {FEATURES.map((feature, index) => (
+                {CORE_FEATURES.map((feature, index) => (
                   <MotionPaper
                     key={feature.title}
                     variants={HERO_VARIANTS}
@@ -528,7 +793,7 @@ export default function HomePage() {
                       >
                         {feature.icon}
                       </Box>
-                      <Typography variant="h6" fontWeight={800}>
+                      <Typography variant="h6" sx={{ fontWeight: 500 }}>
                         {feature.title}
                       </Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.75 }}>
@@ -541,66 +806,59 @@ export default function HomePage() {
             </Stack>
           </MotionBox>
 
-          <MotionBox id="security" variants={HERO_VARIANTS} transition={{ duration: 0.5, ease: "easeOut" }}>
+          <MotionBox variants={HERO_VARIANTS} transition={{ duration: 0.5, ease: "easeOut" }}>
             <Paper
               elevation={0}
               sx={{
                 position: "relative",
                 overflow: "hidden",
-                p: { xs: 3, md: 4.5 },
+                p: { xs: 2.5, md: 4 },
                 borderRadius: 6,
-                color: "common.white",
-                background:
-                  "linear-gradient(135deg, rgba(25,118,210,0.08), rgba(0,172,193,0.07) 40%, rgba(255,255,255,0.95))",
-                boxShadow: "0 28px 70px rgba(25,118,210,0.12)",
+                bgcolor: "rgba(255,255,255,0.8)",
                 border: "1px solid",
                 borderColor: "rgba(15,23,42,0.06)",
               }}
             >
               <Stack spacing={2.5}>
                 <Stack spacing={1}>
-                  <Typography variant="overline" letterSpacing={3} color="text.secondary" fontWeight={800}>
-                    How it works
+                  <Typography variant="overline" letterSpacing={3} color="text.secondary" sx={{ fontWeight: 500 }}>
+                    Tabbed demo
                   </Typography>
-                  <Typography variant="h4" fontWeight={850} sx={{ maxWidth: 780 }}>
-                    From workspace context to agentic execution in three simple moves.
+                  <Typography variant="h4" sx={{ maxWidth: 820, fontWeight: 500 }}>
+                    Switch between product areas like a lightweight demo browser.
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 760, lineHeight: 1.75 }}>
+                    Use this section for feature-by-feature storytelling and dashboard video slots. Each tab can feel
+                    like a self-contained, semi-working mockup.
                   </Typography>
                 </Stack>
 
-                <Box
+                <Tabs
+                  value={demoTab}
+                  onChange={(_, value) => setDemoTab(value)}
+                  variant="scrollable"
+                  scrollButtons="auto"
+                  allowScrollButtonsMobile
                   sx={{
-                    display: "grid",
-                    gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" },
-                    gap: 2,
+                    minHeight: 42,
+                    "& .MuiTabs-scroller": { overflowX: "auto !important" },
+                    "& .MuiTab-root": {
+                      minHeight: 42,
+                      textTransform: "none",
+                      fontWeight: 500,
+                    },
                   }}
                 >
-                  {STEPS.map((step, index) => (
-                    <Box
-                      key={step.title}
-                      sx={{
-                        p: 2.5,
-                        borderRadius: 4,
-                        bgcolor: "rgba(255,255,255,0.78)",
-                        border: "1px solid",
-                        borderColor: "rgba(15,23,42,0.06)",
-                      }}
-                    >
-                      <Stack spacing={1.25}>
-                        <Chip
-                          label={`0${index + 1}`}
-                          size="small"
-                          sx={{ width: "fit-content", borderRadius: 999, fontWeight: 800 }}
-                        />
-                        <Typography variant="h6" fontWeight={800}>
-                          {step.title}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.75 }}>
-                          {step.text}
-                        </Typography>
-                      </Stack>
-                    </Box>
+                  {DEMO_TABS.map((item) => (
+                    <Tab key={item.label} label={item.label} />
                   ))}
-                </Box>
+                </Tabs>
+
+                <MockDashboard
+                  accent={activeDemo.accent}
+                  chips={activeDemo.chips}
+                  preview={activeDemo.preview}
+                />
               </Stack>
             </Paper>
           </MotionBox>
@@ -611,11 +869,10 @@ export default function HomePage() {
               sx={{
                 position: "relative",
                 overflow: "hidden",
-                p: { xs: 3, md: 4.5 },
+                p: { xs: 2.5, md: 4 },
                 borderRadius: 6,
-                color: "common.white",
                 background: "linear-gradient(135deg, #1976d2 0%, #0b5cab 55%, #043661 100%)",
-                boxShadow: "0 28px 70px rgba(25,118,210,0.28)",
+                boxShadow: "0 28px 70px rgba(25,118,210,0.22)",
               }}
             >
               <Box
@@ -623,7 +880,7 @@ export default function HomePage() {
                   position: "absolute",
                   inset: 0,
                   background:
-                    "radial-gradient(circle at 75% 20%, rgba(255,255,255,0.22), transparent 28%), radial-gradient(circle at 20% 80%, rgba(255,255,255,0.14), transparent 24%)",
+                    "radial-gradient(circle at 75% 20%, rgba(255,255,255,0.18), transparent 28%), radial-gradient(circle at 20% 80%, rgba(255,255,255,0.12), transparent 24%)",
                 }}
               />
               <Stack
@@ -633,11 +890,11 @@ export default function HomePage() {
                 spacing={3}
                 sx={{ position: "relative" }}
               >
-                <Box sx={{ maxWidth: 680 }}>
-                  <Typography variant="overline" sx={{ color: "rgba(255,255,255,0.72)", letterSpacing: 3 }}>
+                <Box sx={{ maxWidth: 700 }}>
+                  <Typography variant="overline" sx={{ color: "rgba(255,255,255,0.72)", letterSpacing: 3, fontWeight: 500 }}>
                     Ready to move faster
                   </Typography>
-                  <Typography variant="h3" fontWeight={850} sx={{ mt: 0.75, lineHeight: 1.08 }}>
+                  <Typography variant="h3" sx={{ mt: 0.75, lineHeight: 1.08, fontWeight: 500, color: "common.white" }}>
                     Build your next project system with an agent that understands the work.
                   </Typography>
                   <Typography sx={{ mt: 1.5, color: "rgba(255,255,255,0.82)", lineHeight: 1.75 }}>
@@ -656,9 +913,10 @@ export default function HomePage() {
                     sx={{
                       bgcolor: "common.white",
                       color: "primary.main",
-                      fontWeight: 850,
+                      fontWeight: 400,
                       borderRadius: 999,
                       px: 3,
+                      textTransform: "none",
                       "&:hover": {
                         bgcolor: "rgba(255,255,255,0.94)",
                       },
@@ -674,9 +932,10 @@ export default function HomePage() {
                     sx={{
                       color: "common.white",
                       borderColor: "rgba(255,255,255,0.4)",
-                      fontWeight: 800,
+                      fontWeight: 400,
                       borderRadius: 999,
                       px: 3,
+                      textTransform: "none",
                     }}
                   >
                     See pricing

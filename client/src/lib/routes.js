@@ -33,6 +33,7 @@ export const WORKSPACE_ROUTES = {
 
 export const PROJECT_ROUTES = {
     overview: (workspaceSlug, projectSlug) => `${WORKSPACE_ROUTES.workspace(workspaceSlug)}/projects/${projectSlug}`,
+    projectClientChat: (workspaceSlug, projectSlug) => `${WORKSPACE_ROUTES.workspace(workspaceSlug)}/projects/${projectSlug}/chat`,
     projectSettings: (workspaceSlug, projectSlug) => `${WORKSPACE_ROUTES.workspace(workspaceSlug)}/projects/${projectSlug}/settings`,
     projectMembers: (workspaceSlug, projectSlug) => `${WORKSPACE_ROUTES.workspace(workspaceSlug)}/projects/${projectSlug}/members`,
     projectRoles: (workspaceSlug, projectSlug) => `${WORKSPACE_ROUTES.workspace(workspaceSlug)}/projects/${projectSlug}/roles`,

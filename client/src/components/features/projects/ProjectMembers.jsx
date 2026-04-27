@@ -4,6 +4,7 @@ import {
   Typography,
   Paper,
   Table,
+  TableContainer,
   TableHead,
   TableRow,
   TableCell,
@@ -103,7 +104,6 @@ export default function ProjectMembers() {
   }, [alert, projectId, search])
 
 
-  /* ---------------- FILTER ---------------- */
 
   const filteredMembers = useMemo(() => {
     return members.filter((m) => {
@@ -117,7 +117,6 @@ export default function ProjectMembers() {
     });
   }, [members, roleFilter]);
 
-  /* ---------------- ACTIONS ---------------- */
 
   const handleRemove = async (memberId) => {
     const res = await callApi({
@@ -148,7 +147,6 @@ export default function ProjectMembers() {
     setEditMember(null);
   };
 
-  /* ---------------- UI ---------------- */
 
   return (
     <ProjectPermissionGate
@@ -156,17 +154,15 @@ export default function ProjectMembers() {
       title="You do not have permission to view project members"
       message="Ask a project admin to grant member management access."
     >
-      <Box>
-        {/* Header */}
-        <Stack direction="row" justifyContent="space-between" mb={2}>
+      <Box sx={{ minWidth: 0 }}>
+        <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} mb={2} gap={1.5}>
           <Typography variant="h5" fontWeight={500}>Project Members</Typography>
 
-          <Button variant="contained" onClick={handleAdd}>
+          <Button variant="contained" onClick={handleAdd} sx={{ width: { xs: "100%", sm: "auto" } }}>
             Add Member
           </Button>
         </Stack>
 
-        {/* Filters */}
         <Paper sx={{ p: 2, mb: 2 }}>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
@@ -177,7 +173,7 @@ export default function ProjectMembers() {
               fullWidth
             />
 
-            <FormControl sx={{ minWidth: 180 }}>
+            <FormControl sx={{ minWidth: { xs: "100%", sm: 180 } }}>
               <InputLabel>Role</InputLabel>
               <Select
                 value={roleFilter}
@@ -195,9 +191,8 @@ export default function ProjectMembers() {
           </Stack>
         </Paper>
 
-        {/* Table */}
-        <Paper>
-          <Table>
+        <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
+          <Table sx={{ minWidth: 720 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Member</TableCell>
@@ -222,10 +217,8 @@ export default function ProjectMembers() {
                     </Stack>
                   </TableCell>
 
-                  {/* Email */}
                   <TableCell>{m.user?.email}</TableCell>
 
-                  {/* Roles */}
                   <TableCell>
                     <Stack direction="row" spacing={0.5} flexWrap="wrap">
                       {m.roles?.map((role) => (
@@ -239,7 +232,6 @@ export default function ProjectMembers() {
                     </Stack>
                   </TableCell>
 
-                  {/* Actions */}
                   <TableCell align="right">
                     <Stack direction="row" spacing={1} justifyContent="flex-end">
                       <IconButton
@@ -269,9 +261,8 @@ export default function ProjectMembers() {
               )}
             </TableBody>
           </Table>
-        </Paper>
+        </TableContainer>
 
-        {/* Dialog (Add + Edit) */}
         <ProjectInviteDialog
           open={open}
           onClose={handleClose}

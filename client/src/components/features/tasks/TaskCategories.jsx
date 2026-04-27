@@ -71,7 +71,13 @@ function CategoryDialog({ open, onClose, onSave, initial, workflows, loading }) 
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{ sx: { borderRadius: 3, mx: { xs: 1, sm: 2 } } }}
+    >
       <DialogTitle fontWeight={700}>{initial ? "Edit Category" : "New Task Category"}</DialogTitle>
       <Divider />
       <DialogContent sx={{ pt: 2.5, display: "flex", flexDirection: "column", gap: 2 }}>
@@ -101,7 +107,7 @@ function CategoryDialog({ open, onClose, onSave, initial, workflows, loading }) 
           <Typography variant="caption" color="text.secondary" gutterBottom display="block">
             Color
           </Typography>
-          <Stack direction="row" spacing={1} flexWrap="wrap">
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
             {COLOR_PRESETS.map(c => (
               <Box
                 key={c}
@@ -122,7 +128,7 @@ function CategoryDialog({ open, onClose, onSave, initial, workflows, loading }) 
               value={form.color}
               onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
               InputProps={{ startAdornment: <InputAdornment position="start"><Box sx={{ width: 14, height: 14, borderRadius: "50%", bgcolor: form.color }} /></InputAdornment> }}
-              sx={{ width: 120 }}
+              sx={{ width: { xs: "100%", sm: 120 }, minWidth: { xs: "100%", sm: 120 } }}
             />
           </Stack>
         </Box>
@@ -160,7 +166,13 @@ function CategoryDialog({ open, onClose, onSave, initial, workflows, loading }) 
 function DeleteCategoryDialog({ open, onClose, onConfirm, category, loading }) {
   const blocked = category?.taskCount > 0;
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="xs"
+      fullWidth
+      PaperProps={{ sx: { borderRadius: 3, mx: { xs: 1, sm: 2 } } }}
+    >
       <DialogTitle fontWeight={700} color="error">Delete Category</DialogTitle>
       <Divider />
       <DialogContent>
@@ -284,10 +296,10 @@ const TaskCategories = () => {
       title="You do not have permission to manage task categories"
       message="Ask a project admin to change task categories."
     >
-    <Box sx={{ p: 3, width: "100%", maxWidth: "none", mx: 0 }}>
+    <Box sx={{ p: { xs: 1.5, md: 3 }, width: "100%", maxWidth: "none", mx: 0, minWidth: 0 }}>
       {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Box>
+      <Box display="flex" justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} flexDirection={{ xs: "column", sm: "row" }} mb={3} gap={1.5}>
+        <Box sx={{ minWidth: 0 }}>
           <Typography variant="h5" fontWeight={500}>Task Categories</Typography>
           <Typography variant="body2" color="text.secondary" mt={0.5}>
             Organize tasks into groups, assign colors and default workflows.
@@ -297,7 +309,7 @@ const TaskCategories = () => {
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => setCreateOpen(true)}
-          sx={{ borderRadius: 2 }}
+          sx={{ borderRadius: 2, width: { xs: "100%", sm: "auto" } }}
         >
           New Category
         </Button>
@@ -341,10 +353,10 @@ const TaskCategories = () => {
               }}
             >
               <CardContent sx={{ pb: "12px !important" }}>
-                <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                <Box display="flex" justifyContent="space-between" alignItems={{ xs: "flex-start", md: "flex-start" }} flexDirection={{ xs: "column", md: "row" }} gap={2}>
                   {/* Left: name + meta */}
                   <Box flex={1}>
-                    <Stack direction="row" alignItems="center" spacing={1.5}>
+                    <Stack direction="row" alignItems="center" spacing={1.5} flexWrap="wrap" useFlexGap>
                       <Avatar sx={{ width: 20, height: 20, bgcolor: category.color, fontSize: 10 }}>
                         {category.name?.[0]?.toUpperCase()}
                       </Avatar>
@@ -360,13 +372,13 @@ const TaskCategories = () => {
                     </Stack>
 
                     {category.description && (
-                      <Typography variant="body2" color="text.secondary" mt={0.5} ml={4.5}>
+                      <Typography variant="body2" color="text.secondary" mt={0.5} ml={{ xs: 0, md: 4.5 }}>
                         {category.description}
                       </Typography>
                     )}
 
                     {category.defaultWorkflow && (
-                      <Stack direction="row" alignItems="center" spacing={0.5} mt={1} ml={4.5}>
+                      <Stack direction="row" alignItems="center" spacing={0.5} mt={1} ml={{ xs: 0, md: 4.5 }} flexWrap="wrap">
                         <AccountTreeOutlinedIcon sx={{ fontSize: 14, color: "text.secondary" }} />
                         <Typography variant="caption" color="text.secondary">
                           Default Workflow:&nbsp;
@@ -377,7 +389,7 @@ const TaskCategories = () => {
                     )}
 
                     {!category.defaultWorkflow && (
-                      <Stack direction="row" alignItems="center" spacing={0.5} mt={1} ml={4.5}>
+                      <Stack direction="row" alignItems="center" spacing={0.5} mt={1} ml={{ xs: 0, md: 4.5 }}>
                         <FolderOffIcon sx={{ fontSize: 14, color: "text.disabled" }} />
                         <Typography variant="caption" color="text.disabled">
                           No default workflow
@@ -387,7 +399,7 @@ const TaskCategories = () => {
                   </Box>
 
                   {/* Actions */}
-                  <Stack direction="row" spacing={0.5}>
+                  <Stack direction="row" spacing={0.5} justifyContent={{ xs: "flex-start", md: "flex-end" }} alignSelf={{ xs: "flex-end", md: "flex-start" }}>
                     <Tooltip title="Edit category">
                       <IconButton size="small" onClick={() => setEditTarget(category)}>
                         <EditIcon fontSize="small" />

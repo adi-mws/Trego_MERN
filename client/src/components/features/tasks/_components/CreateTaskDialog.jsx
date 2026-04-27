@@ -172,7 +172,7 @@ export default function CreateTaskDialog({
         onClose={onClose}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 3 } }}
+        PaperProps={{ sx: { borderRadius: 3, mx: { xs: 1, sm: 2 }, width: { xs: "calc(100% - 16px)", sm: "100%" } } }}
       >
         <DialogTitle fontWeight={700}>{mode === "edit" ? "Edit Task" : "Create Task"}</DialogTitle>
         <Divider />
@@ -213,7 +213,7 @@ export default function CreateTaskDialog({
             ))}
           </TextField>
 
-          <Stack direction="row" spacing={2}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <DatePicker
               label="Start Date"
               value={form.startDate}
@@ -224,7 +224,7 @@ export default function CreateTaskDialog({
               slotProps={{
                 textField: {
                   size: "small",
-                  sx: { flex: 1 },
+                  sx: { flex: 1, width: "100%" },
                   helperText: mode === "create" ? "Today or later" : "When this task begins",
                 },
               }}
@@ -238,7 +238,7 @@ export default function CreateTaskDialog({
               slotProps={{
                 textField: {
                   size: "small",
-                  sx: { flex: 1 },
+                  sx: { flex: 1, width: "100%" },
                   helperText: mode === "create" ? "Today or later" : "Due date",
                 },
               }}

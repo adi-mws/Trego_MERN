@@ -410,6 +410,117 @@ export async function createProjectMemberRemovedNotification({
   });
 }
 
+export async function createTaskCreatedNotification({
+  task,
+  project,
+  workspace,
+  userId,
+  sourceSessionId,
+}) {
+  if (!task?._id || !project?._id || !workspace?._id || !userId) {
+    return null;
+  }
+
+  const taskData = typeof task.toObject === "function" ? task.toObject() : task;
+  const projectData = typeof project.toObject === "function" ? project.toObject() : project;
+  const workspaceData = typeof workspace.toObject === "function" ? workspace.toObject() : workspace;
+
+  const recipientUserIds = await WorkspaceMember.distinct("userId", {
+    workspaceId: workspaceData._id,
+    role: { $in: ["OWNER", "ADMIN"] },
+  });
+
+  const activeSessions = await getActiveSessionsByUserIds(recipientUserIds);
+  const recipientSessions = activeSessions.map((session) => ({
+    userId: String(session.userId),
+    sessionId: String(session._id),
+  }));
+
+  return await createNotificationForSessions({
+    title: "Task created",
+    message: `${taskData.title} was created in ${projectData.name}.`,
+    toastMessage: `${taskData.title} was created in ${projectData.name}.`,
+    type: "ACTION",
+    iconKey: "TASK",
+    important: true,
+    triggeredByType: "USER",
+    triggeredBy: userId,
+    scopeType: "WORKSPACE",
+    scopeId: workspaceData._id,
+    workspaceId: workspaceData._id,
+    workspaceName: workspaceData.name,
+    workspaceSlug: workspaceData.slug,
+    projectId: projectData._id,
+    projectName: projectData.name,
+    projectSlug: projectData.slug,
+    entityType: "TASK",
+    entityId: taskData._id,
+    link: `/app/${workspaceData.slug}/projects/${projectData.slug}/tasks/${taskData._id}`,
+    sourceSessionId,
+    recipientSessions,
+  });
+}
+
+export async function createTaskStageAssigneeNotification({
+  task,
+  project,
+  workspace,
+  stage,
+  projectMember,
+  userId,
+  sourceSessionId,
+}) {
+  if (!task?._id || !project?._id || !workspace?._id || !stage?._id || !projectMember?._id || !userId) {
+    return null;
+  }
+
+  const taskData = typeof task.toObject === "function" ? task.toObject() : task;
+  const projectData = typeof project.toObject === "function" ? project.toObject() : project;
+  const workspaceData = typeof workspace.toObject === "function" ? workspace.toObject() : workspace;
+  const stageData = typeof stage.toObject === "function" ? stage.toObject() : stage;
+  const memberData = typeof projectMember.toObject === "function" ? projectMember.toObject() : projectMember;
+
+  const targetUserId =
+    memberData.user?._id ||
+    memberData.user?.id ||
+    memberData.user ||
+    null;
+
+  if (!targetUserId) {
+    return null;
+  }
+
+  const activeSessions = await getActiveSessionsByUserIds([targetUserId]);
+  const recipientSessions = activeSessions.map((session) => ({
+    userId: String(session.userId),
+    sessionId: String(session._id),
+  }));
+
+  return await createNotificationForSessions({
+    title: "Task assigned",
+    message: `You were assigned to ${taskData.title}${stageData.name ? ` in ${stageData.name}` : ""}.`,
+    toastMessage: `${taskData.title} was assigned to you.`,
+    type: "ACTION",
+    iconKey: "TASK",
+    important: true,
+    triggeredByType: "USER",
+    triggeredBy: userId,
+    scopeType: "WORKSPACE",
+    scopeId: workspaceData._id,
+    workspaceId: workspaceData._id,
+    workspaceName: workspaceData.name,
+    workspaceSlug: workspaceData.slug,
+    projectId: projectData._id,
+    projectName: projectData.name,
+    projectSlug: projectData.slug,
+    entityType: "TASK",
+    entityId: taskData._id,
+    link: `/app/${workspaceData.slug}/projects/${projectData.slug}/tasks/${taskData._id}`,
+    sourceSessionId,
+    recipientSessions,
+  });
+}
+
 export async function createSessionActivityNotification({
   userId,
   sourceSessionId,

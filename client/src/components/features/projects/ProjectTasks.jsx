@@ -92,8 +92,8 @@ export default function ProjectTasks() {
   };
 
   return (
-    <Box sx={{ p: 3, display: "flex", flexDirection: "column", height: "100%" }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2.5}>
+    <Box sx={{ p: { xs: 1.5, md: 3 }, display: "flex", flexDirection: "column", height: "100%", minWidth: 0, overflow: "hidden" }}>
+      <Box display="flex" justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} mb={2.5} flexDirection={{ xs: "column", sm: "row" }} gap={1.5}>
         <Box>
           <Typography variant="h5" fontWeight={400}>Tasks</Typography>
           <Typography variant="body2" color="text.secondary">
@@ -102,7 +102,7 @@ export default function ProjectTasks() {
           </Typography>
         </Box>
         {(userIsAdmin || canCreateTask) && (
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)} sx={{ borderRadius: 2 }}>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)} sx={{ borderRadius: 2, width: { xs: "100%", sm: "auto" } }}>
             New Task
           </Button>
         )}
@@ -114,23 +114,23 @@ export default function ProjectTasks() {
         </Alert>
       )}
 
-      <Stack direction="row" spacing={2} mb={2} flexWrap="wrap">
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={2} flexWrap="wrap">
         <TextField
           size="small"
           placeholder="Search tasks..."
           value={search}
           onChange={e => setSearch(e.target.value)}
           InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
-          sx={{ minWidth: 240 }}
+          sx={{ minWidth: { xs: "100%", sm: 240 } }}
         />
-        <FormControl size="small" sx={{ minWidth: 140 }}>
+        <FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 140 } }}>
           <InputLabel>Priority</InputLabel>
           <Select label="Priority" value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)}>
             <MenuItem value="">All</MenuItem>
             {["LOW", "MEDIUM", "HIGH"].map(p => <MenuItem key={p} value={p}>{p}</MenuItem>)}
           </Select>
         </FormControl>
-        <FormControl size="small" sx={{ minWidth: 180 }}>
+        <FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 180 } }}>
           <InputLabel>Category</InputLabel>
           <Select label="Category" value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
             <MenuItem value="">All</MenuItem>
@@ -150,8 +150,8 @@ export default function ProjectTasks() {
       {loading ? (
         <Box display="flex" justifyContent="center" mt={6}><CircularProgress /></Box>
       ) : (
-        <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2, flex: 1 }}>
-          <Table stickyHeader>
+        <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2, flex: 1, overflowX: "auto", minWidth: 0 }}>
+          <Table stickyHeader sx={{ minWidth: 900 }}>
             <TableHead>
               <TableRow sx={{ "& th": { fontWeight: 700, bgcolor: "background.default" } }}>
                 <TableCell>Title</TableCell>

@@ -24,7 +24,7 @@ const NAV_ITEMS = [
 ];
 
 
-export default function WorkspacesSidebar() {
+export default function WorkspacesSidebar({ onNavigate }) {
     const location = useLocation();
     const pathname = location.pathname;
 
@@ -49,9 +49,10 @@ export default function WorkspacesSidebar() {
 
                     return (
                         <Box
-                            key={item.href}
+                            key={item.to}
                             component={Link}
                             to={item.to}
+                            onClick={onNavigate}
                             py={1}
                             sx={{
                                 display: "flex",

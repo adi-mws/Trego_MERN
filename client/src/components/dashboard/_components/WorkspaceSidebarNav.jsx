@@ -32,7 +32,7 @@ import { isAdmin } from '../../../utils/permissions.utils';
 import { useSocketEvent } from '../../../lib/socket';
 import { removeProject } from '../../../redux/slices/workspaceSlice';
 
-export default function WorkspaceSidebarNav() {
+export default function WorkspaceSidebarNav({ onNavigate }) {
     const [openCreateProjectDialog, setOpenCreateProjectDialog] = useState(false);
     const workspace = useSelector((state) => state.workspace);
     const authUser = useSelector((state) => state.auth?.data);
@@ -187,7 +187,7 @@ export default function WorkspaceSidebarNav() {
         ) {
             navigate(WORKSPACE_ROUTES.workspace(workspaceSlug));
         }
-    }, [authUser?._id, dispatch, location.pathname, navigate, workspaceSlug]);
+    }, [authUser, dispatch, location.pathname, navigate, workspaceSlug]);
 
     useSocketEvent(
         "workspace:project-member-removed",
@@ -197,9 +197,14 @@ export default function WorkspaceSidebarNav() {
 
     const { _id: projectId } = useSelector((state) => state.project)
 
+    const handleNavigate = (target) => {
+        if (typeof onNavigate === "function") onNavigate();
+        navigate(target);
+    };
+
     return (
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, p: 1, overflow: 'hidden' }}>
-            <Box component={'img'} src="/images/logo-with-text.png" alt="Logo" sx={{ width: 80, m: 1 }} />
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, p: { xs: 1, md: 1 }, overflow: 'hidden' }}>
+            <Box component={'img'} src="/images/logo-with-text.png" alt="Logo" sx={{ width: { xs: 72, md: 80 }, m: 1 }} />
 
             {/* Workspace Switcher */}
             <Box sx={{ flexShrink: 0, mt: 1 }}>
@@ -238,10 +243,8 @@ export default function WorkspaceSidebarNav() {
                                 <ListItemButton
                                     key={project._id}
                                     selected={project._id === projectId}
-                                    onClick={() =>
-                                        navigate(PROJECT_ROUTES.overview(workspace.slug, project.slug))
-                                    }
-                                    sx={{ pl: 3 }}
+                                    onClick={() => handleNavigate(PROJECT_ROUTES.overview(workspace.slug, project.slug))}
+                                    sx={{ pl: { xs: 2.5, md: 3 } }}
                                 >
                                     <ListItemIcon sx={{ minWidth: 28 }}>
                                         <Avatar
@@ -263,9 +266,12 @@ export default function WorkspaceSidebarNav() {
                             {/* Only admins can create projects */}
                             {userIsAdmin && (
                                 <ListItemButton
-                                    onClick={() => setOpenCreateProjectDialog(true)}
+                                    onClick={() => {
+                                        if (typeof onNavigate === "function") onNavigate();
+                                        setOpenCreateProjectDialog(true);
+                                    }}
                                     sx={{
-                                        pl: 3,
+                                        pl: { xs: 2.5, md: 3 },
                                         mt: 0.5,
                                         borderRadius: 1,
                                         color: "primary.main",
@@ -334,7 +340,7 @@ export default function WorkspaceSidebarNav() {
                                         <ListItemButton
                                             key={item.id}
                                             disabled={!item.path}
-                                            onClick={() => item.path && navigate(item.path)}
+                                            onClick={() => item.path && handleNavigate(item.path)}
                                         >
                                             <ListItemIcon
                                                 sx={{

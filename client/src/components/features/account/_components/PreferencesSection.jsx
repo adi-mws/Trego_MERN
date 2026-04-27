@@ -1,11 +1,11 @@
 import {
-    Card,
     Box,
     Stack,
     Typography,
-    Button,
     ToggleButton,
     ToggleButtonGroup,
+    useMediaQuery,
+    useTheme,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 
@@ -32,6 +32,8 @@ function PreferencesSection() {
     const [accent, setAccent] = useState("#1976d2");
     const { user, updatePrefs } = useUserGlobal();
     const showAlert = useAlert();
+    const muiTheme = useTheme();
+    const isMobile = useMediaQuery(muiTheme.breakpoints.down("sm"));
 
     const handleThemeChange = async (value) => {
         setTheme(value);
@@ -65,21 +67,25 @@ function PreferencesSection() {
             showAlert(response.error?.message, "error");
         }
     };
-   useEffect(() => {
-    if (user?.preferences) {
-        setTheme(user.preferences.theme || "system");
-        setAccent(user.preferences.accentColor || "#1976d2");
-    }
-}, [user]);
+    useEffect(() => {
+        const timer = window.setTimeout(() => {
+            if (user?.preferences) {
+                setTheme(user.preferences.theme || "system");
+                setAccent(user.preferences.accentColor || "#1976d2");
+            }
+        }, 0);
+
+        return () => window.clearTimeout(timer);
+    }, [user]);
     return (
         <Box id="preferences">
-            <Box p={3}>
+            <Box p={{ xs: 2, sm: 3 }} sx={{ minWidth: 0 }}>
                 <SectionHeader
                     title="Preferences"
                     description="Customize your experience"
                 />
 
-                <Stack spacing={4} maxWidth={420}>
+                <Stack spacing={4} maxWidth={420} sx={{ width: "100%" }}>
                     {/* THEME SELECTOR */}
                     <Box>
                         <Typography fontSize={14} mb={1}>
@@ -92,6 +98,15 @@ function PreferencesSection() {
                             exclusive
                             fullWidth
                             size="small"
+                            orientation={isMobile ? "vertical" : "horizontal"}
+                            sx={{
+                                "& .MuiToggleButton-root": {
+                                    flex: 1,
+                                },
+                                "& .MuiToggleButtonGroup-grouped": {
+                                    minWidth: 0,
+                                },
+                            }}
                         >
                             <ToggleButton value="system">System</ToggleButton>
                             <ToggleButton value="light">Light</ToggleButton>
@@ -105,7 +120,7 @@ function PreferencesSection() {
                             Accent Color
                         </Typography>
 
-                        <Stack direction="row" flexWrap="wrap" gap={1.5}>
+                        <Stack direction="row" flexWrap="wrap" gap={1.5} useFlexGap>
                             {accentColors.map((color) => (
                                 <Box
                                     onClick={() => handleAccentChange(color)}

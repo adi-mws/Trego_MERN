@@ -103,14 +103,14 @@ export default function MarketingAuthPromptDialog() {
           <Chip
             icon={<AutoAwesomeOutlinedIcon sx={{ fontSize: "16px !important" }} />}
             label="Quick access"
-            sx={{ borderRadius: 999, fontWeight: 700 }}
+            sx={{ borderRadius: 999, fontWeight: 500 }}
           />
         </Stack>
       </DialogTitle>
 
       <DialogContent sx={{ pt: 0.5 }}>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
-          <Typography variant="h6" fontWeight={800}>
+          <Typography variant="h6" fontWeight={500}>
             Want to keep your work in sync?
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -127,7 +127,7 @@ export default function MarketingAuthPromptDialog() {
           startIcon={<GoogleIcon />}
           onClick={handleGoogleClick}
           disabled={!googleReady || googleBusy || !deviceInfo.deviceId}
-          sx={{ textTransform: "none", fontWeight: 700 }}
+          sx={{ textTransform: "none", fontWeight: 400 }}
         >
           {googleBusy ? "Signing in..." : "Continue with Google"}
         </Button>
@@ -143,7 +143,7 @@ export default function MarketingAuthPromptDialog() {
             fullWidth
             variant="outlined"
             onClick={handleSignIn}
-            sx={{ textTransform: "none", fontWeight: 700 }}
+            sx={{ textTransform: "none", fontWeight: 400 }}
           >
             Sign in
           </Button>
@@ -151,7 +151,7 @@ export default function MarketingAuthPromptDialog() {
             fullWidth
             variant="text"
             onClick={handleSignUp}
-            sx={{ textTransform: "none", fontWeight: 700 }}
+            sx={{ textTransform: "none", fontWeight: 400 }}
           >
             Create account
           </Button>

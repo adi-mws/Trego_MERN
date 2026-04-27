@@ -1,9 +1,11 @@
 import * as taskService from "./task.service.js";
 import { WorkspaceMember } from "../workspaces/workspaceMember.model.js";
 import { Project } from "../projects/project.model.js";
+import { Workspace } from "../workspaces/workspace.model.js";
 import { ProjectMember } from "../projects/projectMember.model.js";
 import { replaceTaskStageAssignees } from "./taskStageAssignee.service.js";
 import * as extraService from "./taskExtra.service.js";
+import { createTaskCreatedNotification } from "../notifications/notification.service.js";
 
 const ADMIN_ROLES = ["OWNER", "ADMIN"];
 
@@ -120,6 +122,27 @@ export const createTask = async (req, res, next) => {
             projectId, title, description, createdBy,
             categoryId, workflowId, priority, deadline, startDate, endDate,
         });
+
+        try {
+            const project = await Project.findById(task.projectId)
+                .select("_id name slug workspace")
+                .lean();
+            const workspace = project?.workspace
+                ? await Workspace.findById(project.workspace).select("_id name slug").lean()
+                : null;
+
+            if (project && workspace) {
+                await createTaskCreatedNotification({
+                    task,
+                    project,
+                    workspace,
+                    userId: createdBy,
+                    sourceSessionId: req.user?.sessionId || null,
+                });
+            }
+        } catch (notificationError) {
+            console.warn("Failed to send task created notification:", notificationError?.message || notificationError);
+        }
 
         res.status(201).json({ success: true, data: task });
     } catch (err) {
