@@ -93,10 +93,9 @@ export default function ProjectTasks() {
 
   return (
     <Box sx={{ p: 3, display: "flex", flexDirection: "column", height: "100%" }}>
-      {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2.5}>
         <Box>
-          <Typography variant="h5" fontWeight={700}>Tasks</Typography>
+          <Typography variant="h5" fontWeight={400}>Tasks</Typography>
           <Typography variant="body2" color="text.secondary">
             {tasks.length} total · {tasks.filter(t => t.isBlocked).length} blocked
             {!userIsAdmin && " · Showing tasks assigned to you"}
@@ -109,14 +108,12 @@ export default function ProjectTasks() {
         )}
       </Box>
 
-      {/* Member info banner */}
       {!userIsAdmin && (
         <Alert severity="info" icon={<InfoOutlinedIcon />} sx={{ mb: 2, borderRadius: 2 }}>
           You are viewing tasks assigned to you. Contact an admin to create or view all tasks.
         </Alert>
       )}
 
-      {/* Filters */}
       <Stack direction="row" spacing={2} mb={2} flexWrap="wrap">
         <TextField
           size="small"

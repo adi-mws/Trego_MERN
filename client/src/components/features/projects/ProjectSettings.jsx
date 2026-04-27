@@ -99,12 +99,12 @@ export default function ProjectSettings() {
       title="You do not have permission to manage project settings"
       message="Ask a project admin to update settings."
     >
-      <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 800, mx: "auto" }}>
+      <Box sx={{ p: { xs: 2, md: 4 }, width:"100%", mx: "auto" }}>
         <Typography variant="h5" fontWeight={700} mb={3}>
           Project Settings
         </Typography>
 
-        <Card variant="outlined" sx={{ borderRadius: 3 }}>
+        <Box variant="outlined" sx={{ borderRadius: 3 }}>
           <CardContent sx={{ p: 4 }}>
             <Stack spacing={4}>
               {/* Avatar Upload */}
@@ -190,7 +190,7 @@ export default function ProjectSettings() {
               </Box>
             </Stack>
           </CardContent>
-        </Card>
+        </Box>
       </Box>
     </ProjectPermissionGate>
   );

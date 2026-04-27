@@ -140,7 +140,7 @@ export default function ProjectWorkflowsList() {
       <Box sx={{ p: 3, height: "100%", display: "flex", flexDirection: "column" }}>
         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
           <Box>
-            <Typography variant="h5" fontWeight={600}>
+            <Typography variant="h5" fontWeight={500}>
               Workflows
             </Typography>
             <Typography variant="body2" color="text.secondary">

@@ -10,7 +10,6 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import { useSelector } from "react-redux";
 import { callApi } from "../../../api/api";
 
-// ─── State History Page — all project transitions ─────────────────────────────
 export default function ProjectTaskStateHistory() {
   const { _id: projectId } = useSelector(s => s.project);
   const [history, setHistory] = useState([]);
@@ -55,7 +54,7 @@ export default function ProjectTaskStateHistory() {
   return (
     <Box sx={{ p: 3, width: "100%", maxWidth: "none", mx: 0 }}>
       <Box mb={3}>
-        <Typography variant="h5" fontWeight={700}>Task State History</Typography>
+        <Typography variant="h5" fontWeight={500}>Task State History</Typography>
         <Typography variant="body2" color="text.secondary" mt={0.5}>
           Full audit trail of all workflow stage transitions across the project.
         </Typography>

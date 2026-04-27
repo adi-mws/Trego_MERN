@@ -32,7 +32,6 @@ function isPending(task) {
   return !isTaskDone(task) && !isOverdue(task);
 }
 
-// ─── Task Card ─────────────────────────────────────────────────────────────────
 function TaskCard({ task, onBlock, onOpen, onEdit }) {
   const borderColor = task.color || "#1976d2";
   const overdueFlag = isOverdue(task);
@@ -56,7 +55,7 @@ function TaskCard({ task, onBlock, onOpen, onEdit }) {
       }}
     >
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-        <Typography variant="body2" fontWeight={700} noWrap sx={{ flex: 1, mr: 1 }}>
+        <Typography variant="body2" fontWeight={400} noWrap sx={{ flex: 1, mr: 1 }}>
           {task.isBlocked && <BlockIcon sx={{ fontSize: 13, color: "error.main", mr: 0.5, verticalAlign: "middle" }} />}
           {task.title}
         </Typography>
@@ -102,12 +101,11 @@ function TaskCard({ task, onBlock, onOpen, onEdit }) {
   );
 }
 
-// ─── Category Column ───────────────────────────────────────────────────────────
 function CategoryColumn({ category, tasks, onBlock, onOpen, onAddTask, onEdit, tab, canCreateTask }) {
   const filtered = tasks.filter(t => {
-    if (tab === 0) return isPending(t);        // Pending
-    if (tab === 1) return isTaskDone(t);       // Completed
-    if (tab === 2) return isOverdue(t);        // Overdue
+    if (tab === 0) return isPending(t);       
+    if (tab === 1) return isTaskDone(t);       
+    if (tab === 2) return isOverdue(t);       
     return true;
   });
 
@@ -169,7 +167,6 @@ function CategoryColumn({ category, tasks, onBlock, onOpen, onAddTask, onEdit, t
   );
 }
 
-// ─── Main Board ────────────────────────────────────────────────────────────────
 export default function ProjectTaskBoard() {
   const { _id: projectId } = useSelector(s => s.project);
   const { workspaceSlug, projectSlug } = useParams();
@@ -224,7 +221,6 @@ export default function ProjectTaskBoard() {
   };
   const handleOpen = (task) => navigate(PROJECT_ROUTES.projectTaskDetail(workspaceSlug, projectSlug, task._id));
 
-  // Group tasks by category
   const tasksByCategory = {};
   const uncategorized = [];
   tasks.forEach(t => {
@@ -234,7 +230,6 @@ export default function ProjectTaskBoard() {
     tasksByCategory[cid].push(t);
   });
 
-  // Summary counts
   const total = tasks.length;
   const pending = tasks.filter(isPending).length;
   const done = tasks.filter(isTaskDone).length;
@@ -248,7 +243,6 @@ export default function ProjectTaskBoard() {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", bgcolor: "background.default" }}>
-      {/* ── Header ── */}
       <Box
         sx={{
           px: 3, py: 2,
@@ -276,7 +270,6 @@ export default function ProjectTaskBoard() {
           </Alert>
         )}
 
-        {/* Status tabs */}
         <Tabs
           value={tab}
           onChange={(_, v) => setTab(v)}
@@ -305,10 +298,9 @@ export default function ProjectTaskBoard() {
           />
         ))}
 
-        {/* Uncategorized */}
         {uncategorized.length > 0 && (
           <CategoryColumn
-            category={{ _id: "__none__", name: "Uncategorized", color: "#9e9e9e" }}
+            category={{ _id: "none", name: "Uncategorized", color: "#9e9e9e" }}
             tasks={uncategorized}
             onBlock={setBlockTarget}
             onOpen={handleOpen}

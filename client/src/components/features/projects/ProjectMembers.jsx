@@ -107,7 +107,7 @@ export default function ProjectMembers() {
 
   const filteredMembers = useMemo(() => {
     return members.filter((m) => {
-     
+
 
       const matchesRole = roleFilter
         ? m.roles?.some((r) => r._id === roleFilter)
@@ -156,132 +156,132 @@ export default function ProjectMembers() {
       title="You do not have permission to view project members"
       message="Ask a project admin to grant member management access."
     >
-    <Box>
-      {/* Header */}
-      <Stack direction="row" justifyContent="space-between" mb={2}>
-        <Typography variant="h6">Project Members</Typography>
+      <Box>
+        {/* Header */}
+        <Stack direction="row" justifyContent="space-between" mb={2}>
+          <Typography variant="h5" fontWeight={500}>Project Members</Typography>
 
-        <Button variant="contained" onClick={handleAdd}>
-          Add Member
-        </Button>
-      </Stack>
-
-      {/* Filters */}
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          <TextField
-            label="Search by name or email"
-            placeholder="Search for members..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            fullWidth
-          />
-
-          <FormControl sx={{ minWidth: 180 }}>
-            <InputLabel>Role</InputLabel>
-            <Select
-              value={roleFilter}
-              label="Role"
-              onChange={(e) => setRoleFilter(e.target.value)}
-            >
-              <MenuItem value="">All</MenuItem>
-              {roles.map((r) => (
-                <MenuItem key={r._id} value={r._id}>
-                  {r.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <Button variant="contained" onClick={handleAdd}>
+            Add Member
+          </Button>
         </Stack>
-      </Paper>
 
-      {/* Table */}
-      <Paper>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Member</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>Roles</TableCell>
-              <TableCell align="right">Actions</TableCell>
-            </TableRow>
-          </TableHead>
+        {/* Filters */}
+        <Paper sx={{ p: 2, mb: 2 }}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField
+              label="Search by name or email"
+              placeholder="Search for members..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              fullWidth
+            />
 
-          <TableBody>
-            {filteredMembers.map((m) => (
-              <TableRow key={m._id} hover>
-                {/* User */}
-                <TableCell>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Avatar src={getImageUrl(m?.user.avatar)}>
-                      {m?.user.name.slice(0, 1)}
-                    </Avatar>
-                    <Typography fontSize={14}>
-                      {m.user?.name}
-                    </Typography>
-                  </Stack>
-                </TableCell>
+            <FormControl sx={{ minWidth: 180 }}>
+              <InputLabel>Role</InputLabel>
+              <Select
+                value={roleFilter}
+                label="Role"
+                onChange={(e) => setRoleFilter(e.target.value)}
+              >
+                <MenuItem value="">All</MenuItem>
+                {roles.map((r) => (
+                  <MenuItem key={r._id} value={r._id}>
+                    {r.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+        </Paper>
 
-                {/* Email */}
-                <TableCell>{m.user?.email}</TableCell>
-
-                {/* Roles */}
-                <TableCell>
-                  <Stack direction="row" spacing={0.5} flexWrap="wrap">
-                    {m.roles?.map((role) => (
-                      <Chip
-                        key={role._id}
-                        label={role.name}
-                        size="small"
-                        variant="outlined"
-                      />
-                    ))}
-                  </Stack>
-                </TableCell>
-
-                {/* Actions */}
-                <TableCell align="right">
-                  <Stack direction="row" spacing={1} justifyContent="flex-end">
-                    <IconButton
-                      color="primary"
-                      onClick={() => handleEdit(m)}
-                    >
-                      <Edit fontSize="small" />
-                    </IconButton>
-
-                    <IconButton
-                      color="error"
-                      onClick={() => handleRemove(m._id)}
-                    >
-                      <Delete fontSize="small" />
-                    </IconButton>
-                  </Stack>
-                </TableCell>
-              </TableRow>
-            ))}
-
-            {!filteredMembers.length && (
+        {/* Table */}
+        <Paper>
+          <Table>
+            <TableHead>
               <TableRow>
-                <TableCell colSpan={4} align="center">
-                  No members found
-                </TableCell>
+                <TableCell>Member</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Roles</TableCell>
+                <TableCell align="right">Actions</TableCell>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </Paper>
+            </TableHead>
 
-      {/* Dialog (Add + Edit) */}
-      <ProjectInviteDialog
-        open={open}
-        onClose={handleClose}
-        projectId={projectId}
-        workspaceId={workspaceId}
-        onSuccess={fetchMembers}
-        member={editMember}
-        mode={editMember ? "edit" : "create"}
-      />
-    </Box>
+            <TableBody>
+              {filteredMembers.map((m) => (
+                <TableRow key={m._id} hover>
+                  {/* User */}
+                  <TableCell>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Avatar src={getImageUrl(m?.user.avatar)}>
+                        {m?.user.name.slice(0, 1)}
+                      </Avatar>
+                      <Typography fontSize={14}>
+                        {m.user?.name}
+                      </Typography>
+                    </Stack>
+                  </TableCell>
+
+                  {/* Email */}
+                  <TableCell>{m.user?.email}</TableCell>
+
+                  {/* Roles */}
+                  <TableCell>
+                    <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                      {m.roles?.map((role) => (
+                        <Chip
+                          key={role._id}
+                          label={role.name}
+                          size="small"
+                          variant="outlined"
+                        />
+                      ))}
+                    </Stack>
+                  </TableCell>
+
+                  {/* Actions */}
+                  <TableCell align="right">
+                    <Stack direction="row" spacing={1} justifyContent="flex-end">
+                      <IconButton
+                        color="primary"
+                        onClick={() => handleEdit(m)}
+                      >
+                        <Edit fontSize="small" />
+                      </IconButton>
+
+                      <IconButton
+                        color="error"
+                        onClick={() => handleRemove(m._id)}
+                      >
+                        <Delete fontSize="small" />
+                      </IconButton>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))}
+
+              {!filteredMembers.length && (
+                <TableRow>
+                  <TableCell colSpan={4} align="center">
+                    No members found
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Paper>
+
+        {/* Dialog (Add + Edit) */}
+        <ProjectInviteDialog
+          open={open}
+          onClose={handleClose}
+          projectId={projectId}
+          workspaceId={workspaceId}
+          onSuccess={fetchMembers}
+          member={editMember}
+          mode={editMember ? "edit" : "create"}
+        />
+      </Box>
     </ProjectPermissionGate>
   );
 }

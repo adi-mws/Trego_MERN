@@ -288,7 +288,7 @@ const TaskCategories = () => {
       {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Box>
-          <Typography variant="h5" fontWeight={700}>Task Categories</Typography>
+          <Typography variant="h5" fontWeight={500}>Task Categories</Typography>
           <Typography variant="body2" color="text.secondary" mt={0.5}>
             Organize tasks into groups, assign colors and default workflows.
           </Typography>

@@ -158,7 +158,7 @@ export default function ProjectRoles() {
     <Box>
       {/*  Header */}
       <Stack direction="row" justifyContent="space-between" mb={2}>
-        <Typography variant="h6" fontWeight={600}>
+        <Typography variant="h5" fontWeight={500}>
           Project Roles
         </Typography>
 

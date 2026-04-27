@@ -103,10 +103,9 @@ export default function ProjectOverview() {
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, height: "100%", overflowY: "auto" }}>
-      {/* ── Header ── */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
         <Box>
-          <Typography variant="h5" fontWeight={700}>Project Overview</Typography>
+          <Typography variant="h5" fontWeight={500}>Project Overview</Typography>
           <Typography variant="body2" color="text.secondary">Real-time metrics and progress</Typography>
         </Box>
         <Tooltip title="Refresh">
@@ -114,7 +113,6 @@ export default function ProjectOverview() {
         </Tooltip>
       </Stack>
 
-      {/* ── Stat Cards ── */}
       <Grid container spacing={2} mb={3}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard label="Total Tasks" value={tasks.total} icon={<TaskIcon />} color="#1890ff" />

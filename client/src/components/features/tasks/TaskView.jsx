@@ -811,7 +811,7 @@ export default function TaskView() {
                 />
               )}
 
-              <Typography variant="h5" fontWeight={800} lineHeight={1.25}>
+              <Typography variant="h5" fontWeight={500} lineHeight={1.25}>
                 {task.title}
               </Typography>
 

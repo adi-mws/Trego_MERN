@@ -54,7 +54,7 @@ export default function ProjectComments() {
   return (
     <Box sx={{ p: 3, width: "100%", maxWidth: "none", mx: 0 }}>
       <Box mb={3}>
-        <Typography variant="h5" fontWeight={700}>Project Comments</Typography>
+        <Typography variant="h5" fontWeight={500}>Project Comments</Typography>
         <Typography variant="body2" color="text.secondary" mt={0.5}>
           All comments across tasks in this project.
         </Typography>

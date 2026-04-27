@@ -21,9 +21,8 @@ import { isAdmin, canCreateProjectTask } from "../../../utils/permissions.utils"
 
 const PRIORITY_COLOR = { LOW: "#52c41a", MEDIUM: "#faad14", HIGH: "#f5222d" };
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-const DAY_WIDTH = 48; // Fixed width for Days view (wider for readability)
+const DAY_WIDTH = 48; 
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────
 function getDaysBetween(start, end) {
   return Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
 }
@@ -32,7 +31,6 @@ function getOffsetDays(base, date) {
   return (date - base) / (1000 * 60 * 60 * 24);
 }
 
-// ─── Timeline Row ──────────────────────────────────────────────────────────────
 function TimelineRow({ task, minDate, dayWidth, onBlock, onOpen, onEdit }) {
   const start = task.startDate ? new Date(task.startDate) : (task.deadline ? new Date(task.deadline) : null);
   const end = task.deadline ? new Date(task.deadline) : (task.startDate ? new Date(task.startDate) : null);
@@ -60,7 +58,6 @@ function TimelineRow({ task, minDate, dayWidth, onBlock, onOpen, onEdit }) {
         minWidth: "100%",
       }}
     >
-      {/* Task label — Sticky left column */}
       <Box
         sx={{
           minWidth: 240,
@@ -141,7 +138,6 @@ function TimelineRow({ task, minDate, dayWidth, onBlock, onOpen, onEdit }) {
   );
 }
 
-// ─── Category Group ────────────────────────────────────────────────────────────
 function CategoryGroup({ label, color, tasks, minDate, dayWidth, onBlock, onAddTask, onOpen, onEdit, canCreateTask }) {
   const [collapsed, setCollapsed] = useState(false);
   return (
@@ -202,7 +198,6 @@ function CategoryGroup({ label, color, tasks, minDate, dayWidth, onBlock, onAddT
   );
 }
 
-// ─── Main Timeline / Gantt Chart ──────────────────────────────────────────────
 export default function ProjectTimeline() {
   const { _id: projectId } = useSelector(s => s.project);
   const { workspaceSlug, projectSlug } = useParams();
@@ -247,13 +242,11 @@ export default function ProjectTimeline() {
     return () => window.clearTimeout(timer);
   }, [fetchData]);
 
-  // Update current time every minute
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
 
-  // ── Date range across all tasks ────────────────────────────────────────────
   const { minDate, totalDays, monthSegments, todayOffsetPixels } = useMemo(() => {
     const dates = tasks
       .flatMap(t => [t.startDate, t.deadline].filter(Boolean).map(d => new Date(d)))
@@ -265,15 +258,14 @@ export default function ProjectTimeline() {
     const baseMin = dates.length ? new Date(Math.min(...dates, today)) : today;
     const baseMax = dates.length ? new Date(Math.max(...dates, today)) : new Date(today.getTime() + 30 * 86400000);
 
-    // Add explicit large viewport padding for natural infinite scrolling
     const viewMin = new Date(baseMin);
-    viewMin.setMonth(viewMin.getMonth() - 6); // 6 months padding left
+    viewMin.setMonth(viewMin.getMonth() - 6); 
     viewMin.setDate(1); // Align to month start
     viewMin.setHours(0,0,0,0);
 
     const viewMax = new Date(baseMax);
-    viewMax.setMonth(viewMax.getMonth() + 6); // 6 months padding right
-    viewMax.setDate(0); // Align to month end
+    viewMax.setMonth(viewMax.getMonth() + 6); 
+    viewMax.setDate(0);
     viewMax.setHours(23,59,59,999);
 
     const tDays = getDaysBetween(viewMin, viewMax);
@@ -299,15 +291,12 @@ export default function ProjectTimeline() {
     return { minDate: viewMin, maxDate: viewMax, totalDays: tDays, monthSegments: mSegments, todayOffsetPixels: offsetPixels };
   }, [tasks, currentTime]);
 
-  // Scroll to today on initial load
   useEffect(() => {
     if (containerRef.current && todayOffsetPixels > 0 && !loading) {
-      // Keep it somewhat centered
       containerRef.current.scrollLeft = Math.max(0, todayOffsetPixels - 400);
     }
-  }, [loading, todayOffsetPixels]); // Ignore currentTime updates to avoid fighting user scroll
+  }, [loading, todayOffsetPixels]); 
 
-  // ── Group tasks by category ────────────────────────────────────────────────
   const grouped = {};
   const uncategorized = [];
 
@@ -342,7 +331,6 @@ export default function ProjectTimeline() {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
-      {/* ── Top Control Bar ── */}
       <Box
         sx={{
           display: "flex",
@@ -358,7 +346,7 @@ export default function ProjectTimeline() {
         }}
       >
         <Box>
-          <Typography variant="h5" fontWeight={700}>Project Timeline</Typography>
+          <Typography variant="h5" fontWeight={500}>Project Timeline</Typography>
           <Typography variant="caption" color="text.secondary" display="block">
             {currentTime.toLocaleString()} — {tasks.length} tasks
           </Typography>
@@ -379,7 +367,6 @@ export default function ProjectTimeline() {
         )}
       </Box>
 
-      {/* ── Main Gantt Area (Fully Scrollable) ── */}
       <Box
         ref={containerRef}
         sx={{
@@ -392,7 +379,6 @@ export default function ProjectTimeline() {
       >
         <Box sx={{ width: "max-content", minWidth: "100%", position: "relative" }}>
           
-          {/* Header Row (Sticky Top) */}
           <Box
             sx={{
               display: "flex",
@@ -405,14 +391,11 @@ export default function ProjectTimeline() {
               boxShadow: "0 2px 4px rgba(0,0,0,0.05)"
             }}
           >
-            {/* Sticky Label Corner */}
             <Box sx={{ position: "sticky", left: 0, minWidth: 240, borderRight: "1px solid", borderColor: "divider", px: 1.5, display: "flex", alignItems: "center", bgcolor: "background.paper", zIndex: 11 }}>
               <Typography variant="caption" fontWeight={700} color="text.secondary">TASK</Typography>
             </Box>
 
-            {/* Time Scale */}
             <Box sx={{ display: "flex", flexDirection: "column" }}>
-              {/* Month Row */}
               <Box sx={{ display: "flex", height: 24, borderBottom: "1px solid", borderColor: "divider", bgcolor: "background.default" }}>
                 {monthSegments.map((seg, i) => (
                   <Box
@@ -431,7 +414,6 @@ export default function ProjectTimeline() {
                 ))}
               </Box>
 
-              {/* Day Row */}
               <Box sx={{ display: "flex", height: 22 }}>
                 {Array.from({ length: totalDays }).map((_, i) => {
                   const d = new Date(minDate.getTime() + i * 86400000);
@@ -459,11 +441,9 @@ export default function ProjectTimeline() {
               </Box>
             </Box>
 
-            {/* Actions Corner */}
             <Box sx={{ position: "sticky", right: 0, minWidth: 40, bgcolor: "background.paper", borderLeft: "1px solid", borderColor: "divider", zIndex: 11 }} />
           </Box>
 
-          {/* Current Time Indicator Line */}
           <Box
             sx={{
               position: "absolute",
@@ -478,7 +458,6 @@ export default function ProjectTimeline() {
               boxShadow: "0 0 8px rgba(245,34,45,0.8)",
             }}
           >
-            {/* Playhead dot on top */}
             <Box
               sx={{
                 position: "absolute",
@@ -492,7 +471,6 @@ export default function ProjectTimeline() {
             />
           </Box>
 
-          {/* Rows */}
           <Box sx={{ pb: 4, position: "relative", zIndex: 2 }}>
             {categories.map(cat => {
               const catTasks = grouped[cat._id] || [];
@@ -514,7 +492,6 @@ export default function ProjectTimeline() {
             );
             })}
 
-            {/* Uncategorized */}
             {uncategorized.length > 0 && (
               <CategoryGroup
                 label="Uncategorized"

@@ -21,7 +21,7 @@ export default function WorkspaceSettingsPage() {
   const { workspaceSlug } = useParams();
   const dispatch = useDispatch();
   const { enqueueSnackbar } = useSnackbar();
-  
+
   const workspace = useSelector((s) => s.workspace);
   const loading = useSelector((s) => s.workspace.loading);
 
@@ -63,6 +63,7 @@ export default function WorkspaceSettingsPage() {
       formData.append("avatar", avatarFile);
     }
 
+    console.log(Object.fromEntries(formData));
     const res = await callApi({
       method: "put",
       url: `/workspaces/${workspace._id}`,
@@ -80,9 +81,11 @@ export default function WorkspaceSettingsPage() {
       const freshRes = await callApi({
         url: `/workspaces/global/${workspaceSlug || res.data?.workspace?.slug}`,
       });
+
+      console.log(freshRes.data)
       if (freshRes.success) {
         dispatch({ type: "workspace/setWorkspace", payload: freshRes.data.workspace });
-      }
+      } 
     } else {
       enqueueSnackbar(res.message || "Failed to update workspace", {
         variant: "error",
@@ -99,12 +102,12 @@ export default function WorkspaceSettingsPage() {
   }
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 800, mx: "auto" }}>
+    <Box sx={{ p: { xs: 2, md: 4 }, width: "100%", mx: "auto" }}>
       <Typography variant="h5" fontWeight={700} mb={3}>
         Workspace Settings
       </Typography>
 
-      <Card variant="outlined" sx={{ borderRadius: 3 }}>
+      <Box sx={{ borderRadius: 3 }}>
         <CardContent sx={{ p: 4 }}>
           <Stack spacing={4}>
             {/* Avatar Upload */}
@@ -190,7 +193,7 @@ export default function WorkspaceSettingsPage() {
             </Box>
           </Stack>
         </CardContent>
-      </Card>
+      </Box>
     </Box>
   );
 }
