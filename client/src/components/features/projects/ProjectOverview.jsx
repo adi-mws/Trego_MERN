@@ -113,20 +113,19 @@ export default function ProjectOverview() {
 
       <Grid container spacing={2} mb={3}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard label="Total Tasks" value={tasks.total} icon={<TaskIcon />} color="#1890ff" />
+          <StatCard label="Total Tasks" value={tasks.total} icon={<TaskIcon />} color={theme.palette.primary.main} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard label="Completed" value={tasks.completed} icon={<CheckCircleOutline />} color="#52c41a" subtitle={`${completePct}% done`} />
+          <StatCard label="Completed" value={tasks.completed} icon={<CheckCircleOutline />} color={theme.palette.success.main} subtitle={`${completePct}% done`} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard label="Overdue" value={tasks.overdue} icon={<ErrorOutline />} color="#f5222d" subtitle="Past deadline" />
+          <StatCard label="Overdue" value={tasks.overdue} icon={<ErrorOutline />} color={theme.palette.error.main} subtitle="Past deadline" />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard label="In Progress" value={tasks.inProgress} icon={<AccessTimeOutlined />} color="#fa8c16" />
+          <StatCard label="In Progress" value={tasks.inProgress} icon={<AccessTimeOutlined />} color={theme.palette.warning.main} />
         </Grid>
       </Grid>
 
-      {/* ── Progress Bar ── */}
       <Card variant="outlined" sx={{ borderRadius: 3, mb: 3 }}>
         <CardContent>
           <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>

@@ -110,7 +110,7 @@ export default function WorkflowSidebarHeader() {
             {(name || "Untitled").length > 8 ? (name || "Untitled").slice(0, 8) + "…" : (name || "Untitled")}
         </Typography>
 
-        <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
+        {/* <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
           <Chip label={`V${version || 1}`} size="small" color="primary" variant="outlined" />
           {usage?.totalCount > 0 && (
             <Chip
@@ -120,7 +120,7 @@ export default function WorkflowSidebarHeader() {
               variant="outlined"
             />
           )}
-        </Stack>
+        </Stack> */}
       </Stack>
 
       {/* RIGHT: Save & Status Icons */}

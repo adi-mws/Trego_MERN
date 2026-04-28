@@ -386,7 +386,7 @@ function WorkflowBuilderInner() {
       title="You do not have permission to manage workflows"
       message="Ask a project admin to edit the workflow designer."
     >
-    <Box sx={{ display: "flex", height: "100%", overflow: 'hidden', minHeight: 0, flexDirection: { xs: "column", lg: "row" }, minWidth: 0 }}>
+    <Box sx={{ display: "flex", height: "100%", overflow: 'hidden', minHeight: 0, flexDirection: 'column', minWidth: 0 }}>
       <Box
         sx={{
           px: { xs: 1.5, md: 1.75 },
