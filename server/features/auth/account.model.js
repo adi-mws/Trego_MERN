@@ -23,6 +23,18 @@ const accountSchema = new mongoose.Schema(
       type: String, 
       default: null,
     },
+
+    passwordResetToken: {
+      type: String,
+      default: null,
+      select: false,
+    },
+
+    passwordResetExpiresAt: {
+      type: Date,
+      default: null,
+      select: false,
+    },
   },
   {
     timestamps: true,

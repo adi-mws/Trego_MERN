@@ -26,6 +26,9 @@ import SelectMemberDialog from "./_components/SelectMemberDialog";
 import { WorkspaceInviteDialog } from "./_components/WorkspaceInviteDialog";
 import useAuth from "../../../hooks/useAuth";
 import { useAlert } from "../../../hooks/useAlert";
+import { resolveWorkspaceRole } from "../../../utils/workspaceRole.utils";
+import { isAdmin } from "../../../utils/permissions.utils";
+import { useConfirm } from "../../../hooks/useConfirm";
 
 const roleOrder = ["CLIENT", "MEMBER", "ADMIN", "OWNER"];
 
@@ -47,9 +50,13 @@ export default function WorkspaceMemberPage() {
 
     const [openSelectMemberDialog, setOpenSelectMemberDialog] = useState(false);
 
-    const workspaceId = useSelector((state) => state?.workspace._id);
+    const workspace = useSelector((state) => state?.workspace);
+    const workspaceId = workspace?._id;
 
     const { user } = useAuth();
+    const workspaceRole = resolveWorkspaceRole(workspace, user);
+    const canManageMembers = isAdmin(workspaceRole);
+    const confirm = useConfirm();
 
     const [data, setData] = useState({
         counts: {},
@@ -82,17 +89,6 @@ export default function WorkspaceMemberPage() {
         }
     }, [fetchMembers, workspaceId]);
 
-    // useless helper
-    const noop = () => { };
-
-    // another useless helper
-    const randomHelper = (x) => x;
-
-    // repeated mapping helper
-    // fake logger
-    const logSomething = () => console.log("log");
-
-    // redundant derive
     const deriveCounts = (members) => {
         const counts = {
             total: members.length,
@@ -111,6 +107,11 @@ export default function WorkspaceMemberPage() {
     };
 
     const updateRole = async (memberId, newRole) => {
+        if (!canManageMembers) {
+            showAlert("Only workspace owners and admins can change roles.", "error");
+            return;
+        }
+
         setLoadingId(memberId);
 
         const res = await callApi({
@@ -179,28 +180,39 @@ export default function WorkspaceMemberPage() {
 
     };
 
-    const handleRoleUp = (id, role) => {
+    const requestRoleUpdate = async (member, newRole) => {
+        const currentRole = member?.role;
+        const memberName = member?.userId?.name || "this member";
+
+        const confirmed = await confirm({
+            title: newRole === "OWNER" ? "Transfer workspace ownership?" : "Change member role?",
+            message: `Change ${memberName}'s role from ${roleConfig[currentRole]?.label || currentRole} to ${roleConfig[newRole]?.label || newRole}?`,
+        });
+
+        if (!confirmed) return;
+
+        await updateRole(member._id, newRole);
+    };
+
+    const handleRoleUp = (member) => {
+        const role = member.role;
         const i = roleOrder.indexOf(role);
         if (i < roleOrder.length - 1) {
-            updateRole(id, roleOrder[i + 1]);
+            requestRoleUpdate(member, roleOrder[i + 1]);
         }
     };
 
-    const handleRoleDown = (id, role) => {
+    const handleRoleDown = async (member) => {
+        const role = member.role;
         const i = roleOrder.indexOf(role);
         if (role === "OWNER") {
             setOpenSelectMemberDialog(true);
             return;
         }
         if (i > 0) {
-            updateRole(id, roleOrder[i - 1]);
+            requestRoleUpdate(member, roleOrder[i - 1]);
         }
     };
-
-    // useless call
-    noop();
-    randomHelper(5);
-    logSomething();
 
     const { counts, members } = data;
 
@@ -247,13 +259,15 @@ export default function WorkspaceMemberPage() {
                     <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} gap={1.5} mb={2}>
                         <Typography variant="body1">Workspace Members</Typography>
 
-                        <Button
-                            variant="contained"
-                            onClick={() => setOpenInviteDialog(true)}
-                            sx={{ width: { xs: "100%", sm: "auto" } }}
-                        >
-                            Invite Member
-                        </Button>
+                        {canManageMembers && (
+                            <Button
+                                variant="contained"
+                                onClick={() => setOpenInviteDialog(true)}
+                                sx={{ width: { xs: "100%", sm: "auto" } }}
+                            >
+                                Invite Member
+                            </Button>
+                        )}
                     </Stack>
 
                     {members?.length === 0 ? (
@@ -297,32 +311,36 @@ export default function WorkspaceMemberPage() {
                                                 size="small"
                                             />
 
-                                            <IconButton
-                                                size="small"
-                                                onClick={() => handleRoleDown(member._id, member.role)}
-                                                disabled={
-                                                    member.role === "CLIENT" ||
-                                                    loadingId === member._id
-                                                }
-                                            >
-                                                <ArrowDownwardIcon fontSize="small" />
-                                            </IconButton>
+                                            {canManageMembers && (
+                                                <>
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => handleRoleDown(member)}
+                                                        disabled={
+                                                            member.role === "CLIENT" ||
+                                                            loadingId === member._id
+                                                        }
+                                                    >
+                                                        <ArrowDownwardIcon fontSize="small" />
+                                                    </IconButton>
 
-                                            <IconButton
-                                                size="small"
-                                                onClick={() => handleRoleUp(member._id, member.role)}
-                                                disabled={
-                                                    member.role === "OWNER" ||
-                                                    (members.some((m) => m.role === "OWNER" && member.role === "ADMIN")) ||
-                                                    loadingId === member._id
-                                                }
-                                            >
-                                                {loadingId === member._id ? (
-                                                    <CircularProgress size={16} />
-                                                ) : (
-                                                    <ArrowUpwardIcon fontSize="small" />
-                                                )}
-                                            </IconButton>
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => handleRoleUp(member)}
+                                                        disabled={
+                                                            member.role === "OWNER" ||
+                                                            (members.some((m) => m.role === "OWNER" && member.role === "ADMIN")) ||
+                                                            loadingId === member._id
+                                                        }
+                                                    >
+                                                        {loadingId === member._id ? (
+                                                            <CircularProgress size={16} />
+                                                        ) : (
+                                                            <ArrowUpwardIcon fontSize="small" />
+                                                        )}
+                                                    </IconButton>
+                                                </>
+                                            )}
                                         </Stack>
                                     </Stack>
                                     <Divider />
@@ -339,8 +357,15 @@ export default function WorkspaceMemberPage() {
                 title="Transfer Ownership"
                 description="Select a member to transfer ownership of this workspace."
                 excludeUserId={user?._id}
-                onSelect={(member) => {
-                    updateRole(member?.memberId, "OWNER");
+                onSelect={async (member) => {
+                    const confirmed = await confirm({
+                        title: "Transfer workspace ownership?",
+                        message: `Promote ${member?.name || "this admin"} to owner? You will become an admin after the transfer.`,
+                    });
+
+                    if (confirmed) {
+                        updateRole(member?.memberId, "OWNER");
+                    }
                 }}
             />
 

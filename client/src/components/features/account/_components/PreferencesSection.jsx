@@ -4,6 +4,8 @@ import {
     Typography,
     ToggleButton,
     ToggleButtonGroup,
+    FormControlLabel,
+    Switch,
     useMediaQuery,
     useTheme,
 } from "@mui/material";
@@ -11,6 +13,7 @@ import { useEffect, useState } from "react";
 
 import SectionHeader from "./SectionHeader";
 import { useUserGlobal } from "../../../../hooks/useUserGlobal";
+import { useNotification } from "../../../../hooks/useNotification";
 import { callApi } from "../../../../api/api";
 import { useAlert } from "../../../../hooks/useAlert";
 
@@ -30,7 +33,9 @@ const accentColors = [
 function PreferencesSection() {
     const [theme, setTheme] = useState("system");
     const [accent, setAccent] = useState("#1976d2");
+    const [importantOnly, setImportantOnly] = useState(false);
     const { user, updatePrefs } = useUserGlobal();
+    const { fetchNotifications } = useNotification();
     const showAlert = useAlert();
     const muiTheme = useTheme();
     const isMobile = useMediaQuery(muiTheme.breakpoints.down("sm"));
@@ -41,11 +46,11 @@ function PreferencesSection() {
         const response = await callApi({
             method: "PUT",
             url: "/user/preferences",
-            data: { theme: value, accentColor: accent },
+            data: { theme: value, accentColor: accent, importantNotificationsOnly: importantOnly },
         });
 
         if (response.success) {
-            updatePrefs({ theme: value, accentColor: accent });
+            updatePrefs({ theme: value, accentColor: accent, importantNotificationsOnly: importantOnly });
         } else {
             showAlert(response.error?.message, "error");
         }
@@ -58,20 +63,41 @@ function PreferencesSection() {
         const response = await callApi({
             method: "PUT",
             url: "/user/preferences",
-            data: { theme, accentColor: color },
+            data: { theme, accentColor: color, importantNotificationsOnly: importantOnly },
         });
 
         if (response.success) {
-            updatePrefs({ theme, accentColor: color });
+            updatePrefs({ theme, accentColor: color, importantNotificationsOnly: importantOnly });
         } else {
             showAlert(response.error?.message, "error");
         }
     };
+
+    const handleNotificationPreferenceChange = async (event) => {
+        const value = event.target.checked;
+        setImportantOnly(value);
+
+        const response = await callApi({
+            method: "PUT",
+            url: "/user/preferences",
+            data: { theme, accentColor: accent, importantNotificationsOnly: value },
+        });
+
+        if (response.success) {
+            updatePrefs({ theme, accentColor: accent, importantNotificationsOnly: value });
+            fetchNotifications();
+        } else {
+            setImportantOnly(!value);
+            showAlert(response.error?.message, "error");
+        }
+    };
+
     useEffect(() => {
         const timer = window.setTimeout(() => {
             if (user?.preferences) {
                 setTheme(user.preferences.theme || "system");
                 setAccent(user.preferences.accentColor || "#1976d2");
+                setImportantOnly(Boolean(user.preferences.importantNotificationsOnly));
             }
         }, 0);
 
@@ -143,6 +169,29 @@ function PreferencesSection() {
                                 />
                             ))}
                         </Stack>
+                    </Box>
+
+                    <Box>
+                        <Typography fontSize={14} mb={1}>
+                            Notifications
+                        </Typography>
+
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={importantOnly}
+                                    onChange={handleNotificationPreferenceChange}
+                                />
+                            }
+                            label="Only important notifications"
+                            sx={{
+                                m: 0,
+                                alignItems: "center",
+                                "& .MuiFormControlLabel-label": {
+                                    fontSize: 14,
+                                },
+                            }}
+                        />
                     </Box>
                 </Stack>
 

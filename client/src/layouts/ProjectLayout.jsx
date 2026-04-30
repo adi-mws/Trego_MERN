@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux'
 import { canViewProjectActivity, isClient, isClientProjectRole } from '../utils/permissions.utils'
 import { PROJECT_ROUTES, WORKSPACE_ROUTES } from '../lib/routes'
 import { resolveWorkspaceRole } from '../utils/workspaceRole.utils'
+import ProjectSidebar from '../components/features/projects/_components/ProjectSidebar'
 
 export default function ProjectLayout() {
   const navigate = useNavigate()
@@ -75,7 +76,10 @@ export default function ProjectLayout() {
         minHeight: 0,            
       }}
     >
-      <Outlet />
+      <Box sx={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+        <Outlet />
+      </Box>
+      <ProjectSidebar variant="bottom" forceCollapsed />
     </Box>
   )
 }

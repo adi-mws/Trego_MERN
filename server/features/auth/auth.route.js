@@ -8,7 +8,9 @@ import {
   signOut,
   signOutDevice,
   signOutAll,
-  authVerifyController
+  authVerifyController,
+  forgotPasswordController,
+  resetPasswordController,
 } from "../auth/auth.controller.js";
 
 import ensureAuth from "../../middlewares/ensureAuth.js";
@@ -25,6 +27,12 @@ router.post("/sign-up", signUpController);
 
 // Sign in with Google
 router.post("/google", signInGoogleController);
+
+// Request password reset email
+router.post("/forgot-password", forgotPasswordController);
+
+// Reset local account password
+router.post("/reset-password", resetPasswordController);
 
 // AUTH (PROTECTED)
 

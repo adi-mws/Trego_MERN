@@ -174,6 +174,7 @@ export const advanceTaskStage = async (req, res, next) => {
       transitionId,
       userId,
       comment,
+      sourceSessionId: req.user?.sessionId || null,
     });
     res.status(200).json({ success: true, data: result });
   } catch (err) { next(err); }

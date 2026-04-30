@@ -44,7 +44,10 @@ workspaceSchema.pre("validate", async function () {
   let counter = 0;
 
   while (true) {
-    const existing = await this.constructor.findOne({ slug });
+    const existing = await this.constructor.findOne({
+      slug,
+      _id: { $ne: this._id },
+    });
 
     if (!existing) break;
 

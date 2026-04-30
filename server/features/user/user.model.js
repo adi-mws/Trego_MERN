@@ -10,6 +10,10 @@ const userPreferencesSchema = new mongoose.Schema({
     type: String,
     default: "#1976d2",
   },
+  importantNotificationsOnly: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const userProfileSchema = new mongoose.Schema({
@@ -61,7 +65,11 @@ const userSchema = new mongoose.Schema(
     },
     preferences: {
       type: userPreferencesSchema,
-      default: () => ({ theme: "light", accentColor: "#1976d2" }),
+      default: () => ({
+        theme: "light",
+        accentColor: "#1976d2",
+        importantNotificationsOnly: false,
+      }),
     },
     lastOnline: {
       type: Date,

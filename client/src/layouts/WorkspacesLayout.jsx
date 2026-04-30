@@ -74,6 +74,7 @@ export default function WorkspacesLayout() {
         <Header
           onMenuClick={() => setMobileSidebarOpen(true)}
           menuIcon={<MenuOutlinedIcon />}
+          showWorkspaceTools={false}
         />
         <Box
           sx={{

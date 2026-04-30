@@ -20,8 +20,7 @@ import { callApi } from "../../../api/api";
 import { useAlert } from "../../../hooks/useAlert";
 import useAuth from "../../../hooks/useAuth";
 import { useDeviceInfo } from "../../../hooks/useDeviceInfo";
-import { useGoogleIdentity } from "../../../hooks/useGoogleIdentity";
-import { GoogleLogin } from '@react-oauth/google'
+import { GoogleLogin } from "@react-oauth/google";
 
 
 export default function SignInForm() {
@@ -34,7 +33,6 @@ export default function SignInForm() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const showAlert = useAlert();
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
   const {
     register,
@@ -44,15 +42,21 @@ export default function SignInForm() {
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get("redirect");
 
-  const handleGoogleCredential = useCallback(async (code) => {
+  const handleGoogleCredential = useCallback(async (idToken) => {
+    if (!idToken) {
+      setError("Google sign-in failed");
+      return;
+    }
+
     setGoogleLoading(true);
+    setError(null);
 
     try {
       const response = await callApi({
         method: "POST",
         url: "/auth/google",
         data: {
-          code,
+          idToken,
           deviceInfo: {
             deviceId: deviceInfo.deviceId,
             ip: deviceInfo.ipAddress,
@@ -74,11 +78,6 @@ export default function SignInForm() {
       setGoogleLoading(false);
     }
   }, [deviceInfo.browser, deviceInfo.deviceId, deviceInfo.ipAddress, deviceInfo.os, deviceInfo.userAgent, login, navigate, redirect, showAlert]);
-
-  const { ready: googleReady, promptGoogle, error: googleError } = useGoogleIdentity({
-    clientId,
-    onCredential: handleGoogleCredential,
-  });
 
   useEffect(() => {
     if (deviceInfo.deviceId) {
@@ -159,26 +158,34 @@ export default function SignInForm() {
           </Typography>
         </Box>
 
-        <Button
-          fullWidth
-          variant="outlined"
-          size="small"
-          onClick={() => {
-            setGoogleLoading(true);
-            const started = promptGoogle();
-            if (!started) setGoogleLoading(false);
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            pointerEvents: !deviceInfo.deviceId || googleLoading ? "none" : "auto",
+            opacity: !deviceInfo.deviceId || googleLoading ? 0.6 : 1,
           }}
-          disabled={!deviceInfo.deviceId || !googleReady || googleLoading}
-          sx={{ height: 40, textTransform: "none", fontWeight: 500 }}
         >
-          {googleLoading ? <CircularProgress size={18} /> : "Continue with Google"}
-        </Button>
-
-        {googleError && (
-          <Alert severity="error" sx={{ mt: 1 }}>
-            {googleError}
-          </Alert>
-        )}
+          {googleLoading ? (
+            <Box
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              height={40}
+            >
+              <CircularProgress size={18} />
+            </Box>
+          ) : (
+            <GoogleLogin
+              onSuccess={(credentialResponse) => {
+                handleGoogleCredential(credentialResponse.credential);
+              }}
+              onError={() => setError("Google sign-in failed")}
+              width="310"
+              text="continue_with"
+            />
+          )}
+        </Box>
 
         <Divider sx={{ my: 1.8 }}>
           <Typography variant="caption" color="text.secondary">
@@ -233,7 +240,7 @@ export default function SignInForm() {
           <Box display="flex" justifyContent="flex-end" mt={0.5} mb={1.5}>
             <Link
               component={NavLink}
-              href="/forgot-password"
+              to={AUTH_ROUTES.forgotPassword}
               variant="caption"
               underline="none"
               color="primary.main"

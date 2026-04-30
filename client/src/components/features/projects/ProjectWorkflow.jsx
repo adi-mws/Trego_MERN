@@ -415,7 +415,7 @@ function WorkflowBuilderInner() {
             {name || "Untitled Workflow"}
           </Typography>
         </Stack>
-        <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
+        <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap" alignItems="center" justifyContent="flex-end">
           <Chip label={`V${version || 1}`} size="small" color="primary" variant="outlined" />
           {usage?.totalCount > 0 && (
             <Chip
@@ -425,6 +425,7 @@ function WorkflowBuilderInner() {
               variant="outlined"
             />
           )}
+          {isEditable && <WorkflowControls workflowActions={actions} />}
         </Stack>
       </Box>
       <Box sx={{ flex: 1, display: "flex", minHeight: 0, minWidth: 0, flexDirection: { xs: "column", lg: "row" } }}>
@@ -465,7 +466,6 @@ function WorkflowBuilderInner() {
           </Box>
         </Box>
 
-        {isEditable && <WorkflowControls workflowActions={actions} />}
         <WorkflowSidebar />
       </Box>
     </Box>

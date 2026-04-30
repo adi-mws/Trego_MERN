@@ -28,7 +28,7 @@ import { addProject, setProjects } from '../../../redux/slices/workspaceSlice';
 import CreateProjectDialog from '../../features/projects/_components/CreateProjectDialog';
 import { getImageUrl } from '../../../utils/image.utils';
 import { resolveWorkspaceRole } from '../../../utils/workspaceRole.utils';
-import { isAdmin } from '../../../utils/permissions.utils';
+import { isAdmin, isMember } from '../../../utils/permissions.utils';
 import { useSocketEvent } from '../../../lib/socket';
 import { removeProject } from '../../../redux/slices/workspaceSlice';
 
@@ -42,7 +42,7 @@ export default function WorkspaceSidebarNav({ onNavigate }) {
     const workspaceRole = resolveWorkspaceRole(workspace, authUser);
     const userIsAdmin = isAdmin(workspaceRole);
     const canOpenAgent = userIsAdmin;
-    const canViewWorkspaceMembers = userIsAdmin;
+    const canViewWorkspaceMembers = userIsAdmin || isMember(workspaceRole);
 
     const loadedWorkspaceSlugRef = useRef(null);
     const workspaceProjectsCountRef = useRef(0);

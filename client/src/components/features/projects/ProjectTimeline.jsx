@@ -149,37 +149,64 @@ function CategoryGroup({ label, color, tasks, minDate, dayWidth, onBlock, onAddT
           display: "flex",
           alignItems: "center",
           height: 36,
-          px: 1.5,
           bgcolor: color ? `${color}18` : "action.hover",
           borderBottom: "1px solid",
           borderColor: "divider",
           cursor: "pointer",
           userSelect: "none",
-          gap: 1,
-          position: "sticky",
-          left: 0,
-          zIndex: 3, // slightly above items
           width: "100%",
         }}
       >
-        <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: color || "#999", flexShrink: 0 }} />
-        <Typography variant="caption" fontWeight={700} color={color || "text.primary"}>
-          {label}
-        </Typography>
-        <Chip size="small" label={tasks.length} sx={{ height: 18, fontSize: 10 }} />
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            position: "sticky",
+            left: 0,
+            height: "100%",
+            px: 1.5,
+            minWidth: 240,
+            maxWidth: 240,
+            bgcolor: "background.paper",
+            borderRight: "1px solid",
+            borderColor: "divider",
+            zIndex: 4,
+          }}
+        >
+          <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: color || "#999", flexShrink: 0 }} />
+          <Typography variant="caption" fontWeight={700} color={color || "text.primary"} noWrap>
+            {label}
+          </Typography>
+          <Chip size="small" label={tasks.length} sx={{ height: 18, fontSize: 10, ml: "auto" }} />
+        </Box>
+
         <Box sx={{ flex: 1 }} />
-        {canCreateTask && (
-          <Tooltip title="Add task to this category">
-            <IconButton
-              size="small"
-              onClick={e => { e.stopPropagation(); onAddTask(); }}
-              sx={{ p: 0.3 }}
-            >
-              <AddIcon sx={{ fontSize: 16 }} />
-            </IconButton>
-          </Tooltip>
-        )}
-        <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>{collapsed ? "▶" : "▼"}</Typography>
+
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            position: "sticky",
+            right: 0,
+            height: "100%",
+            px: 1.5,
+            zIndex: 4,
+          }}
+        >
+          {canCreateTask && (
+            <Tooltip title="Add task to this category">
+              <IconButton
+                size="small"
+                onClick={e => { e.stopPropagation(); onAddTask(); }}
+                sx={{ p: 0.3 }}
+              >
+                <AddIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </Tooltip>
+          )}
+          <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>{collapsed ? "▶" : "▼"}</Typography>
+        </Box>
       </Box>
 
       {/* Rows */}
@@ -333,6 +360,7 @@ export default function ProjectTimeline() {
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", minWidth: 0 }}>
       <Box
         sx={{
+          width: "100%",
           display: "flex",
           justifyContent: "space-between",
           alignItems: { xs: "flex-start", md: "center" },
@@ -352,9 +380,9 @@ export default function ProjectTimeline() {
           </Typography>
         </Box>
 
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center" flexWrap="wrap" sx={{ width: "100%" }}>
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ xs: "stretch", sm: "center" }} justifyContent={{ xs: "flex-start", md: "flex-end" }} flexWrap="wrap" sx={{ width: { xs: "100%", md: "auto" } }}>
           {(userIsAdmin || canCreateTask) && (
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setCreateCategoryId(null); setCreateOpen(true); }} sx={{ borderRadius: 2, width: { xs: "100%", sm: "auto" }, flexShrink: 0 }}>
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setCreateCategoryId(null); setCreateOpen(true); }} sx={{ borderRadius: 2, flexShrink: 0 }}>
               New Task
             </Button>
           )}

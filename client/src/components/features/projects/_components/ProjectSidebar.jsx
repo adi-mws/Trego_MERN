@@ -22,8 +22,16 @@ import { resolveWorkspaceRole } from "../../../../utils/workspaceRole.utils";
 const EXPANDED_WIDTH = 240;
 const COLLAPSED_WIDTH = 72;
 
-const ProjectSidebar = ({ onOpenMembers, forceCollapsed = false }) => {
+function isProjectMenuItemActive(pathname, itemPath) {
+  if (!itemPath) return false;
+  const normalizedPathname = pathname.replace(/\/+$/, "");
+  const normalizedItemPath = itemPath.replace(/\/+$/, "");
+  return normalizedPathname === normalizedItemPath;
+}
+
+const ProjectSidebar = ({ forceCollapsed = false, variant = "side" }) => {
   const [collapsedState, setCollapsedState] = useState(true);
+  const isBottom = variant === "bottom";
   const collapsed = forceCollapsed ? true : collapsedState;
 
   const navigate = useNavigate();
@@ -68,7 +76,7 @@ const ProjectSidebar = ({ onOpenMembers, forceCollapsed = false }) => {
         path: PROJECT_ROUTES.projectTasks(workspaceSlug, projectSlug),
         visible: projectCanViewActivity,
       },
-       {
+      {
         label: "Timeline",
         icon: <TimelineOutlined sx={{ fontSize: 20 }} />,
         path: PROJECT_ROUTES.projectTimeline(workspaceSlug, projectSlug),
@@ -81,8 +89,8 @@ const ProjectSidebar = ({ onOpenMembers, forceCollapsed = false }) => {
         visible: projectCanViewActivity && projectCanManageProject,
       },
       {
-        label: "Task State History", 
-        icon: <HistoryOutlined sx={{fontSize: 20}} />, 
+        label: "Task State History",
+        icon: <HistoryOutlined sx={{ fontSize: 20 }} />,
         path: PROJECT_ROUTES.projectTaskStateHistory(workspaceSlug, projectSlug),
         visible: projectCanViewActivity,
       },
@@ -93,7 +101,7 @@ const ProjectSidebar = ({ onOpenMembers, forceCollapsed = false }) => {
         visible: projectCanViewActivity,
       },
 
-       {
+      {
         label: "Workflows",
         icon: <AccountTreeOutlined sx={{ fontSize: 20 }} />,
         path: PROJECT_ROUTES.projectWorkflows(workspaceSlug, projectSlug),
@@ -106,7 +114,7 @@ const ProjectSidebar = ({ onOpenMembers, forceCollapsed = false }) => {
         path: PROJECT_ROUTES.projectMembers(workspaceSlug, projectSlug),
         visible: projectCanManageMembers,
       },
-       {
+      {
         label: "Roles",
         icon: <ShieldOutlined sx={{ fontSize: 20 }} />,
         path: PROJECT_ROUTES.projectRoles(workspaceSlug, projectSlug),
@@ -119,6 +127,66 @@ const ProjectSidebar = ({ onOpenMembers, forceCollapsed = false }) => {
         visible: projectCanManageProject,
       },
     ].filter((item) => item.visible !== false);
+
+  if (isBottom) {
+    return (
+      <Box
+        component="nav"
+        sx={{
+          flexShrink: 0,
+          borderTop: "1px solid",
+          borderColor: "divider",
+          bgcolor: "background.paper",
+          overflowX: "auto",
+          overflowY: "hidden",
+          width: "100%",
+          m: 0,
+          px: 0,
+          py: 0.25,
+
+          scrollbarWidth: "thin",
+        }}
+      >
+        <List
+
+          sx={{
+            display: "flex",
+            justifySelf: 'center',
+            gap: 2,
+            width: "800px",
+            px: 0.25,
+          }}
+        >
+          {menuItems.map((item) => {
+            const isActive = isProjectMenuItemActive(location.pathname, item.path);
+
+            return (
+              <Tooltip key={item.label} title={item.label} placement="top">
+                <ListItemButton
+                  onClick={() => navigate(item.path)}
+                  sx={{
+                    width: 36,
+                    height: 36,
+                    minWidth: 36,
+                    borderRadius: 1.25,
+                    p: 0,
+                    justifyContent: "center",
+                    bgcolor: isActive ? "action.selected" : "transparent",
+                    color: isActive ? "primary.main" : "text.secondary",
+                    "&:hover": {
+                      bgcolor: "action.hover",
+                    },
+                  }}
+                >
+                  {item.icon}
+                </ListItemButton>
+              </Tooltip>
+            );
+          })}
+        </List>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -169,9 +237,7 @@ const ProjectSidebar = ({ onOpenMembers, forceCollapsed = false }) => {
 
       <List sx={{ mt: 1, px: 0.5, flex: 1, minHeight: 0 }}>
         {menuItems.map((item, index) => {
-          const isActive =
-            location.pathname === item.path ||
-            location.pathname.startsWith(item.path + '/')
+          const isActive = isProjectMenuItemActive(location.pathname, item.path);
 
           return (
             <Tooltip
@@ -181,17 +247,16 @@ const ProjectSidebar = ({ onOpenMembers, forceCollapsed = false }) => {
             >
               <ListItemButton
                 onClick={() => {
-                  if (item.action === "openMembers") {
-                    onOpenMembers?.();
-                  } else {
-                    navigate(item.path);
-                  }
+                  navigate(item.path);
                 }}
                 sx={{
-                  borderRadius: 2,
-                  mb: 1,
+                  borderRadius: collapsed ? 3 : 2,
+                  mb: collapsed ? 1.5 : 0.5,
                   justifyContent: collapsed ? "center" : "flex-start",
-                  px: collapsed ? 1 : 1.5,
+                  width: collapsed ? 44 : "auto",
+                  height: collapsed ? 44 : "auto",
+                  mx: collapsed ? "auto" : 0,
+                  p: collapsed ? 0 : 1.25,
 
                   bgcolor: isActive ? "action.selected" : "transparent",
                   "&:hover": {
@@ -208,8 +273,10 @@ const ProjectSidebar = ({ onOpenMembers, forceCollapsed = false }) => {
                     width: 3,
                     borderRadius: 2,
                     bgcolor: isActive ? "primary.main" : "transparent",
+                    display: collapsed ? "none" : "block",
                   }}
                 />
+
 
                 <ListItemIcon
                   sx={{

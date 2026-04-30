@@ -160,7 +160,7 @@ export const getWorkspaceGlobalState = async (workspaceSlug, userId) => {
     name: workspace.name,
     slug: workspace.slug,
     avatar: workspace.avatar,
-    description: workspace.description,
+    about: workspace.about,
 
     members,
     totalMembers: members.length,

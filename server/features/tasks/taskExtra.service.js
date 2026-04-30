@@ -14,6 +14,8 @@ import {
   getTaskStageAssignmentBundle,
 } from "./taskStageAssignee.service.js";
 import { TaskStageAssignee } from "./taskStageAssignee.model.js";
+import { Workspace } from "../workspaces/workspace.model.js";
+import { createTaskStageAdvancedNotification } from "../notifications/notification.service.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET FULL TASK DETAIL (for TaskView page)
@@ -216,9 +218,9 @@ export const getAvailableTransitions = async (taskId) => {
 };
 
 // Advance task to a new stage via a specific transition (admin/owner bypass OR role check)
-export const advanceTaskStage = async ({ taskId, transitionId, userId, comment }) => {
+export const advanceTaskStage = async ({ taskId, transitionId, userId, comment, sourceSessionId = null }) => {
   const { WorkflowTransition } = await import("../workflows/workflowTransition.model.js");
-  const task = await Task.findById(taskId).select("projectId currentStageId workflowId").lean();
+  const task = await Task.findById(taskId).select("projectId currentStageId workflowId title").lean();
   if (!task) throw new Error("Task not found");
 
   const transition = await WorkflowTransition.findById(transitionId)
@@ -289,6 +291,28 @@ export const advanceTaskStage = async ({ taskId, transitionId, userId, comment }
     userId,
     comment: transitionComment || transition.action || `Moved to ${transition.toStage.name}`,
   });
+
+  try {
+    const [notificationProject, workspace, fromStage] = await Promise.all([
+      Project.findById(task.projectId).select("_id name slug workspace").lean(),
+      Workspace.findById(project.workspace).select("_id name slug").lean(),
+      oldStageId ? WorkflowStage.findById(oldStageId).select("_id name").lean() : null,
+    ]);
+
+    if (notificationProject && workspace) {
+      await createTaskStageAdvancedNotification({
+        task,
+        project: notificationProject,
+        workspace,
+        fromStage,
+        toStage: transition.toStage,
+        userId,
+        sourceSessionId,
+      });
+    }
+  } catch (notificationError) {
+    console.warn("Failed to send task stage advanced notification:", notificationError?.message || notificationError);
+  }
 
   return { success: true, newStage: transition.toStage, historyRecord };
 };

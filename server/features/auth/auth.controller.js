@@ -3,6 +3,8 @@ import {
   signOutSpecificSession,
   signOutAllSession,
   verifyAuthData,
+  requestPasswordReset,
+  resetLocalPassword,
 } from "./auth.service.js";
 
 function getAuthCookieOptions() {
@@ -55,6 +57,40 @@ export const signUpController = async (req, res) => {
     return res.json({
       success: true,
       user,
+    });
+  } catch (err) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+export const forgotPasswordController = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const result = await requestPasswordReset({ email });
+
+    return res.json({
+      success: true,
+      message: result.message,
+    });
+  } catch (err) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+export const resetPasswordController = async (req, res) => {
+  try {
+    const { email, token, password } = req.body;
+    const result = await resetLocalPassword({ email, token, password });
+
+    return res.json({
+      success: true,
+      message: result.message,
     });
   } catch (err) {
     return res.status(400).json({

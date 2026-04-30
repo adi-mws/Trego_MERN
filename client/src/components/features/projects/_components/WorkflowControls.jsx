@@ -20,20 +20,17 @@ export default function WorkflowControls({ workflowActions }) {
     return (
         <>
             <Stack
-                position={'fixed'}
-                left={"50%"}
                 sx={{
-                    transform: "translateX(-50%)",
                     background: theme.palette.background.paper,
                     border: `1px solid ${theme.palette.divider}`,
-                    borderRadius: 2,
-                    boxShadow: theme.shadows[4],
-                    maxWidth: "calc(100vw - 16px)",
+                    borderRadius: 1.5,
+                    maxWidth: "100%",
+                    overflowX: "auto",
+                    scrollbarWidth: "thin",
                 }}
                 justifyContent={'center'}
-                bottom={{ xs: 12, sm: 16 }}
                 spacing={0}
-                px={{ xs: 0.5, sm: 1 }}
+                px={0.25}
                 direction={"row"}
                 alignItems="center"
             >

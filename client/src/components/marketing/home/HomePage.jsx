@@ -1,951 +1,1151 @@
-import { useMemo, useState } from "react";
 import {
   Avatar,
   Box,
   Button,
   Chip,
   Container,
-  Divider,
+  LinearProgress,
   Paper,
   Stack,
-  Tab,
-  Tabs,
   Typography,
 } from "@mui/material";
+import AccountTreeOutlinedIcon from "@mui/icons-material/AccountTreeOutlined";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import AutoAwesomeOutlinedIcon from "@mui/icons-material/AutoAwesomeOutlined";
+import BoltOutlinedIcon from "@mui/icons-material/BoltOutlined";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
-import DashboardCustomizeOutlinedIcon from "@mui/icons-material/DashboardCustomizeOutlined";
+import CloudSyncOutlinedIcon from "@mui/icons-material/CloudSyncOutlined";
+import ForumOutlinedIcon from "@mui/icons-material/ForumOutlined";
 import Groups2OutlinedIcon from "@mui/icons-material/Groups2Outlined";
-import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
-import SecurityOutlinedIcon from "@mui/icons-material/SecurityOutlined";
-import SmartToyOutlinedIcon from "@mui/icons-material/SmartToyOutlined";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import ManageAccountsOutlinedIcon from "@mui/icons-material/ManageAccountsOutlined";
+import RouteOutlinedIcon from "@mui/icons-material/RouteOutlined";
+import TaskAltOutlinedIcon from "@mui/icons-material/TaskAltOutlined";
 import TimelineOutlinedIcon from "@mui/icons-material/TimelineOutlined";
+import ViewKanbanOutlinedIcon from "@mui/icons-material/ViewKanbanOutlined";
 import WorkOutlineOutlinedIcon from "@mui/icons-material/WorkOutlineOutlined";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { motion, useReducedMotion } from "framer-motion";
+import { useLayoutEffect, useRef } from "react";
 import { Link as RouterLink } from "react-router-dom";
 
 const MotionBox = motion(Box);
 const MotionPaper = motion(Paper);
 
-const TRUST_LOGOS = ["Product", "Design", "Engineering", "Ops", "Client Success"];
+gsap.registerPlugin(ScrollTrigger);
 
-const STATS = [
-  { value: "4.9/5", label: "Team satisfaction" },
-  { value: "10x", label: "Faster coordination" },
-  { value: "87%", label: "Less context switching" },
-  { value: "24/7", label: "AI agent coverage" },
-];
+const page = {
+  bg: "#F8FAFC",
+  surface: "rgba(255,255,255,0.82)",
+  surfaceStrong: "rgba(255,255,255,0.94)",
+  border: "rgba(15,23,42,0.12)",
+  text: "#0F172A",
+  muted: "rgba(51,65,85,0.76)",
+  blue: "#2563EB",
+  cyan: "#0891B2",
+  violet: "#7C3AED",
+  green: "#059669",
+  amber: "#D97706",
+  rose: "#E11D48",
+};
 
-const CORE_FEATURES = [
+const people = [
   {
-    icon: <SmartToyOutlinedIcon />,
-    title: "Agentic planning",
-    text: "Turn goals into structured work with workspace-aware suggestions, tasks, and follow-up actions.",
+    name: "Anika",
+    role: "Owner",
+    image:
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=320&q=80",
   },
   {
-    icon: <TimelineOutlinedIcon />,
-    title: "Workflow visibility",
-    text: "See task movement, stage transitions, blockers, and history in one operational timeline.",
+    name: "Marcus",
+    role: "Admin",
+    image:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=320&q=80",
   },
   {
-    icon: <Groups2OutlinedIcon />,
-    title: "Role-safe collaboration",
-    text: "Owners, admins, members, and clients all get the right actions and the right level of access.",
+    name: "Priya",
+    role: "Member",
+    image:
+      "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=320&q=80",
   },
   {
-    icon: <DashboardCustomizeOutlinedIcon />,
-    title: "Command center search",
-    text: "Search projects, roles, tasks, and workflows in a compact command-style experience.",
-  },
-  {
-    icon: <WorkOutlineOutlinedIcon />,
-    title: "Workspace-native context",
-    text: "Everything the team needs lives inside the workspace, so the agent always has real context.",
-  },
-  {
-    icon: <SecurityOutlinedIcon />,
-    title: "Permission aware",
-    text: "High-risk actions stay gated while teams still get fast, useful assistance everywhere else.",
-  },
-];
-
-const DEMO_TABS = [
-  {
-    label: "Projects",
-    title: "Overview and progress at a glance",
-    text: "Show live status, completion, and team activity in a layout that looks like the real dashboard.",
-    accent: "#1976d2",
-    preview: [
-      { label: "Total tasks", value: "128" },
-      { label: "Completed", value: "96" },
-      { label: "Overdue", value: "9" },
-    ],
-    chips: ["Health score", "Members", "Workflow"],
-  },
-  {
-    label: "Tasks",
-    title: "Board, list, and timeline views",
-    text: "Highlight execution with a Kanban lane, a table preview, and a timeline strip for scheduled work.",
-    accent: "#0ea5e9",
-    preview: [
-      { label: "Pending", value: "24" },
-      { label: "Blocked", value: "5" },
-      { label: "Due this week", value: "18" },
-    ],
-    chips: ["Board", "Tasks", "Timeline"],
-  },
-  {
-    label: "Agent",
-    title: "Guided execution from context",
-    text: "Demonstrate how the agent pulls from roles, comments, and workflows to produce accurate assistance.",
-    accent: "#f59e0b",
-    preview: [
-      { label: "Context", value: "Workspace + Project" },
-      { label: "Mode", value: "Ask / Draft / Execute" },
-      { label: "Safety", value: "Role-aware" },
-    ],
-    chips: ["Context", "Safety", "Payload"],
+    name: "Noah",
+    role: "Client",
+    image:
+      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=320&q=80",
   },
 ];
 
-const HERO_VARIANTS = {
-  hidden: { opacity: 0, y: 22 },
+const stats = [
+  ["12K+", "workspaces coordinated"],
+  ["2.8M", "tasks processed"],
+  ["840K", "AI workflow executions"],
+  ["4.7K+", "teams onboarded"],
+];
+
+const productFlow = [
+  {
+    step: "01",
+    eyebrow: "Workspace created",
+    title: "A workspace becomes the operating room.",
+    text: "Owners create the company space, invite admins, members, and clients, then Trego fixes the workspace context for every project, workflow, task, chat, and history that follows.",
+    icon: WorkOutlineOutlinedIcon,
+    color: page.cyan,
+    chips: ["Owner", "Admin", "Members", "Clients"],
+    visual: "workspace",
+  },
+  {
+    step: "02",
+    eyebrow: "Categories structured",
+    title: "Divide the project into clear streams.",
+    text: "Instead of a massive backlog, organize work into functional categories. Each category can default to a specific workflow, routing tasks automatically as they are created.",
+    icon: AccountTreeOutlinedIcon,
+    color: page.blue,
+    chips: ["Frontend", "Backend", "Marketing", "Design"],
+    visual: "categories",
+  },
+  {
+    step: "03",
+    eyebrow: "Workflow built",
+    title: "A living workflow replaces loose process.",
+    text: "Stages, transitions, allowed roles, and validation rules become a visible path. The workflow is not a static diagram; it controls how task movement really happens.",
+    icon: RouteOutlinedIcon,
+    color: page.violet,
+    chips: ["Intake", "Plan", "Build", "Review", "Launch"],
+    visual: "workflow",
+  },
+  {
+    step: "04",
+    eyebrow: "Task views",
+    title: "Track progress from multiple angles.",
+    text: "Switch between Kanban boards for stage progression and Timeline views for daily scheduling. Both views are real-time and bound by the same underlying workflow logic.",
+    icon: ViewKanbanOutlinedIcon,
+    color: page.amber,
+    chips: ["Kanban", "Gantt Timeline", "Real-time sync", "Drag & Drop"],
+    visual: "views",
+  },
+  {
+    step: "05",
+    eyebrow: "Task assigned",
+    title: "Work lands with the right person at the right stage.",
+    text: "Members and clients are invited into projects, tasks attach to workflow stages, and assignment rules protect execution from accidental handoffs.",
+    icon: TaskAltOutlinedIcon,
+    color: page.green,
+    chips: ["Task", "Objective", "Role check", "Deadline"],
+    visual: "task",
+  },
+  {
+    step: "06",
+    eyebrow: "AI chat inspects",
+    title: "Reports live in chat, not cluttered dashboards.",
+    text: "Clients and teams ask the project assistant for health, blockers, velocity, risks, histories, and next steps. The dashboard stays clean; chat generates the report when needed.",
+    icon: ForumOutlinedIcon,
+    color: page.rose,
+    chips: ["Ask", "Inspect", "Plan", "Project status"],
+    visual: "chat",
+  },
+];
+
+const roleRows = [
+  ["Owner", "Full override", 100, page.rose],
+  ["Admin", "Workspace/project command", 88, page.amber],
+  ["Member", "Stage-based execution", 62, page.green],
+  ["Client", "Focused chat inspection", 38, page.cyan],
+];
+
+const reveal = {
+  hidden: { opacity: 0, y: 28 },
   show: { opacity: 1, y: 0 },
 };
 
-const STAGGER = {
-  hidden: {},
-  show: {
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.05,
-    },
-  },
-};
+function Reveal({ children, sx }) {
+  const reduceMotion = useReducedMotion();
 
-function MockDashboard({ accent, chips, preview }) {
+  return (
+    <MotionBox
+      initial={reduceMotion ? false : "hidden"}
+      whileInView={reduceMotion ? undefined : "show"}
+      viewport={{ once: true, margin: "-100px" }}
+      variants={reveal}
+      transition={{ duration: 0.65, ease: "easeOut" }}
+      sx={sx}
+    >
+      {children}
+    </MotionBox>
+  );
+}
+
+function SectionIntro({ eyebrow, title, text, center = false }) {
+  return (
+    <Stack
+      spacing={1.5}
+      alignItems={center ? "center" : "flex-start"}
+      textAlign={center ? "center" : "left"}
+      sx={{ maxWidth: center ? 920 : 760, mx: center ? "auto" : 0 }}
+    >
+      <Chip
+        label={eyebrow}
+        sx={{
+          color: page.cyan,
+          bgcolor: "rgba(34,211,238,0.1)",
+          border: "1px solid rgba(34,211,238,0.24)",
+          fontWeight: 500,
+        }}
+      />
+      <Typography
+        component="h2"
+        sx={{
+          color: page.text,
+          fontSize: { xs: 34, md: 56 },
+          lineHeight: 1.02,
+          fontWeight: 500,
+          letterSpacing: 0,
+        }}
+      >
+        {title}
+      </Typography>
+      <Typography sx={{ color: page.muted, fontSize: { xs: 16, md: 19 }, lineHeight: 1.75 }}>
+        {text}
+      </Typography>
+    </Stack>
+  );
+}
+
+function GlassSurface({ children, sx }) {
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        color: page.text,
+        bgcolor: page.surface,
+        border: `1px solid ${page.border}`,
+        borderRadius: 4,
+        backdropFilter: "blur(20px)",
+        boxShadow: "0 30px 90px rgba(15,23,42,0.12)",
+        ...sx,
+      }}
+    >
+      {children}
+    </Paper>
+  );
+}
+
+function PersonStrip() {
+  return (
+    <Stack direction="row" spacing={1.25} flexWrap="wrap" useFlexGap>
+      {people.map((person) => (
+        <Stack
+          key={person.name}
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          sx={{
+            p: 0.75,
+            pr: 1.25,
+            borderRadius: 999,
+            bgcolor: "rgba(255,255,255,0.82)",
+            border: `1px solid ${page.border}`,
+          }}
+        >
+          <Avatar src={person.image} alt={`${person.name} ${person.role}`} sx={{ width: 34, height: 34 }} />
+          <Box>
+            <Typography sx={{ color: page.text, fontSize: 13, lineHeight: 1.1 }}>{person.name}</Typography>
+            <Typography sx={{ color: page.muted, fontSize: 11, lineHeight: 1.1 }}>{person.role}</Typography>
+          </Box>
+        </Stack>
+      ))}
+    </Stack>
+  );
+}
+
+function HeroShowcase() {
   return (
     <Box
       sx={{
         position: "relative",
-        p: { xs: 1.5, sm: 2 },
-        borderRadius: 5,
-        overflow: "hidden",
-        border: "1px solid",
-        borderColor: "rgba(15,23,42,0.08)",
-        background:
-          "linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.92))",
+        perspective: "1400px",
+        minHeight: { xs: 500, md: 640 },
       }}
     >
-      <Box
+      <MotionBox
+        className="gsap-hero-screen"
+        animate={{ y: [0, -14, 0], rotateZ: [0, 0.35, 0] }}
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
         sx={{
           position: "absolute",
-          inset: "auto -40px -60px auto",
-          width: 180,
-          height: 180,
-          borderRadius: "50%",
-          bgcolor: `${accent}22`,
-          filter: "blur(26px)",
+          inset: { xs: "40px 0 auto 0", md: "40px 28px auto 28px" },
+          transformStyle: "preserve-3d",
         }}
-      />
+      >
+        <Box
+          component="img"
+          src="/images/timeline-dashboard.png"
+          alt="Trego product dashboard"
+          sx={{
+            width: "100%",
+            height: { xs: 360, md: 520 },
+            objectFit: "contain",
+            objectPosition: "center",
+            borderRadius: 4,
+            border: `1px solid ${page.border}`,
+            boxShadow: "0 40px 120px rgba(15,23,42,0.18)",
+            transform: "rotateX(8deg) rotateY(-14deg)",
+            filter: "saturate(1.05) contrast(1.05)",
+          }}
+        />
+      </MotionBox>
 
-      <Stack spacing={1.5} sx={{ position: "relative" }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Box>
-            <Typography variant="caption" color="text.secondary">
-              Dashboard preview
-            </Typography>
-            <Typography variant="body1" sx={{ fontWeight: 500 }}>
-              Semi-working mockup
-            </Typography>
-          </Box>
-          <Chip
-            label="Live"
-            size="small"
+      <GlassSurface
+        className="gsap-float-card"
+        sx={{
+          position: "absolute",
+          left: { xs: 8, md: 0 },
+          bottom: { xs: 28, md: 60 },
+          width: { xs: "88%", md: 360 },
+          p: 2,
+        }}
+      >
+        <Stack spacing={1.5}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <AutoAwesomeOutlinedIcon sx={{ color: page.cyan }} />
+            <Typography sx={{ fontWeight: 500 }}>AI chat inspection</Typography>
+          </Stack>
+          <Typography sx={{ color: page.muted, lineHeight: 1.65, fontSize: 14 }}>
+            "Inspect project risk, stage delays, and who can approve Launch."
+          </Typography>
+          <LinearProgress
+            variant="determinate"
+            value={78}
             sx={{
+              height: 7,
               borderRadius: 999,
-              fontWeight: 500,
-              bgcolor: `${accent}14`,
-              color: accent,
+              bgcolor: "rgba(15,23,42,0.08)",
+              "& .MuiLinearProgress-bar": { bgcolor: page.cyan, borderRadius: 999 },
             }}
           />
         </Stack>
+      </GlassSurface>
 
-        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-          {chips.map((chip) => (
-            <Chip
-              key={chip}
-              label={chip}
-              variant="outlined"
+      <GlassSurface
+        className="gsap-people-card"
+        sx={{
+          position: "absolute",
+          right: { xs: 8, md: 4 },
+          top: { xs: 0, md: 12 },
+          width: { xs: 190, md: 250 },
+          p: 1.5,
+        }}
+      >
+        <PersonStrip />
+      </GlassSurface>
+    </Box>
+  );
+}
+
+function ArtifactVisual({ type, color }) {
+  const common = {
+    position: "relative",
+    minHeight: { xs: 360, md: 480 },
+    overflow: "hidden",
+    borderRadius: 5,
+    border: `1px solid ${page.border}`,
+    bgcolor: "rgba(255,255,255,0.76)",
+    boxShadow: "0 34px 120px rgba(15,23,42,0.14)",
+  };
+
+  if (type === "workspace") {
+    return (
+      <Box sx={common}>
+        <Box
+          component="img"
+          src="/images/workspace-overview.png"
+          alt="Workspace creation screen"
+          style={{ transform: "translateY(10px)" }}
+          sx={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: 0.58 }}
+        />
+      </Box>
+    );
+  }
+
+  if (type === "categories") {
+    return (
+      <Box sx={{ ...common, p: 3 }}>
+        <Stack spacing={2.5} sx={{ mt: 2 }}>
+          {["Frontend Development", "Backend Infrastructure", "Marketing Campaigns", "UI/UX Design"].map((cat, index) => (
+            <MotionBox
+              key={cat}
+              initial={{ x: -24, opacity: 0 }}
+              whileInView={{ x: 0, opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.12 }}
               sx={{
-                borderRadius: 999,
-                fontWeight: 500,
-                bgcolor: "rgba(255,255,255,0.7)",
+                p: 2,
+                borderRadius: 3,
+                bgcolor: "rgba(255,255,255,0.9)",
+                border: `1px solid ${page.border}`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                boxShadow: "0 8px 30px rgba(15,23,42,0.04)",
               }}
-            />
+            >
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Box sx={{ width: 14, height: 14, borderRadius: "50%", bgcolor: index === 0 ? page.blue : index === 1 ? page.green : index === 2 ? page.rose : page.amber }} />
+                <Typography sx={{ fontWeight: 500, fontSize: 16 }}>{cat}</Typography>
+              </Stack>
+              <Chip size="small" label={`${(5 - index) * 3} tasks`} sx={{ height: 22, fontSize: 11, fontWeight: 600, bgcolor: "rgba(15,23,42,0.04)" }} />
+            </MotionBox>
           ))}
         </Stack>
+      </Box>
+    );
+  }
 
+  if (type === "workflow") {
+    return (
+      <Box sx={{ ...common, p: { xs: 2, md: 3 }, perspective: "1200px" }}>
+        <Box
+          component={"img"}
+          src="/images/workflow.png"
+          sx={{
+            position: "absolute",
+            inset: 0,
+            objectFit: "fill",
+
+          }}
+        />
+      </Box>
+    );
+  }
+
+  if (type === "views") {
+    return (
+      <Box sx={{ ...common, p: { xs: 2, md: 3 }, perspective: "1000px" }}>
         <Box
           sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
-            gap: 1.25,
+            position: "absolute",
+            inset: 0,
+            backgroundImage: "linear-gradient(rgba(15,23,42,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,0.04) 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
           }}
+        />
+        <MotionBox
+          animate={{ rotateY: [-5, 5, -5] }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+          sx={{ position: "relative", height: "100%", transformStyle: "preserve-3d" }}
         >
-          {preview.map((item) => (
-            <Paper
-              key={item.label}
-              variant="outlined"
-              sx={{
-                p: 1.5,
-                borderRadius: 3,
-                borderColor: "rgba(15,23,42,0.08)",
-                bgcolor: "rgba(255,255,255,0.86)",
-              }}
-            >
-              <Typography variant="caption" color="text.secondary">
-                {item.label}
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 500, mt: 0.5, lineHeight: 1.1 }}>
-                {item.value}
-              </Typography>
-            </Paper>
-          ))}
-        </Box>
-
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "1.2fr 0.8fr" },
-            gap: 1.25,
-            minHeight: { xs: 220, md: 260 },
-          }}
-        >
-          <Paper
-            variant="outlined"
-            sx={{
-              p: 2,
-              borderRadius: 4,
-              bgcolor: "rgba(17,24,39,0.96)",
-              color: "common.white",
-              overflow: "hidden",
-            }}
-          >
-            <Stack spacing={1.5}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.76)", fontWeight: 500 }}>
-                  Command stream
-                </Typography>
-                <Chip
-                  label="Preview"
-                  size="small"
-                  sx={{
-                    bgcolor: "rgba(255,255,255,0.12)",
-                    color: "white",
-                    fontWeight: 500,
-                  }}
-                />
-              </Stack>
-
-              <Box
-                sx={{
-                  borderRadius: 3,
-                  p: 1.5,
-                  bgcolor: "rgba(255,255,255,0.08)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                }}
-              >
-                <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.72)" }}>
-                  "Show delayed tasks, role permissions, and the next stage transitions."
-                </Typography>
+          {/* Kanban Board Mockup */}
+          <Box sx={{ position: "absolute", top: 20, left: 20, right: 20, height: 220, bgcolor: "rgba(255,255,255,0.85)", border: `1px solid ${page.border}`, borderRadius: 4, p: 1.5, display: "flex", gap: 1.5, boxShadow: "0 20px 40px rgba(15,23,42,0.08)", backdropFilter: "blur(10px)" }}>
+            {[1, 2, 3].map(col => (
+              <Box key={col} sx={{ flex: 1, bgcolor: "rgba(15,23,42,0.03)", borderRadius: 2, p: 1 }}>
+                <Box sx={{ width: "50%", height: 6, bgcolor: "rgba(15,23,42,0.15)", borderRadius: 4, mb: 1.5 }} />
+                <Box sx={{ height: 44, bgcolor: "white", borderRadius: 1.5, mb: 1, border: `1px solid ${page.border}` }} />
+                {col === 2 && <Box sx={{ height: 58, bgcolor: "white", borderRadius: 1.5, border: `1px solid ${page.border}` }} />}
               </Box>
-
-              <Stack spacing={1}>
-                {[
-                  "Search context is loaded from workspace data.",
-                  "Task board and timeline stay in sync.",
-                  "Action suggestions respect role permissions.",
-                ].map((item) => (
-                  <Stack key={item} direction="row" spacing={1} alignItems="center">
-                    <CheckCircleRoundedIcon sx={{ fontSize: 16, color: "#7CFFB2" }} />
-                    <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.78)" }}>
-                      {item}
-                    </Typography>
-                  </Stack>
-                ))}
-              </Stack>
-            </Stack>
-          </Paper>
-
-          <Paper
-            variant="outlined"
-            sx={{
-              p: 2,
-              borderRadius: 4,
-              bgcolor: "rgba(255,255,255,0.84)",
-              borderColor: "rgba(15,23,42,0.08)",
-              display: "flex",
-              flexDirection: "column",
-              gap: 1.25,
-            }}
-          >
-            <Box
-              sx={{
-                flex: 1,
-                borderRadius: 3,
-                border: "1px solid",
-                borderColor: "divider",
-              background: "linear-gradient(180deg, #fff, #f8fafc)",
-                p: 1.25,
-                display: "flex",
-                flexDirection: "column",
-                gap: 1,
-              }}
-            >
-              {[
-                { label: "Project", value: "Hospital Management" },
-                { label: "View", value: "Board + Timeline" },
-                { label: "Status", value: "2 blockers" },
-              ].map((row) => (
-                <Stack
-                  key={row.label}
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  sx={{
-                    px: 1,
-                    py: 0.75,
-                    borderRadius: 2,
-                    bgcolor: "action.hover",
-                  }}
-                >
-                  <Typography variant="caption" color="text.secondary">
-                    {row.label}
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {row.value}
-                  </Typography>
-                </Stack>
+            ))}
+          </Box>
+          {/* Timeline Mockup overlaid */}
+          <Box sx={{ position: "absolute", top: 180, left: 40, right: -20, height: 180, bgcolor: "rgba(255,255,255,0.96)", border: `1px solid ${page.border}`, borderRadius: 4, p: 2, boxShadow: "0 30px 60px rgba(15,23,42,0.12)", transform: "translateZ(50px)" }}>
+            <Box sx={{ display: "flex", gap: 1, mb: 2, borderBottom: `1px solid ${page.border}`, pb: 1 }}>
+              {[1, 2, 3, 4, 5, 6, 7].map(day => (
+                <Box key={day} sx={{ flex: 1, height: 12, borderRight: `1px solid ${page.border}` }} />
               ))}
             </Box>
+            <Box sx={{ position: "relative", height: 100 }}>
+              <Box sx={{ position: "absolute", top: 10, left: "10%", width: "35%", height: 18, bgcolor: `${page.cyan}cc`, borderRadius: 1 }} />
+              <Box sx={{ position: "absolute", top: 38, left: "28%", width: "45%", height: 18, bgcolor: `${page.violet}cc`, borderRadius: 1 }} />
+              <Box sx={{ position: "absolute", top: 66, left: "55%", width: "30%", height: 18, bgcolor: `${page.amber}cc`, borderRadius: 1 }} />
+            </Box>
+          </Box>
+        </MotionBox>
+      </Box>
+    );
+  }
 
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<PlayArrowRoundedIcon />}
+  if (type === "task") {
+    return (
+      <Box sx={{ ...common, p: 3 }}>
+        <Stack spacing={2.2}>
+          {["Assign owner", "Create objectives", "Set deadline", "Notify admins"].map((item, index) => (
+            <MotionBox
+              key={item}
+              initial={{ x: 34, opacity: 0 }}
+              whileInView={{ x: 0, opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.12 }}
               sx={{
-                borderRadius: 999,
-                fontWeight: 400,
-                textTransform: "none",
+                p: 2,
+                borderRadius: 3,
+                bgcolor: "rgba(255,255,255,0.86)",
+                border: `1px solid ${page.border}`,
               }}
             >
-              Play dashboard video
-            </Button>
-          </Paper>
-        </Box>
+              <Stack direction="row" spacing={1.25} alignItems="center">
+                <CheckCircleRoundedIcon sx={{ color }} />
+                <Typography>{item}</Typography>
+              </Stack>
+            </MotionBox>
+          ))}
+          <Box
+            component="img"
+            src={people[2].image}
+            alt="Project member working"
+            sx={{ width: "100%", height: 180, objectFit: "contain", borderRadius: 4, border: `1px solid ${page.border}` }}
+          />
+        </Stack>
+      </Box>
+    );
+  }
+
+  if (type === "chat") {
+    return (
+      <Box sx={{ ...common, p: { xs: 2, md: 3 } }}>
+        <Stack spacing={2}>
+          {[
+            ["Client", "What is the actual project risk right now?"],
+            ["Trego AI", "Review is slow, two tasks are near deadline, and Launch needs Owner approval."],
+            ["Client", "Create a short recovery plan."],
+            ["Trego AI", "Plan: split QA, assign Admin fallback, notify Owner, then move through Review."],
+          ].map(([name, message], index) => (
+            <Box
+              key={`${name}-${message}`}
+              sx={{
+                alignSelf: index % 2 ? "flex-start" : "flex-end",
+                maxWidth: "82%",
+                p: 2,
+                borderRadius: 3,
+                bgcolor: index % 2 ? "rgba(8,145,178,0.1)" : "rgba(255,255,255,0.9)",
+                border: `1px solid ${index % 2 ? "rgba(34,211,238,0.26)" : page.border}`,
+              }}
+            >
+              <Typography sx={{ color: index % 2 ? page.cyan : page.text, fontSize: 13 }}>{name}</Typography>
+              <Typography sx={{ color: page.text, mt: 0.75, lineHeight: 1.65 }}>{message}</Typography>
+            </Box>
+          ))}
+        </Stack>
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ ...common, p: 3 }}>
+      <Stack spacing={2}>
+        {roleRows.map(([role, detail, value, tone]) => (
+          <Box key={role}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+              <Typography>{role}</Typography>
+              <Typography sx={{ color: tone }}>{detail}</Typography>
+            </Stack>
+            <LinearProgress
+              variant="determinate"
+              value={value}
+              sx={{
+                height: 9,
+                borderRadius: 999,
+                bgcolor: "rgba(15,23,42,0.08)",
+                "& .MuiLinearProgress-bar": { bgcolor: tone, borderRadius: 999 },
+              }}
+            />
+          </Box>
+        ))}
+        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ pt: 2 }}>
+          {["JWT cookie", "Device sessions", "Socket sync", "RBAC"].map((item) => (
+            <Chip key={item} label={item} sx={{ color: page.text, bgcolor: "rgba(255,255,255,0.82)" }} />
+          ))}
+        </Stack>
       </Stack>
+    </Box>
+  );
+}
+
+function FlowScene() {
+  return (
+    <Box className="gsap-flow-container" sx={{ position: "relative", py: { xs: 4, md: 8 } }}>
+      <Box
+        sx={{
+          position: "absolute",
+          top: 0,
+          bottom: 0,
+          left: { xs: 24, lg: "50%" },
+          width: 3,
+          bgcolor: "rgba(15,23,42,0.06)",
+          transform: { lg: "translateX(-50%)" },
+          zIndex: 0,
+        }}
+      >
+        <Box
+          className="gsap-timeline-progress"
+          sx={{
+            width: "100%",
+            height: "0%",
+            background: `linear-gradient(180deg, ${page.cyan}, ${page.violet}, ${page.rose})`,
+            boxShadow: `0 0 15px rgba(34,211,238,0.5)`,
+          }}
+        />
+      </Box>
+      <Stack spacing={{ xs: 10, md: 16 }} sx={{ position: "relative", zIndex: 1 }}>
+        {productFlow.map((item, index) => {
+          const Icon = item.icon;
+          const reverse = index % 2 === 1;
+
+          return (
+            <Reveal key={item.step}>
+              <Box
+                className="gsap-flow-step"
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" },
+                  gap: { xs: 4, lg: 14 },
+                  alignItems: "center",
+                  minHeight: { lg: 500 },
+                  position: "relative",
+                }}
+              >
+                <Box
+                  className="gsap-flow-dot"
+                  sx={{
+                    position: "absolute",
+                    left: { xs: 24, lg: "50%" },
+                    top: { xs: 0, lg: "50%" },
+                    transform: { xs: "translate(-50%, -50%)", lg: "translate(-50%, -50%)" },
+                    width: 24,
+                    height: 24,
+                    borderRadius: "50%",
+                    bgcolor: "white",
+                    border: `4px solid ${item.color}`,
+                    zIndex: 2,
+                    boxShadow: "0 0 0 4px rgba(255,255,255,0.8)",
+                  }}
+                />
+                <Stack className="gsap-flow-copy" spacing={2.4} sx={{ order: { xs: 1, lg: reverse ? 2 : 1 }, pl: { xs: 6, lg: 0 } }}>
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Box
+                      sx={{
+                        width: 54,
+                        height: 54,
+                        borderRadius: 3,
+                        display: "grid",
+                        placeItems: "center",
+                        color: item.color,
+                        bgcolor: `${item.color}1F`,
+                        border: `1px solid ${item.color}55`,
+                      }}
+                    >
+                      <Icon />
+                    </Box>
+                    <Box>
+                      <Typography sx={{ color: item.color, fontSize: 14 }}>{item.step}</Typography>
+                      <Typography sx={{ color: page.muted }}>{item.eyebrow}</Typography>
+                    </Box>
+                  </Stack>
+                  <Typography
+                    sx={{
+                      color: page.text,
+                      fontSize: { xs: 34, md: 58 },
+                      lineHeight: 1.02,
+                      fontWeight: 500,
+                      letterSpacing: 0,
+                    }}
+                  >
+                    {item.title}
+                  </Typography>
+                  <Typography sx={{ color: page.muted, fontSize: { xs: 16, md: 19 }, lineHeight: 1.85 }}>
+                    {item.text}
+                  </Typography>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {item.chips.map((chip) => (
+                      <Chip
+                        key={chip}
+                        label={chip}
+                        sx={{
+                          color: page.text,
+                          bgcolor: `${item.color}18`,
+                          border: `1px solid ${item.color}33`,
+                        }}
+                      />
+                    ))}
+                  </Stack>
+                </Stack>
+                <MotionBox
+                  className="gsap-flow-artifact"
+                  sx={{ order: { xs: 2, lg: reverse ? 1 : 2 }, pl: { xs: 6, lg: 0 } }}
+                >
+                  <ArtifactVisual type={item.visual} color={item.color} />
+                </MotionBox>
+              </Box>
+            </Reveal>
+          );
+        })}
+      </Stack>
+    </Box>
+  );
+}
+
+function CapabilityRibbon() {
+  const capabilities = [
+    [ViewKanbanOutlinedIcon, "Kanban boards"],
+    [TimelineOutlinedIcon, "Timeline tracking"],
+    [RouteOutlinedIcon, "Transition validation"],
+    [ManageAccountsOutlinedIcon, "RBAC"],
+    [CloudSyncOutlinedIcon, "Realtime updates"],
+    [LockOutlinedIcon, "JWT security"],
+    [Groups2OutlinedIcon, "Team activity"],
+    [BoltOutlinedIcon, "AI task planning"],
+  ];
+
+  return (
+    <Box
+      sx={{
+        overflow: "hidden",
+        py: 2,
+        borderBlock: `1px solid ${page.border}`,
+        bgcolor: "rgba(255,255,255,0.62)",
+      }}
+    >
+      <MotionBox
+        className="gsap-ribbon-track"
+        sx={{ display: "flex", width: "max-content", gap: 1.5 }}
+      >
+        {[...capabilities, ...capabilities].map(([Icon, label], index) => (
+          <Stack
+            key={`${label}-${index}`}
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            sx={{
+              px: 2,
+              py: 1.1,
+              borderRadius: 999,
+              color: page.text,
+              bgcolor: "rgba(255,255,255,0.82)",
+              border: `1px solid ${page.border}`,
+            }}
+          >
+            <Box component={Icon} sx={{ fontSize: 18, color: index % 3 === 0 ? page.cyan : index % 3 === 1 ? page.violet : page.green }} />
+            <Typography sx={{ whiteSpace: "nowrap", fontSize: 14 }}>{label}</Typography>
+          </Stack>
+        ))}
+      </MotionBox>
+    </Box>
+  );
+}
+
+function Footer() {
+  return (
+    <Box component="footer" sx={{ borderTop: `1px solid ${page.border}`, py: 4 }}>
+      <Container maxWidth="xl">
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          spacing={2}
+          alignItems={{ xs: "flex-start", md: "center" }}
+          justifyContent="space-between"
+        >
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <Box component="img" src="/images/logo-with-text.png" alt="Trego" sx={{ width: 104 }} />
+            <Typography sx={{ color: page.muted }}>Agentic AI workflow management.</Typography>
+          </Stack>
+          <Typography sx={{ color: page.muted, fontSize: 14 }}>2026 Trego. Built as a 6th semester final project.</Typography>
+        </Stack>
+      </Container>
     </Box>
   );
 }
 
 export default function HomePage() {
   const reduceMotion = useReducedMotion();
-  const [demoTab, setDemoTab] = useState(0);
+  const rootRef = useRef(null);
 
-  const activeDemo = useMemo(() => DEMO_TABS[demoTab] || DEMO_TABS[0], [demoTab]);
+  useLayoutEffect(() => {
+    if (reduceMotion || !rootRef.current) return undefined;
+
+    const context = gsap.context(() => {
+      gsap.set(".gsap-hero-kicker, .gsap-hero-title, .gsap-hero-text, .gsap-hero-actions", {
+        autoAlpha: 0,
+        y: 28,
+      });
+
+      gsap
+        .timeline({ defaults: { ease: "power3.out" } })
+        .to(".gsap-hero-kicker", { autoAlpha: 1, y: 0, duration: 0.55 })
+        .to(".gsap-hero-title", { autoAlpha: 1, y: 0, duration: 0.75 }, "-=0.28")
+        .to(".gsap-hero-text", { autoAlpha: 1, y: 0, duration: 0.65 }, "-=0.42")
+        .to(".gsap-hero-actions", { autoAlpha: 1, y: 0, duration: 0.55 }, "-=0.34")
+        .from(".gsap-hero-screen", { autoAlpha: 0, y: 60, rotateX: 18, rotateY: -28, duration: 1.1 }, "-=0.72")
+        .from(".gsap-float-card, .gsap-people-card", { autoAlpha: 0, y: 26, scale: 0.94, stagger: 0.12, duration: 0.7 }, "-=0.46");
+
+      gsap.to(".gsap-glow", {
+        y: -400,
+        x: 100,
+        rotate: -20,
+        ease: "none",
+        scrollTrigger: {
+          trigger: ".gsap-page",
+          start: "top top",
+          end: "bottom bottom",
+          scrub: 1.5,
+        },
+      });
+
+      gsap.to(".gsap-hero-screen", {
+        y: -200,
+        rotateY: -10,
+        rotateX: 10,
+        scale: 0.92,
+        ease: "none",
+        scrollTrigger: {
+          trigger: ".gsap-hero",
+          start: "top top",
+          end: "bottom top",
+          scrub: 1.2,
+        },
+      });
+
+      gsap.to(".gsap-float-card", {
+        y: -80,
+        x: 24,
+        ease: "none",
+        scrollTrigger: {
+          trigger: ".gsap-hero",
+          start: "top top",
+          end: "bottom top",
+          scrub: 1.2,
+        },
+      });
+
+      gsap.to(".gsap-people-card", {
+        y: 64,
+        x: -28,
+        ease: "none",
+        scrollTrigger: {
+          trigger: ".gsap-hero",
+          start: "top top",
+          end: "bottom top",
+          scrub: 1.2,
+        },
+      });
+
+      gsap.to(".gsap-ribbon-track", {
+        xPercent: -50,
+        duration: 24,
+        ease: "none",
+        repeat: -1,
+      });
+
+      gsap.to(".gsap-timeline-progress", {
+        height: "100%",
+        ease: "none",
+        scrollTrigger: {
+          trigger: ".gsap-flow-container",
+          start: "top center",
+          end: "bottom center",
+          scrub: 0.5,
+        },
+      });
+
+      gsap.utils.toArray(".gsap-flow-dot").forEach((dot) => {
+        gsap.from(dot, {
+          scale: 0,
+          autoAlpha: 0,
+          scrollTrigger: {
+            trigger: dot,
+            start: "top center+=100",
+            toggleActions: "play none none reverse",
+          }
+        });
+      });
+
+      gsap.utils.toArray(".gsap-flow-step").forEach((step, index) => {
+        const copy = step.querySelector(".gsap-flow-copy");
+        const artifact = step.querySelector(".gsap-flow-artifact");
+
+        gsap.from(copy, {
+          autoAlpha: 0,
+          x: index % 2 ? 70 : -70,
+          duration: 0.9,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: step,
+            start: "top 72%",
+            toggleActions: "play none none reverse",
+          },
+        });
+
+        gsap.fromTo(
+          artifact,
+          { autoAlpha: 0, y: 60, scale: 0.94 },
+          {
+            autoAlpha: 1,
+            y: 0,
+            scale: 1,
+            duration: 1.2,
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: step,
+              start: "top 76%",
+              toggleActions: "play none none reverse",
+            },
+          }
+        );
+
+        gsap.to(artifact, {
+          y: index % 2 ? -40 : 40,
+          ease: "none",
+          scrollTrigger: {
+            trigger: step,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: 1,
+          },
+        });
+      });
+
+      ScrollTrigger.refresh();
+    }, rootRef);
+
+    return () => context.revert();
+  }, [reduceMotion]);
 
   return (
-    <Box
-      sx={{
-        position: "relative",
-        overflow: "hidden",
-        bgcolor: "background.default",
-      }}
-    >
+    <Box ref={rootRef} className="gsap-page" sx={{ bgcolor: page.bg, color: page.text, overflow: "hidden" }}>
       <Box
         sx={{
-          position: "absolute",
+          position: "fixed",
           inset: 0,
           pointerEvents: "none",
           background:
-            "radial-gradient(circle at 14% 16%, rgba(25, 118, 210, 0.16), transparent 26%), radial-gradient(circle at 82% 12%, rgba(14, 165, 233, 0.14), transparent 22%), radial-gradient(circle at 64% 74%, rgba(245, 158, 11, 0.12), transparent 24%)",
+            "radial-gradient(circle at 18% 8%, rgba(37,99,235,0.14), transparent 30%), radial-gradient(circle at 78% 16%, rgba(124,58,237,0.12), transparent 28%), linear-gradient(180deg, #F8FAFC 0%, #EEF6FF 48%, #F8FAFC 100%)",
         }}
       />
-      <Box
+      <MotionBox
+        className="gsap-glow"
         sx={{
-          position: "absolute",
-          inset: 0,
+          position: "fixed",
+          inset: "10% -10% auto -10%",
+          height: 520,
           pointerEvents: "none",
-          backgroundImage:
-            "linear-gradient(rgba(15,23,42,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,0.035) 1px, transparent 1px)",
-          backgroundSize: "54px 54px",
-          maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.8), transparent 88%)",
-          WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.8), transparent 88%)",
+          background:
+            "linear-gradient(110deg, rgba(8,145,178,0.12), rgba(124,58,237,0.12), rgba(225,29,72,0.08))",
+          filter: "blur(76px)",
+          transform: "rotate(-8deg)",
         }}
       />
 
-      <Container maxWidth="xl" sx={{ position: "relative", zIndex: 1, py: { xs: 5, md: 8, lg: 10 } }}>
-        <MotionBox
-          variants={STAGGER}
-          initial={reduceMotion ? false : "hidden"}
-          animate={reduceMotion ? false : "show"}
-          sx={{ display: "flex", flexDirection: "column", gap: { xs: 8, md: 10 } }}
-        >
+      <Box className="gsap-hero" component="section" sx={{ position: "relative", minHeight: { xs: "auto", lg: "calc(100vh - 78px)" }, py: { xs: 7, md: 10 } }}>
+        <Container maxWidth="xl">
           <MotionBox
-            variants={HERO_VARIANTS}
-            transition={{ duration: 0.5, ease: "easeOut" }}
             sx={{
               display: "grid",
-              gridTemplateColumns: { xs: "1fr", lg: "1.03fr 0.97fr" },
-              gap: { xs: 4, lg: 6 },
+              gridTemplateColumns: { xs: "1fr", lg: "0.92fr 1.08fr" },
+              gap: { xs: 5, lg: 7 },
               alignItems: "center",
-              minHeight: { xs: "auto", lg: "76vh" },
             }}
           >
-            <Stack spacing={3.25}>
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ rowGap: 1 }}>
+            <Stack spacing={3.2}>
+              <Stack className="gsap-hero-kicker" direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                 <Chip
-                  icon={<AutoAwesomeOutlinedIcon sx={{ fontSize: "16px !important" }} />}
-                  label="Agentic project management"
-                  sx={{
-                    bgcolor: "rgba(25,118,210,0.08)",
-                    color: "primary.main",
-                    fontWeight: 500,
-                    borderRadius: 999,
-                  }}
+                  icon={<AutoAwesomeOutlinedIcon sx={{ color: `${page.cyan} !important` }} />}
+                  label="Agentic AI workflow platform"
+                  sx={{ color: page.cyan, bgcolor: "rgba(8,145,178,0.1)", border: "1px solid rgba(8,145,178,0.24)" }}
                 />
                 <Chip
-                  label="Built for admins, owners, and high-velocity teams"
-                  sx={{
-                    bgcolor: "rgba(15,23,42,0.04)",
-                    color: "text.secondary",
-                    fontWeight: 500,
-                    borderRadius: 999,
-                  }}
+                  label="Final-project grade SaaS experience"
+                  sx={{ color: page.text, bgcolor: "rgba(255,255,255,0.86)", border: `1px solid ${page.border}` }}
                 />
               </Stack>
-
-              <Stack spacing={2.1}>
-                <Typography
-                  component="h1"
-                  variant="h2"
-                  sx={{
-                    fontWeight: 500,
-                    lineHeight: 1.02,
-                    letterSpacing: "-0.04em",
-                    maxWidth: 860,
-                    fontSize: { xs: "2.8rem", sm: "3.55rem", md: "4.35rem" },
-                  }}
-                >
-                  A premium workspace for{" "}
-                  <Box
-                    component="span"
-                    sx={{
-                      background: "linear-gradient(90deg, #1976d2 0%, #00acc1 45%, #f59e0b 100%)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                    }}
-                  >
-                    projects, tasks, and AI-assisted execution
-                  </Box>
-                </Typography>
-
-                <Typography
-                  variant="h6"
-                  sx={{
-                    color: "text.secondary",
-                    maxWidth: 720,
-                    lineHeight: 1.75,
-                    fontWeight: 400,
-                  }}
-                >
-                  Trego brings projects, workflows, roles, tasks, and comments into one polished system. Show the
-                  board, timeline, and command center as a single product story instead of a collection of screens.
-                </Typography>
-              </Stack>
-
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+              <Typography
+                className="gsap-hero-title"
+                component="h1"
+                sx={{
+                  color: page.text,
+                  fontSize: { xs: 48, sm: 68, md: 88 },
+                  lineHeight: 0.94,
+                  fontWeight: 500,
+                  letterSpacing: 0,
+                  maxWidth: 980,
+                }}
+              >
+                Watch a workspace turn into an AI-run delivery system.
+              </Typography>
+              <Typography className="gsap-hero-text" sx={{ color: page.muted, fontSize: { xs: 17, md: 21 }, lineHeight: 1.75, maxWidth: 760 }}>
+                Trego is not just a list of features. It is a flow: create the workspace, build the workflow, assign
+                tasks, inspect with AI chat, and keep every move secure in realtime.
+              </Typography>
+              <Stack className="gsap-hero-actions" direction={{ xs: "column", sm: "row" }} spacing={1.5}>
                 <Button
                   component={RouterLink}
                   to="/sign-up"
                   variant="contained"
+                  color="primary"
                   size="large"
                   endIcon={<ArrowForwardRoundedIcon />}
                   sx={{
+                    borderRadius: 999,
                     px: 3,
                     py: 1.35,
-                    borderRadius: 999,
-                    fontWeight: 400,
-                    boxShadow: "0 16px 32px rgba(25,118,210,0.18)",
                     textTransform: "none",
+                    fontWeight: 500,
                   }}
                 >
-                  Start free
+                  Start building
                 </Button>
                 <Button
-                  component={RouterLink}
-                  to="/sign-in"
+                  href="#flow"
                   variant="outlined"
+                  color="primary"
                   size="large"
-                  startIcon={<PlayArrowRoundedIcon />}
                   sx={{
+                    borderRadius: 999,
                     px: 3,
                     py: 1.35,
-                    borderRadius: 999,
-                    fontWeight: 400,
-                    borderColor: "divider",
-                    bgcolor: "rgba(255,255,255,0.68)",
-                    backdropFilter: "blur(14px)",
                     textTransform: "none",
+                    fontWeight: 500,
+                    bgcolor: "rgba(255,255,255,0.78)",
+                    "&:hover": { bgcolor: "rgba(255,255,255,0.96)" },
                   }}
                 >
-                  Watch demo
+                  See the flow
                 </Button>
               </Stack>
-
-              <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap sx={{ rowGap: 1 }}>
-                {TRUST_LOGOS.map((item) => (
-                  <Chip
-                    key={item}
-                    label={item}
-                    variant="outlined"
-                    sx={{
-                      borderRadius: 999,
-                      fontWeight: 500,
-                      bgcolor: "rgba(255,255,255,0.72)",
-                    }}
-                  />
-                ))}
-              </Stack>
             </Stack>
-
-            <MotionBox
-              variants={HERO_VARIANTS}
-              transition={{ duration: 0.65, ease: "easeOut" }}
-              sx={{ position: "relative", minHeight: { xs: 520, md: 680 } }}
-            >
-              <Box
-                sx={{
-                  position: "absolute",
-                  inset: 18,
-                  borderRadius: 8,
-                  background:
-                    "linear-gradient(180deg, rgba(25,118,210,0.10), rgba(255,255,255,0.92) 42%, rgba(255,255,255,0.78))",
-                  filter: "blur(0px)",
-                }}
-              />
-
-              <Box
-                sx={{
-                  position: "absolute",
-                  inset: 0,
-                  borderRadius: 8,
-                  background:
-                    "linear-gradient(135deg, rgba(25,118,210,0.16), rgba(0,172,193,0.08) 38%, rgba(255,255,255,0.12))",
-                  boxShadow: "0 30px 80px rgba(15,23,42,0.12)",
-                  border: "1px solid",
-                  borderColor: "rgba(255,255,255,0.55)",
-                  overflow: "hidden",
-                }}
-              >
-                <Box
-                  sx={{
-                    position: "absolute",
-                    width: 240,
-                    height: 240,
-                    borderRadius: "50%",
-                    bgcolor: "rgba(25,118,210,0.22)",
-                    filter: "blur(44px)",
-                    top: -50,
-                    right: -30,
-                  }}
-                />
-
-                <Box sx={{ position: "relative", p: { xs: 2, sm: 3, md: 4 }, height: "100%" }}>
-                  <Stack spacing={2.25} sx={{ height: "100%" }}>
-                    <Stack direction="row" alignItems="center" justifyContent="space-between">
-                      <Stack direction="row" spacing={1.2} alignItems="center">
-                        <Avatar sx={{ bgcolor: "primary.main", width: 38, height: 38 }}>
-                          <AutoAwesomeOutlinedIcon sx={{ fontSize: 18 }} />
-                        </Avatar>
-                        <Box>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 500 }}>
-                            Trego Command Center
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Live context, payload preview, and execution signals
-                          </Typography>
-                        </Box>
-                      </Stack>
-                      <Chip
-                        label="Live"
-                        color="success"
-                        size="small"
-                        sx={{ fontWeight: 500, borderRadius: 999 }}
-                      />
-                    </Stack>
-
-                    <Stack spacing={1.25} sx={{ flex: 1, minHeight: 0 }}>
-                      <Paper
-                        elevation={0}
-                        sx={{
-                          p: 2,
-                          borderRadius: 4,
-                          bgcolor: "rgba(255,255,255,0.78)",
-                          backdropFilter: "blur(16px)",
-                          border: "1px solid",
-                          borderColor: "rgba(15,23,42,0.06)",
-                        }}
-                      >
-                        <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
-                          <Box>
-                            <Typography variant="caption" color="text.secondary">
-                              Workspace
-                            </Typography>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-                              Sprint Horizon
-                            </Typography>
-                          </Box>
-                          <Chip
-                            label="Agent aware"
-                            size="small"
-                            sx={{ borderRadius: 999, fontWeight: 500 }}
-                          />
-                        </Stack>
-                        <Divider sx={{ my: 1.5 }} />
-                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ rowGap: 1 }}>
-                          {["@project", "@frontendDeveloper", "@tasks", "@workflow"].map((item) => (
-                            <Chip
-                              key={item}
-                              label={item}
-                              variant="outlined"
-                              sx={{ borderRadius: 999, fontWeight: 500, bgcolor: "rgba(255,255,255,0.7)" }}
-                            />
-                          ))}
-                        </Stack>
-                      </Paper>
-
-                      <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25} sx={{ flex: 1, minHeight: 0 }}>
-                        <Paper
-                          elevation={0}
-                          sx={{
-                            flex: 1,
-                            borderRadius: 4,
-                            p: 2,
-                            bgcolor: "rgba(255,255,255,0.82)",
-                            border: "1px solid",
-                            borderColor: "rgba(15,23,42,0.06)",
-                          }}
-                        >
-                          <Typography variant="caption" color="text.secondary">
-                            Chat
-                          </Typography>
-                          <Typography sx={{ mt: 0.75, fontWeight: 500, lineHeight: 1.7 }}>
-                            "Show delayed tasks, project roles, and the next stage transitions."
-                          </Typography>
-                          <Box
-                            sx={{
-                              mt: 1.5,
-                              p: 1.25,
-                              borderRadius: 3,
-                              bgcolor: "rgba(25,118,210,0.08)",
-                            }}
-                          >
-                            <Typography variant="body2" color="text.secondary">
-                              Agent response generated from workspace context and real project documents.
-                            </Typography>
-                          </Box>
-                        </Paper>
-
-                        <Stack spacing={1.25} sx={{ width: { xs: "100%", sm: 220 } }}>
-                          <Paper
-                            elevation={0}
-                            sx={{
-                              p: 2,
-                              borderRadius: 4,
-                              bgcolor: "rgba(17,24,39,0.96)",
-                              color: "common.white",
-                              minHeight: 128,
-                            }}
-                          >
-                            <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.7)" }}>
-                              Payload preview
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              sx={{ mt: 1, whiteSpace: "pre-wrap", color: "rgba(255,255,255,0.92)" }}
-                            >
-{`{
-  "contexts": ["project", "tasks", "projectRoles"],
-  "mode": "ask",
-  "prompt": "Show delayed tasks"
-}`}
-                            </Typography>
-                          </Paper>
-                          <Paper
-                            elevation={0}
-                            sx={{
-                              p: 2,
-                              borderRadius: 4,
-                              bgcolor: "rgba(255,255,255,0.82)",
-                              border: "1px solid",
-                              borderColor: "rgba(15,23,42,0.06)",
-                            }}
-                          >
-                            <Stack direction="row" spacing={1} alignItems="center">
-                              <CheckCircleRoundedIcon color="success" fontSize="small" />
-                              <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                Permission-safe
-                              </Typography>
-                            </Stack>
-                            <Typography variant="caption" color="text.secondary">
-                              Admin and owner access only.
-                            </Typography>
-                          </Paper>
-                        </Stack>
-                      </Stack>
-                    </Stack>
-                  </Stack>
-                </Box>
-              </Box>
-            </MotionBox>
+            <HeroShowcase />
           </MotionBox>
+        </Container>
+      </Box>
 
-          <MotionBox variants={HERO_VARIANTS} transition={{ duration: 0.5, ease: "easeOut" }}>
-            <Stack
-              direction={{ xs: "column", md: "row" }}
-              spacing={2}
-              divider={<Divider orientation="vertical" flexItem sx={{ display: { xs: "none", md: "block" } }} />}
-              sx={{
-                p: { xs: 2.5, md: 3.5 },
-                borderRadius: 5,
-                bgcolor: "rgba(255,255,255,0.72)",
-                backdropFilter: "blur(20px)",
-                border: "1px solid",
-                borderColor: "rgba(15,23,42,0.07)",
-              }}
-            >
-              {STATS.map((stat) => (
-                <Box key={stat.label} sx={{ flex: 1 }}>
-                  <Typography variant="h4" sx={{ fontWeight: 500, lineHeight: 1 }}>
-                    {stat.value}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-                    {stat.label}
-                  </Typography>
-                </Box>
-              ))}
-            </Stack>
-          </MotionBox>
+      <Box sx={{ position: "relative" }}>
+        <CapabilityRibbon />
 
-          <MotionBox variants={HERO_VARIANTS} transition={{ duration: 0.5, ease: "easeOut" }}>
-            <Stack spacing={2.25}>
-              <Stack spacing={1}>
-                <Typography variant="overline" letterSpacing={3} color="text.secondary" sx={{ fontWeight: 500 }}>
-                  Product DNA
-                </Typography>
-                <Typography variant="h3" sx={{ maxWidth: 720, lineHeight: 1.08, fontWeight: 500 }}>
-                  Every feature is presented like part of a polished product story.
-                </Typography>
-              </Stack>
-
+        <Container maxWidth="xl" sx={{ py: { xs: 7, md: 12 } }}>
+          <Stack spacing={{ xs: 8, md: 13 }}>
+            <Reveal>
               <Box
                 sx={{
                   display: "grid",
-                  gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", lg: "repeat(3, 1fr)" },
-                  gap: 2,
+                  gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(4, 1fr)" },
+                  gap: 1.5,
                 }}
               >
-                {CORE_FEATURES.map((feature, index) => (
-                  <MotionPaper
-                    key={feature.title}
-                    variants={HERO_VARIANTS}
-                    transition={{ duration: 0.4, ease: "easeOut", delay: index * 0.03 }}
-                    elevation={0}
-                    sx={{
-                      p: 3,
-                      borderRadius: 4,
-                      height: "100%",
-                      bgcolor: "rgba(255,255,255,0.8)",
-                      backdropFilter: "blur(14px)",
-                      border: "1px solid",
-                      borderColor: "rgba(15,23,42,0.06)",
-                      transition: "transform 180ms ease, box-shadow 180ms ease",
-                      "&:hover": {
-                        transform: "translateY(-4px)",
-                        boxShadow: "0 18px 50px rgba(15,23,42,0.08)",
-                      },
-                    }}
-                  >
-                    <Stack spacing={1.5}>
-                      <Box
-                        sx={{
-                          width: 44,
-                          height: 44,
-                          borderRadius: 3,
-                          display: "grid",
-                          placeItems: "center",
-                          color: "primary.main",
-                          bgcolor: "rgba(25,118,210,0.08)",
-                        }}
-                      >
-                        {feature.icon}
-                      </Box>
-                      <Typography variant="h6" sx={{ fontWeight: 500 }}>
-                        {feature.title}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.75 }}>
-                        {feature.text}
-                      </Typography>
-                    </Stack>
-                  </MotionPaper>
+                {stats.map(([value, label]) => (
+                  <GlassSurface key={label} sx={{ p: { xs: 2, md: 3 } }}>
+                    <Typography sx={{ color: page.text, fontSize: { xs: 34, md: 46 }, lineHeight: 1, fontWeight: 500 }}>
+                      {value}
+                    </Typography>
+                    <Typography sx={{ color: page.muted, mt: 1 }}>{label}</Typography>
+                  </GlassSurface>
                 ))}
               </Box>
-            </Stack>
-          </MotionBox>
+            </Reveal>
 
-          <MotionBox variants={HERO_VARIANTS} transition={{ duration: 0.5, ease: "easeOut" }}>
-            <Paper
-              elevation={0}
-              sx={{
-                position: "relative",
-                overflow: "hidden",
-                p: { xs: 2.5, md: 4 },
-                borderRadius: 6,
-                bgcolor: "rgba(255,255,255,0.8)",
-                border: "1px solid",
-                borderColor: "rgba(15,23,42,0.06)",
-              }}
-            >
-              <Stack spacing={2.5}>
-                <Stack spacing={1}>
-                  <Typography variant="overline" letterSpacing={3} color="text.secondary" sx={{ fontWeight: 500 }}>
-                    Tabbed demo
-                  </Typography>
-                  <Typography variant="h4" sx={{ maxWidth: 820, fontWeight: 500 }}>
-                    Switch between product areas like a lightweight demo browser.
-                  </Typography>
-                  <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 760, lineHeight: 1.75 }}>
-                    Use this section for feature-by-feature storytelling and dashboard video slots. Each tab can feel
-                    like a self-contained, semi-working mockup.
-                  </Typography>
-                </Stack>
-
-                <Tabs
-                  value={demoTab}
-                  onChange={(_, value) => setDemoTab(value)}
-                  variant="scrollable"
-                  scrollButtons="auto"
-                  allowScrollButtonsMobile
-                  sx={{
-                    minHeight: 42,
-                    "& .MuiTabs-scroller": { overflowX: "auto !important" },
-                    "& .MuiTab-root": {
-                      minHeight: 42,
-                      textTransform: "none",
-                      fontWeight: 500,
-                    },
-                  }}
-                >
-                  {DEMO_TABS.map((item) => (
-                    <Tab key={item.label} label={item.label} />
-                  ))}
-                </Tabs>
-
-                <MockDashboard
-                  accent={activeDemo.accent}
-                  chips={activeDemo.chips}
-                  preview={activeDemo.preview}
+            <Reveal sx={{ scrollMarginTop: 100 }}>
+              <Box component="section" id="product">
+                <SectionIntro
+                  eyebrow="Product flow"
+                  title="No generic feature grid. This is the workflow story."
+                  text="Each layer locks into the next one. Workspace context powers projects. Projects power workflows. Workflows control tasks. AI chat reads the whole system."
+                  center
                 />
-              </Stack>
-            </Paper>
-          </MotionBox>
+              </Box>
+            </Reveal>
 
-          <MotionBox variants={HERO_VARIANTS} transition={{ duration: 0.5, ease: "easeOut" }}>
-            <Paper
-              elevation={0}
-              sx={{
-                position: "relative",
-                overflow: "hidden",
-                p: { xs: 2.5, md: 4 },
-                borderRadius: 6,
-                background: "linear-gradient(135deg, #1976d2 0%, #0b5cab 55%, #043661 100%)",
-                boxShadow: "0 28px 70px rgba(25,118,210,0.22)",
-              }}
-            >
+            <Box component="section" id="flow" sx={{ scrollMarginTop: 100 }}>
+              <FlowScene />
+            </Box>
+
+            <Reveal sx={{ scrollMarginTop: 100 }}>
+              <Box component="section" id="how-it-works">
+                <SectionIntro
+                  eyebrow="Layered product journey"
+                  title="The page moves like a product demo, not a feature list."
+                  text="Each scroll step reveals the next part of Trego: workspace context, workflow design, task ownership, client-facing AI chat, and secure project execution."
+                  center
+                />
+              </Box>
+            </Reveal>
+
+            <Reveal sx={{ scrollMarginTop: 100 }}>
+              <Box component="section" id="agent">
+                <GlassSurface sx={{ p: { xs: 2.5, md: 5 } }}>
+                  <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "0.9fr 1.1fr" }, gap: 4, alignItems: "center" }}>
+                    <SectionIntro
+                      eyebrow="AI chat only"
+                      title="Health reports are generated inside chat, exactly where clients ask."
+                      text="The dashboard stays focused on work. The AI assistant handles reports, inspection, recovery planning, blockers, and project answers through conversation."
+                    />
+                    <ArtifactVisual type="chat" color={page.amber} />
+                  </Box>
+                </GlassSurface>
+              </Box>
+            </Reveal>
+
+            <Reveal sx={{ scrollMarginTop: 100 }}>
+              <Box component="section" id="security">
+                <GlassSurface sx={{ p: { xs: 2.5, md: 5 } }}>
+                  <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" }, gap: 4, alignItems: "center" }}>
+                    <SectionIntro
+                      eyebrow="Secure realtime SaaS"
+                      title="The beautiful flow is still protected by real backend rules."
+                      text="JWT HTTP-only cookies, device sessions, Socket.IO updates, and server-side role checks keep Trego believable as a serious MERN SaaS platform."
+                    />
+                    <ArtifactVisual type="secure" color={page.rose} />
+                  </Box>
+                </GlassSurface>
+              </Box>
+            </Reveal>
+
+            <Reveal>
               <Box
+                component="section"
                 sx={{
-                  position: "absolute",
-                  inset: 0,
+                  borderRadius: 5,
+                  p: { xs: 3, md: 6 },
+                  overflow: "hidden",
+                  border: `1px solid ${page.border}`,
                   background:
-                    "radial-gradient(circle at 75% 20%, rgba(255,255,255,0.18), transparent 28%), radial-gradient(circle at 20% 80%, rgba(255,255,255,0.12), transparent 24%)",
+                    "linear-gradient(135deg, rgba(96,165,250,0.2), rgba(34,211,238,0.12) 40%, rgba(167,139,250,0.18))",
                 }}
-              />
-              <Stack
-                direction={{ xs: "column", md: "row" }}
-                alignItems={{ xs: "flex-start", md: "center" }}
-                justifyContent="space-between"
-                spacing={3}
-                sx={{ position: "relative" }}
               >
-                <Box sx={{ maxWidth: 700 }}>
-                  <Typography variant="overline" sx={{ color: "rgba(255,255,255,0.72)", letterSpacing: 3, fontWeight: 500 }}>
-                    Ready to move faster
-                  </Typography>
-                  <Typography variant="h3" sx={{ mt: 0.75, lineHeight: 1.08, fontWeight: 500, color: "common.white" }}>
-                    Build your next project system with an agent that understands the work.
-                  </Typography>
-                  <Typography sx={{ mt: 1.5, color: "rgba(255,255,255,0.82)", lineHeight: 1.75 }}>
-                    Launch a workspace where AI assists planning, execution, and reporting without taking away your
-                    control.
-                  </Typography>
-                </Box>
-
-                <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25}>
+                <Stack
+                  direction={{ xs: "column", md: "row" }}
+                  justifyContent="space-between"
+                  alignItems={{ xs: "flex-start", md: "center" }}
+                  spacing={3}
+                >
+                  <Box sx={{ maxWidth: 780 }}>
+                    <Typography sx={{ color: page.text, fontSize: { xs: 36, md: 62 }, lineHeight: 1.02, fontWeight: 500 }}>
+                      Make the final project feel like a funded SaaS demo.
+                    </Typography>
+                    <Typography sx={{ color: page.muted, mt: 1.5, fontSize: 18, lineHeight: 1.75 }}>
+                      A dark cinematic homepage, real product screenshots, people visuals, AI chat, and a clear system
+                      story from workspace to workflow execution.
+                    </Typography>
+                  </Box>
                   <Button
                     component={RouterLink}
                     to="/sign-up"
                     variant="contained"
+                    color="primary"
                     size="large"
                     endIcon={<ArrowForwardRoundedIcon />}
                     sx={{
-                      bgcolor: "common.white",
-                      color: "primary.main",
-                      fontWeight: 400,
                       borderRadius: 999,
-                      px: 3,
+                      px: 3.5,
+                      py: 1.4,
                       textTransform: "none",
-                      "&:hover": {
-                        bgcolor: "rgba(255,255,255,0.94)",
-                      },
+                      fontWeight: 500,
+                      whiteSpace: "nowrap",
                     }}
                   >
-                    Get started
-                  </Button>
-                  <Button
-                    component={RouterLink}
-                    to="/pricing"
-                    variant="outlined"
-                    size="large"
-                    sx={{
-                      color: "common.white",
-                      borderColor: "rgba(255,255,255,0.4)",
-                      fontWeight: 400,
-                      borderRadius: 999,
-                      px: 3,
-                      textTransform: "none",
-                    }}
-                  >
-                    See pricing
+                    Open Trego
                   </Button>
                 </Stack>
-              </Stack>
-            </Paper>
-          </MotionBox>
-        </MotionBox>
-      </Container>
+              </Box>
+            </Reveal>
+          </Stack>
+        </Container>
+
+        <Footer />
+      </Box>
     </Box>
   );
 }

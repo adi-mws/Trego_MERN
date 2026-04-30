@@ -1,6 +1,7 @@
 import Notification from "./notification.model.js";
 import NotificationRecipient from "./notificationRecipient.model.js";
 import { Session } from "../session/session.model.js";
+import { User } from "../user/user.model.js";
 import { WorkspaceMember } from "../workspaces/workspaceMember.model.js";
 import { emitToUser, emitToUserExceptSession } from "../../socket/index.js";
 
@@ -69,6 +70,29 @@ async function getActiveSessionsByUserIds(userIds = []) {
     .lean();
 }
 
+async function filterRecipientsByNotificationPreference(recipients = [], important = false) {
+  if (important || recipients.length === 0) {
+    return recipients;
+  }
+
+  const userIds = [...new Set(recipients.map((recipient) => String(recipient.userId || "")).filter(Boolean))];
+  if (userIds.length === 0) {
+    return [];
+  }
+
+  const users = await User.find({ _id: { $in: userIds } })
+    .select("preferences.importantNotificationsOnly")
+    .lean();
+
+  const importantOnlyUserIds = new Set(
+    users
+      .filter((user) => Boolean(user.preferences?.importantNotificationsOnly))
+      .map((user) => String(user._id))
+  );
+
+  return recipients.filter((recipient) => !importantOnlyUserIds.has(String(recipient.userId)));
+}
+
 async function createNotificationForSessions({
   title,
   message,
@@ -91,6 +115,7 @@ async function createNotificationForSessions({
   link = "",
   sourceSessionId = null,
   recipientSessions = [],
+  excludeSourceSession = true,
 }) {
   const uniqueRecipients = recipientSessions
     .map((recipient) => ({
@@ -98,9 +123,15 @@ async function createNotificationForSessions({
       sessionId: String(recipient.sessionId || ""),
     }))
     .filter((recipient) => recipient.userId && recipient.sessionId)
-    .filter((recipient) => String(recipient.sessionId) !== String(sourceSessionId));
+    .filter((recipient) => !excludeSourceSession || String(recipient.sessionId) !== String(sourceSessionId));
 
   if (!scopeType || !scopeId || uniqueRecipients.length === 0) {
+    return null;
+  }
+
+  const preferenceFilteredRecipients = await filterRecipientsByNotificationPreference(uniqueRecipients, important);
+
+  if (preferenceFilteredRecipients.length === 0) {
     return null;
   }
 
@@ -128,7 +159,7 @@ async function createNotificationForSessions({
   });
 
   await NotificationRecipient.insertMany(
-    uniqueRecipients.map((recipient) => ({
+    preferenceFilteredRecipients.map((recipient) => ({
       notificationId: notification._id,
       userId: recipient.userId,
       sessionId: recipient.sessionId,
@@ -142,7 +173,7 @@ async function createNotificationForSessions({
   const payload = normalizeNotification(populated);
 
   const emittedUsers = new Set();
-  for (const recipient of uniqueRecipients) {
+  for (const recipient of preferenceFilteredRecipients) {
     if (emittedUsers.has(recipient.userId)) continue;
     emittedUsers.add(recipient.userId);
     emitToUser(recipient.userId, "notification:new", payload);
@@ -458,6 +489,7 @@ export async function createTaskCreatedNotification({
     link: `/app/${workspaceData.slug}/projects/${projectData.slug}/tasks/${taskData._id}`,
     sourceSessionId,
     recipientSessions,
+    excludeSourceSession: false,
   });
 }
 
@@ -503,6 +535,66 @@ export async function createTaskStageAssigneeNotification({
     type: "ACTION",
     iconKey: "TASK",
     important: true,
+    triggeredByType: "USER",
+    triggeredBy: userId,
+    scopeType: "WORKSPACE",
+    scopeId: workspaceData._id,
+    workspaceId: workspaceData._id,
+    workspaceName: workspaceData.name,
+    workspaceSlug: workspaceData.slug,
+    projectId: projectData._id,
+    projectName: projectData.name,
+    projectSlug: projectData.slug,
+    entityType: "TASK",
+    entityId: taskData._id,
+    link: `/app/${workspaceData.slug}/projects/${projectData.slug}/tasks/${taskData._id}`,
+    sourceSessionId,
+    recipientSessions,
+  });
+}
+
+export async function createTaskStageAdvancedNotification({
+  task,
+  project,
+  workspace,
+  fromStage,
+  toStage,
+  userId,
+  sourceSessionId,
+}) {
+  if (!task?._id || !project?._id || !workspace?._id || !toStage?._id || !userId) {
+    return null;
+  }
+
+  const taskData = typeof task.toObject === "function" ? task.toObject() : task;
+  const projectData = typeof project.toObject === "function" ? project.toObject() : project;
+  const workspaceData = typeof workspace.toObject === "function" ? workspace.toObject() : workspace;
+  const fromStageData = typeof fromStage?.toObject === "function" ? fromStage.toObject() : fromStage;
+  const toStageData = typeof toStage.toObject === "function" ? toStage.toObject() : toStage;
+
+  const recipientUserIds = await WorkspaceMember.distinct("userId", {
+    workspaceId: workspaceData._id,
+    role: { $in: ["OWNER", "ADMIN"] },
+  });
+
+  const activeSessions = await getActiveSessionsByUserIds(recipientUserIds);
+  const recipientSessions = activeSessions.map((session) => ({
+    userId: String(session.userId),
+    sessionId: String(session._id),
+  }));
+
+  const toStageName = toStageData.name || "the next stage";
+  const movementMessage = fromStageData?.name
+    ? `${taskData.title} moved from ${fromStageData.name} to ${toStageName}.`
+    : `${taskData.title} moved to ${toStageName}.`;
+
+  return await createNotificationForSessions({
+    title: "Task stage advanced",
+    message: movementMessage,
+    toastMessage: `${taskData.title} moved to ${toStageName}.`,
+    type: "ACTION",
+    iconKey: "TASK",
+    important: false,
     triggeredByType: "USER",
     triggeredBy: userId,
     scopeType: "WORKSPACE",
@@ -582,6 +674,11 @@ export async function getNotificationsForSession({ userId, sessionId, limit = 50
     return { notifications: [], unreadCount: 0 };
   }
 
+  const user = await User.findById(userId)
+    .select("preferences.importantNotificationsOnly")
+    .lean();
+  const importantOnly = Boolean(user?.preferences?.importantNotificationsOnly);
+
   const recipients = await NotificationRecipient.find({
     userId,
     sessionId,
@@ -600,9 +697,9 @@ export async function getNotificationsForSession({ userId, sessionId, limit = 50
 
   const notifications = recipients
     .map((recipient) => normalizeNotification(recipient.notificationId, recipient))
-    .filter(Boolean);
+    .filter((notification) => notification && (!importantOnly || notification.important));
 
-  const unreadCount = recipients.filter((recipient) => !recipient.isRead).length;
+  const unreadCount = notifications.filter((notification) => !notification.isRead).length;
 
   return { notifications, unreadCount };
 }

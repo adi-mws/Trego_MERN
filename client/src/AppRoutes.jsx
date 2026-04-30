@@ -10,6 +10,8 @@ import AlertContainer from "./components/global/AlertContainer";
 import MarketingLayout from "./layouts/MarketingLayout";
 import SignUpForm from "./components/features/auth/SignUpForm";
 import SignInForm from "./components/features/auth/SignInForm";
+import ForgotPasswordPage from "./components/features/auth/ForgotPasswordPage";
+import ResetPasswordPage from "./components/features/auth/ResetPasswordPage";
 import WorkspacesLayout from "./layouts/WorkspacesLayout";
 import WorkspaceListPage from "./components/features/workspaces/WorkspaceListPage";
 import NotificationsPage from "./components/features/notifications/NotificationsPage";
@@ -55,6 +57,8 @@ export default function AppRoutes() {
               <Route index element={<HomePage />} />
               <Route path="sign-up" element={<SignUpForm />} />
               <Route path="sign-in" element={<SignInForm />} />
+              <Route path="forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="reset-password" element={<ResetPasswordPage />} />
             </Route>
           </Route>
 

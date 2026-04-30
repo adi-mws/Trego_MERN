@@ -105,6 +105,116 @@ function includeContextKey(payloadContexts = [], key) {
   return payloadContexts.includes(key);
 }
 
+async function buildProjectPlanningSnapshots(projects, { contexts = [] } = {}) {
+  const includeTasks = includeContextKey(contexts, "tasks");
+  const includeMembers = includeContextKey(contexts, "members");
+  const includeCategories = includeContextKey(contexts, "categories");
+  const includeWorkflow = includeContextKey(contexts, "workflow");
+
+  const projectIds = projects.map((project) => project._id);
+  if (!projectIds.length) return [];
+
+  const [
+    taskStats,
+    blockedStats,
+    overdueStats,
+    memberStats,
+    categoryStats,
+    workflowStats,
+    recentTasks,
+  ] = await Promise.all([
+    includeTasks
+      ? Task.aggregate([
+          { $match: { projectId: { $in: projectIds } } },
+          { $group: { _id: "$projectId", count: { $sum: 1 } } },
+        ])
+      : Promise.resolve([]),
+    includeTasks
+      ? Task.aggregate([
+          { $match: { projectId: { $in: projectIds }, isBlocked: true } },
+          { $group: { _id: "$projectId", count: { $sum: 1 } } },
+        ])
+      : Promise.resolve([]),
+    includeTasks
+      ? Task.aggregate([
+          { $match: { projectId: { $in: projectIds }, deadline: { $lt: new Date() }, isBlocked: false } },
+          { $group: { _id: "$projectId", count: { $sum: 1 } } },
+        ])
+      : Promise.resolve([]),
+    includeMembers
+      ? ProjectMember.aggregate([
+          { $match: { project: { $in: projectIds } } },
+          { $group: { _id: "$project", count: { $sum: 1 } } },
+        ])
+      : Promise.resolve([]),
+    includeCategories
+      ? TaskCategory.aggregate([
+          { $match: { projectId: { $in: projectIds } } },
+          { $group: { _id: "$projectId", count: { $sum: 1 } } },
+        ])
+      : Promise.resolve([]),
+    includeWorkflow
+      ? WorkflowTemplate.aggregate([
+          { $match: { projectId: { $in: projectIds } } },
+          { $group: { _id: "$projectId", count: { $sum: 1 } } },
+        ])
+      : Promise.resolve([]),
+    includeTasks
+      ? Task.find({ projectId: { $in: projectIds } })
+          .select("_id projectId title description priority isBlocked deadline updatedAt")
+          .sort({ updatedAt: -1 })
+          .limit(30)
+          .lean()
+      : Promise.resolve([]),
+  ]);
+
+  const toCountMap = (items) => new Map(items.map((item) => [String(item._id), item.count]));
+  const taskCountByProject = toCountMap(taskStats);
+  const blockedCountByProject = toCountMap(blockedStats);
+  const overdueCountByProject = toCountMap(overdueStats);
+  const memberCountByProject = toCountMap(memberStats);
+  const categoryCountByProject = toCountMap(categoryStats);
+  const workflowCountByProject = toCountMap(workflowStats);
+
+  const recentTasksByProject = new Map();
+  recentTasks.forEach((task) => {
+    const key = String(task.projectId);
+    if (!recentTasksByProject.has(key)) recentTasksByProject.set(key, []);
+    if (recentTasksByProject.get(key).length < 5) {
+      recentTasksByProject.get(key).push({
+        id: String(task._id),
+        title: task.title || "",
+        description: task.description || "",
+        priority: task.priority || "MEDIUM",
+        isBlocked: Boolean(task.isBlocked),
+        deadline: task.deadline || null,
+        updatedAt: task.updatedAt || null,
+      });
+    }
+  });
+
+  return projects.map((project) => {
+    const key = String(project._id);
+    return {
+      id: key,
+      name: project.name || "",
+      slug: project.slug || "",
+      description: project.description || "",
+      isActive: Boolean(project.isActive),
+      updatedAt: project.updatedAt || null,
+      stats: {
+        tasks: taskCountByProject.get(key) || 0,
+        blockedTasks: blockedCountByProject.get(key) || 0,
+        overdueTasks: overdueCountByProject.get(key) || 0,
+        members: memberCountByProject.get(key) || 0,
+        categories: categoryCountByProject.get(key) || 0,
+        workflows: workflowCountByProject.get(key) || 0,
+      },
+      recentTasks: recentTasksByProject.get(key) || [],
+    };
+  });
+}
+
 async function buildWorkspaceAgentContext({ workspace, userId, payload = {} }) {
   const {
     projectId = null,
@@ -127,7 +237,7 @@ async function buildWorkspaceAgentContext({ workspace, userId, payload = {} }) {
       id: String(workspace._id),
       name: workspace.name || "",
       slug: workspace.slug || "",
-      description: workspace.description || "",
+      about: workspace.about || "",
       projectCount: workspaceProjects.length,
       memberCount: workspaceMemberCount,
     },
@@ -143,7 +253,8 @@ async function buildWorkspaceAgentContext({ workspace, userId, payload = {} }) {
     })),
   };
 
-  if (!projectId || scope === "workspace") {
+  if (!projectId || scope === "workspace" || scope === "all-projects") {
+    context.projectPlanningSnapshots = await buildProjectPlanningSnapshots(workspaceProjects, { contexts });
     return context;
   }
 
@@ -427,7 +538,11 @@ function buildSystemPrompt({ workspace, selectedProject, context, payload }) {
     "You are Trego Agent for workspace admins and owners.",
     "Speak like a concise, helpful internal assistant for admins and owners.",
     "Keep the response aligned to the selected workspace and project context only.",
-    "Never invent data that is not present in the JSON context.",
+    "Do not invent existing records that are not present in the JSON context.",
+    "When the admin asks what to build next, propose clearly labeled recommended tasks, epics, and workflows based on the workspace/project domain, even if those tasks do not exist yet.",
+    "Separate Current data from Recommended backlog when making suggestions.",
+    "For feature-building answers, prefer actionable backlog items with task title, goal, priority, dependencies, acceptance checks, and suggested workflow stage.",
+    "For appointment booking or hospital management work, consider patient booking, doctor availability, slots, reminders, rescheduling, cancellations, queue/check-in, payments, staff overrides, reporting, and notifications.",
     "Never reveal hidden ids or emails.",
     `Current scope: ${payload?.scope || "workspace"}.`,
     `Current mode: ${payload?.mode || "ask"}.`,

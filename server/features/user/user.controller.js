@@ -138,7 +138,7 @@ export const updatePreferences = async (req, res, next) => {
       });
     }
 
-    const { theme, accentColor } = req.body;
+    const { theme, accentColor, importantNotificationsOnly } = req.body;
 
     const updateData = {};
 
@@ -147,6 +147,9 @@ export const updatePreferences = async (req, res, next) => {
 
     if (accentColor !== undefined)
       updateData["preferences.accentColor"] = accentColor;
+
+    if (importantNotificationsOnly !== undefined)
+      updateData["preferences.importantNotificationsOnly"] = Boolean(importantNotificationsOnly);
 
     if (Object.keys(updateData).length === 0) {
       return res.status(400).json({

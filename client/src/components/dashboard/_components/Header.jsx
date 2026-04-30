@@ -8,7 +8,8 @@ import { useHeader } from "../../../contexts/HeaderContext";
 import { useSelector } from "react-redux";
 import { resolveWorkspaceRole } from "../../../utils/workspaceRole.utils";
 import { useAccountDialog } from "../../../contexts/AccountDialogContext";
-export default function Header({ onMenuClick, menuIcon }) {
+
+export default function Header({ onMenuClick, menuIcon, showWorkspaceTools = true }) {
   const { headerTitle, headerRightActions, headerLeftContent } = useHeader();
   const { openDrawer: openNotifications } = useNotificationsDrawer();
   const { workspaceSlug } = useParams();
@@ -20,6 +21,7 @@ export default function Header({ onMenuClick, menuIcon }) {
   const unreadCount = useSelector((state) => state.notifications?.unreadCount || 0);
   const workspaceRole = resolveWorkspaceRole(workspace, authUser);
   const isWorkspaceAdmin = ["ADMIN", "OWNER"].includes(workspaceRole);
+  const canShowWorkspaceTools = showWorkspaceTools && Boolean(workspaceSlug);
 
   const { openDialog } = useAccountDialog();
   return (
@@ -104,35 +106,37 @@ export default function Header({ onMenuClick, menuIcon }) {
             ml: { md: "auto" },
           }}
         >
-          <GlobalSearchBar compact />
+          {canShowWorkspaceTools && <GlobalSearchBar compact />}
           {headerRightActions}
 
-          <Tooltip title={isWorkspaceAdmin ? "Open Trego Agent" : "Workspace admins and owners only"}>
-            <span>
-              <IconButton
-                onClick={() => {
-                  if (!isWorkspaceAdmin || !workspaceSlug) return;
-                  navigate(`/app/${workspaceSlug}/agent`);
-                }}
-                size={isMobile ? "small" : "medium"}
-                disabled={!isWorkspaceAdmin}
-                sx={{
-                  width: { xs: 36, sm: 40 },
-                  height: { xs: 36, sm: 40 },
-                  color: isWorkspaceAdmin ? "primary.main" : "text.disabled",
-                  bgcolor: (theme) => isWorkspaceAdmin ? alpha(theme.palette.primary.main, 0.08) : "transparent",
-                  border: "1px solid",
-                  borderColor: (theme) => isWorkspaceAdmin ? alpha(theme.palette.primary.main, 0.18) : theme.palette.divider,
-                  "&:hover": {
-                    bgcolor: (theme) => isWorkspaceAdmin ? alpha(theme.palette.primary.main, 0.14) : "transparent",
-                    color: isWorkspaceAdmin ? "primary.dark" : "text.disabled",
-                  },
-                }}
-              >
-                <AutoAwesomeOutlined sx={{ fontSize: 18 }} />
-              </IconButton>
-            </span>
-          </Tooltip>
+          {canShowWorkspaceTools && (
+            <Tooltip title={isWorkspaceAdmin ? "Open Trego Agent" : "Workspace admins and owners only"}>
+              <span>
+                <IconButton
+                  onClick={() => {
+                    if (!isWorkspaceAdmin || !workspaceSlug) return;
+                    navigate(`/app/${workspaceSlug}/agent`);
+                  }}
+                  size={isMobile ? "small" : "medium"}
+                  disabled={!isWorkspaceAdmin}
+                  sx={{
+                    width: { xs: 36, sm: 40 },
+                    height: { xs: 36, sm: 40 },
+                    color: isWorkspaceAdmin ? "primary.main" : "text.disabled",
+                    bgcolor: (theme) => isWorkspaceAdmin ? alpha(theme.palette.primary.main, 0.08) : "transparent",
+                    border: "1px solid",
+                    borderColor: (theme) => isWorkspaceAdmin ? alpha(theme.palette.primary.main, 0.18) : theme.palette.divider,
+                    "&:hover": {
+                      bgcolor: (theme) => isWorkspaceAdmin ? alpha(theme.palette.primary.main, 0.14) : "transparent",
+                      color: isWorkspaceAdmin ? "primary.dark" : "text.disabled",
+                    },
+                  }}
+                >
+                  <AutoAwesomeOutlined sx={{ fontSize: 18 }} />
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
 
           {/* Notifications */}
           <IconButton

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import WorkspaceSidebarNav from '../components/dashboard/_components/WorkspaceSidebarNav'
 import Header from '../components/dashboard/_components/Header'
-import RightSidebar from '../components/dashboard/_components/RightSidebar'
 import { Box, Drawer, Stack, Avatar, Chip, useMediaQuery, useTheme } from '@mui/material'
 import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined'
 import { Outlet, useLocation, useParams } from 'react-router-dom'
@@ -217,22 +216,6 @@ export default function WorkspaceDetailLayout() {
         </Box>
       </Box>
 
-      <Box
-        sx={{
-          display: 'flex',
-          flexShrink: 0,
-          alignSelf: 'stretch',
-          borderLeft: '1px solid',
-          borderColor: 'divider',
-          position: 'sticky',
-          top: 0,
-          height: '100dvh',
-          maxHeight: '100dvh',
-          overflow: 'hidden',
-        }}
-      >
-        <RightSidebar key={projectSlug || workspaceSlug} />
-      </Box>
     </Box>
   )
 }

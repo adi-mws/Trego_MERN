@@ -1,6 +1,7 @@
 // auth/auth.service.js
 
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { Account } from "../auth/account.model.js";
 import { OAuth2Client } from "google-auth-library";
@@ -8,6 +9,8 @@ import { User } from "../user/user.model.js";
 import { Session } from "../session/session.model.js";
 import { createSessionActivityNotification } from "../notifications/notification.service.js";
 import { emitToUserExceptSession } from "../../socket/index.js";
+import { sendMailAsync } from "../../config/mailer.js";
+import { passwordResetEmailTemplate } from "./passwordResetEmail.template.js";
 
 async function getOtherSessionIds(userId, sessionId, { includeRevoked = false } = {}) {
   const query = {
@@ -49,15 +52,29 @@ function toPlainUser(userDoc) {
   return typeof userDoc.toObject === "function" ? userDoc.toObject() : userDoc;
 }
 
+function normalizeEmail(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
+function hashResetToken(token) {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+function getClientUrl() {
+  return String(process.env.CLIENT_URL || "http://localhost:5173").replace(/\/+$/, "");
+}
+
 export const signInLocally = async ({
   email,
   password,
   deviceInfo,
 }) => {
+  const normalizedEmail = normalizeEmail(email);
+
   // Find account
   const account = await Account.findOne({
     provider: "LOCAL",
-    providerAccountId: email,
+    providerAccountId: normalizedEmail,
   });
 
   if (!account || !account.password) {
@@ -144,10 +161,12 @@ export const signUpLocally = async ({
   email,
   password,
 }) => {
+  const normalizedEmail = normalizeEmail(email);
+
   // Check if LOCAL account already exists
   const existingAccount = await Account.findOne({
     provider: "LOCAL",
-    providerAccountId: email,
+    providerAccountId: normalizedEmail,
   });
 
   if (existingAccount) {
@@ -155,13 +174,13 @@ export const signUpLocally = async ({
   }
 
   // Check if user exists (Google signup case)
-  let user = await User.findOne({ email });
+  let user = await User.findOne({ email: normalizedEmail });
 
   if (!user) {
     // Create new user
     user = await User.create({
       name,
-      email,
+      email: normalizedEmail,
     });
   }
 
@@ -172,7 +191,7 @@ export const signUpLocally = async ({
   const account = await Account.create({
     userId: user._id,
     provider: "LOCAL",
-    providerAccountId: email,
+    providerAccountId: normalizedEmail,
     password: hashedPassword,
   });
 
@@ -354,6 +373,91 @@ export const signInWithGoogle = async ({
       lastOnline: userData.lastOnline,
       currentSessionId: session._id,
     },
+  };
+};
+
+export const requestPasswordReset = async ({ email }) => {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) {
+    throw new Error("Email is required");
+  }
+
+  const genericResponse = {
+    message: "If a local account exists for this email, a password reset link has been sent.",
+  };
+
+  const account = await Account.findOne({
+    provider: "LOCAL",
+    providerAccountId: normalizedEmail,
+  }).select("+passwordResetToken +passwordResetExpiresAt");
+
+  if (!account) {
+    return genericResponse;
+  }
+
+  const user = await User.findById(account.userId).select("name email").lean();
+  if (!user) {
+    return genericResponse;
+  }
+
+  const rawToken = crypto.randomBytes(32).toString("hex");
+  const expiresInMinutes = Number(process.env.PASSWORD_RESET_EXPIRES_MINUTES || 30);
+
+  account.passwordResetToken = hashResetToken(rawToken);
+  account.passwordResetExpiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
+  await account.save();
+
+  const resetUrl = `${getClientUrl()}/reset-password?token=${rawToken}&email=${encodeURIComponent(normalizedEmail)}`;
+  const emailPayload = passwordResetEmailTemplate({
+    name: user.name,
+    resetUrl,
+    expiresInMinutes,
+  });
+
+  sendMailAsync({
+    to: user.email,
+    subject: emailPayload.subject,
+    html: emailPayload.html,
+    text: emailPayload.text,
+  }).catch((err) => {
+    console.warn("Failed to send password reset email:", err.message);
+  });
+
+  return genericResponse;
+};
+
+export const resetLocalPassword = async ({ email, token, password }) => {
+  const normalizedEmail = normalizeEmail(email);
+  const rawToken = String(token || "").trim();
+
+  if (!normalizedEmail || !rawToken || !password) {
+    throw new Error("Email, token, and password are required");
+  }
+
+  if (String(password).length < 8) {
+    throw new Error("Password must be at least 8 characters");
+  }
+
+  const account = await Account.findOne({
+    provider: "LOCAL",
+    providerAccountId: normalizedEmail,
+    passwordResetToken: hashResetToken(rawToken),
+    passwordResetExpiresAt: { $gt: new Date() },
+  }).select("+passwordResetToken +passwordResetExpiresAt +password");
+
+  if (!account) {
+    throw new Error("Password reset link is invalid or expired");
+  }
+
+  account.password = await bcrypt.hash(password, 10);
+  account.passwordResetToken = null;
+  account.passwordResetExpiresAt = null;
+  await account.save();
+
+  await Session.deleteMany({ userId: account.userId });
+
+  return {
+    message: "Password reset successfully. Please sign in with your new password.",
   };
 };
 

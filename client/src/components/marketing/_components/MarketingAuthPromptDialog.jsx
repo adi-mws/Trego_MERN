@@ -12,15 +12,14 @@ import {
   Typography,
 } from "@mui/material";
 import AutoAwesomeOutlinedIcon from "@mui/icons-material/AutoAwesomeOutlined";
-import GoogleIcon from "@mui/icons-material/Google";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AUTH_ROUTES, APP_ROUTES } from "../../../lib/routes";
 import { useMarketingAuthPrompt } from "../../../contexts/MarketingAuthPromptContext";
 import { useDeviceInfo } from "../../../hooks/useDeviceInfo";
-import { useGoogleIdentity } from "../../../hooks/useGoogleIdentity";
 import useAuth from "../../../hooks/useAuth";
 import { callApi } from "../../../api/api";
 import { useAlert } from "../../../hooks/useAlert";
+import { GoogleLogin } from "@react-oauth/google";
 
 export default function MarketingAuthPromptDialog() {
   const navigate = useNavigate();
@@ -30,11 +29,15 @@ export default function MarketingAuthPromptDialog() {
   const deviceInfo = useDeviceInfo();
   const { login } = useAuth();
   const showAlert = useAlert();
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const [googleBusy, setGoogleBusy] = useState(false);
   const [googleError, setGoogleError] = useState("");
 
   const handleGoogleCredential = useCallback(async (idToken) => {
+    if (!idToken) {
+      setGoogleError("Google sign-in failed");
+      return;
+    }
+
     setGoogleBusy(true);
     setGoogleError("");
 
@@ -44,7 +47,13 @@ export default function MarketingAuthPromptDialog() {
         url: "/auth/google",
         data: {
           idToken,
-          deviceInfo,
+          deviceInfo: {
+            deviceId: deviceInfo.deviceId,
+            ip: deviceInfo.ipAddress,
+            browser: deviceInfo.browser,
+            os: deviceInfo.os,
+            userAgent: deviceInfo.userAgent,
+          },
         },
       });
 
@@ -61,11 +70,6 @@ export default function MarketingAuthPromptDialog() {
     }
   }, [closePrompt, deviceInfo, login, navigate, redirect, showAlert]);
 
-  const { promptGoogle, ready: googleReady, error: googleInitError } = useGoogleIdentity({
-    clientId,
-    onCredential: handleGoogleCredential,
-  });
-
   useEffect(() => {
     if (!open) return undefined;
 
@@ -78,13 +82,6 @@ export default function MarketingAuthPromptDialog() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [closePrompt, open]);
-
-  const handleGoogleClick = () => {
-    const started = promptGoogle();
-    if (!started) {
-      setGoogleError("Google Sign-In is not ready yet");
-    }
-  };
 
   const handleSignIn = () => {
     closePrompt();
@@ -121,20 +118,34 @@ export default function MarketingAuthPromptDialog() {
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 2, flexDirection: "column", gap: 1 }}>
-        <Button
-          fullWidth
-          variant="contained"
-          startIcon={<GoogleIcon />}
-          onClick={handleGoogleClick}
-          disabled={!googleReady || googleBusy || !deviceInfo.deviceId}
-          sx={{ textTransform: "none", fontWeight: 400 }}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            width: "100%",
+            pointerEvents: !deviceInfo.deviceId || googleBusy ? "none" : "auto",
+            opacity: !deviceInfo.deviceId || googleBusy ? 0.6 : 1,
+          }}
         >
-          {googleBusy ? "Signing in..." : "Continue with Google"}
-        </Button>
+          {googleBusy ? (
+            <Typography variant="body2" color="text.secondary" py={1}>
+              Signing in...
+            </Typography>
+          ) : (
+            <GoogleLogin
+              onSuccess={(credentialResponse) => {
+                handleGoogleCredential(credentialResponse.credential);
+              }}
+              onError={() => setGoogleError("Google sign-in failed")}
+              width="300"
+              text="continue_with"
+            />
+          )}
+        </Box>
 
-        {(googleError || googleInitError) && (
+        {googleError && (
           <Alert severity="error" sx={{ width: "100%" }}>
-            {googleError || googleInitError}
+            {googleError}
           </Alert>
         )}
 

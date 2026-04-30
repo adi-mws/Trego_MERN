@@ -7,6 +7,7 @@ import {
   Chip,
   Button,
   Divider,
+  IconButton,
 } from "@mui/material";
 import LoginOutlinedIcon from "@mui/icons-material/LoginOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
@@ -14,6 +15,7 @@ import NotificationsActiveOutlinedIcon from "@mui/icons-material/NotificationsAc
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import RefreshIcon from '@mui/icons-material/Refresh';
 import AccountTreeOutlinedIcon from "@mui/icons-material/AccountTreeOutlined";
 import TaskAltOutlinedIcon from "@mui/icons-material/TaskAltOutlined";
 import { useHeader } from "../../../contexts/HeaderContext";
@@ -66,9 +68,10 @@ export default function NotificationsPage() {
           </Typography>
         </Box>
 
-        <Button variant="outlined" size="small" onClick={() => fetchNotifications()}>
-          Refresh
-        </Button>
+        <IconButton variant="outlined" size="small" onClick={() => fetchNotifications()}>
+          <RefreshIcon />
+        </IconButton>
+         
       </Stack>
 
       <Divider sx={{ mb: 2 }} />

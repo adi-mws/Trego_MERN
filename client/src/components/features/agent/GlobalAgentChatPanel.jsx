@@ -13,21 +13,29 @@ import {
   ListItemText,
   MenuItem,
   Paper,
+  Popover,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import AlternateEmailOutlinedIcon from "@mui/icons-material/AlternateEmailOutlined";
 import ArchiveOutlinedIcon from "@mui/icons-material/ArchiveOutlined";
 import AutoAwesomeOutlinedIcon from "@mui/icons-material/AutoAwesomeOutlined";
+import DataObjectOutlinedIcon from "@mui/icons-material/DataObjectOutlined";
+import FolderOutlinedIcon from "@mui/icons-material/FolderOutlined";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import SendOutlinedIcon from "@mui/icons-material/SendOutlined";
+import TuneOutlinedIcon from "@mui/icons-material/TuneOutlined";
+import WorkspacesOutlinedIcon from "@mui/icons-material/WorkspacesOutlined";
 import { useOutletContext } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { useTheme } from "@mui/material/styles";
 import { useAgentChat } from "../../../contexts/AgentChatContext";
 
 const CONTEXT_OPTIONS = [
+  { key: "workspace", label: "Workspace" },
+  { key: "projects", label: "Projects" },
   { key: "project", label: "Project" },
   { key: "tasks", label: "Tasks" },
   { key: "projectRoles", label: "Project Roles" },
@@ -49,6 +57,8 @@ const SCOPE_OPTIONS = [
   { key: "workspace", label: "Workspace" },
   { key: "all-projects", label: "All Projects" },
 ];
+
+const DEFAULT_CONTEXTS = ["workspace", "projects", "tasks", "projectRoles", "workflow"];
 
 function normalizeProjects(projects) {
   if (Array.isArray(projects)) return projects;
@@ -105,7 +115,6 @@ function ChatBubble({ message }) {
 export default function GlobalAgentChatPanel() {
   const outletContext = useOutletContext();
   const workspaceState = useSelector((state) => state.workspace);
-  const authUser = useSelector((state) => state.auth?.data);
   const workspace = outletContext?.workspace || workspaceState;
   const workspaceProjects = useMemo(
     () => normalizeProjects(workspace?.projects || workspace?.currentWorkspace?.projects),
@@ -134,9 +143,12 @@ export default function GlobalAgentChatPanel() {
   const [scope, setScope] = useState("workspace");
   const [mode, setMode] = useState("ask");
   const [selectedProjectId, setSelectedProjectId] = useState("");
-  const [selectedContexts, setSelectedContexts] = useState(["project", "tasks", "projectRoles"]);
+  const [selectedContexts, setSelectedContexts] = useState(DEFAULT_CONTEXTS);
   const [composer, setComposer] = useState("");
   const [activeView, setActiveView] = useState("chat");
+  const [menuAnchor, setMenuAnchor] = useState(null);
+  const [menuType, setMenuType] = useState("");
+  const [lastModel, setLastModel] = useState("");
 
   const selectedProject = useMemo(
     () => workspaceProjects.find((project) => String(project?._id) === String(selectedProjectId)) || null,
@@ -151,7 +163,7 @@ export default function GlobalAgentChatPanel() {
       setSelectedProjectId(activeChat.projectId || "");
       setSelectedContexts(Array.isArray(activeChat.contexts) && activeChat.contexts.length > 0
         ? activeChat.contexts
-        : ["project", "tasks", "projectRoles"]);
+        : DEFAULT_CONTEXTS);
     });
 
     return () => window.cancelAnimationFrame(frame);
@@ -169,6 +181,9 @@ export default function GlobalAgentChatPanel() {
   }, [scope, selectedProjectId, workspaceProjects]);
 
   const activeChatTitle = activeChat?.title || "New chat";
+  const menuOpen = Boolean(menuAnchor);
+  const visibleContextCount = selectedContexts.length;
+  const modelName = lastModel || "gemini-flash-latest";
 
   const payloadPreview = useMemo(() => ({
     workspaceId: workspace?._id || null,
@@ -186,6 +201,16 @@ export default function GlobalAgentChatPanel() {
     setSelectedContexts((current) => (
       current.includes(key) ? current.filter((item) => item !== key) : [...current, key]
     ));
+  };
+
+  const openMenu = (type) => (event) => {
+    setMenuType(type);
+    setMenuAnchor(event.currentTarget);
+  };
+
+  const closeMenu = () => {
+    setMenuAnchor(null);
+    setMenuType("");
   };
 
   const handleNewChat = async () => {
@@ -207,7 +232,7 @@ export default function GlobalAgentChatPanel() {
     if (!prompt) return;
 
     setComposer("");
-    await sendMessage({
+    const result = await sendMessage({
       prompt,
       scope,
       mode,
@@ -216,6 +241,7 @@ export default function GlobalAgentChatPanel() {
       contexts: selectedContexts,
       mentions: [],
     });
+    if (result?.model) setLastModel(result.model);
   };
 
   const hasWorkspace = Boolean(workspace?.slug || workspace?.name || workspace?._id || workspace?.currentWorkspace);
@@ -406,70 +432,16 @@ export default function GlobalAgentChatPanel() {
               <Divider />
 
               <Box sx={{ p: 1.5 }}>
-                <Stack spacing={1.25}>
-                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                    <TextField
-                      select
-                      label="Scope"
-                      size="small"
-                      value={scope}
-                      onChange={(e) => setScope(e.target.value)}
-                      sx={{ minWidth: 150 }}
-                    >
-                      {SCOPE_OPTIONS.map((option) => (
-                        <MenuItem key={option.key} value={option.key}>
-                          {option.label}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                    <TextField
-                      select
-                      label="Mode"
-                      size="small"
-                      value={mode}
-                      onChange={(e) => setMode(e.target.value)}
-                      sx={{ minWidth: 120 }}
-                    >
-                      {MODE_OPTIONS.map((option) => (
-                        <MenuItem key={option.key} value={option.key}>
-                          {option.label}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                    <TextField
-                      select
-                      label="Project"
-                      size="small"
-                      value={selectedProjectId}
-                      onChange={(e) => setSelectedProjectId(e.target.value)}
-                      sx={{ minWidth: 220, flex: 1 }}
-                    >
-                      <MenuItem value="">
-                        <em>Workspace only</em>
-                      </MenuItem>
-                      {workspaceProjects.map((project) => (
-                        <MenuItem key={project._id} value={project._id}>
-                          {project.name}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                  </Stack>
-
-                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                    {CONTEXT_OPTIONS.map((option) => (
-                      <Chip
-                        key={option.key}
-                        label={option.label}
-                        clickable
-                        onClick={() => toggleContext(option.key)}
-                        variant={selectedContexts.includes(option.key) ? "filled" : "outlined"}
-                        color={selectedContexts.includes(option.key) ? "primary" : "default"}
-                        sx={{ fontWeight: 400 }}
-                      />
-                    ))}
-                  </Stack>
-
-                  <Stack direction="row" spacing={1} alignItems="flex-end">
+                <Stack spacing={0.75}>
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      p: 0.75,
+                      borderRadius: 3,
+                      bgcolor: isDark ? "rgba(255,255,255,0.05)" : "background.paper",
+                      borderColor: isDark ? "rgba(255,255,255,0.12)" : "divider",
+                    }}
+                  >
                     <TextField
                       fullWidth
                       multiline
@@ -486,35 +458,194 @@ export default function GlobalAgentChatPanel() {
                       }}
                       sx={{
                         "& .MuiInputBase-root": {
-                          borderRadius: 3,
+                          alignItems: "flex-start",
+                          borderRadius: 2,
                           fontWeight: 400,
-                          bgcolor: isDark ? "rgba(255,255,255,0.05)" : "background.paper",
+                          bgcolor: "transparent",
+                          px: 0.5,
                         },
+                        "& fieldset": { border: "0 !important" },
                       }}
                     />
-                    <IconButton
-                      color="primary"
-                      onClick={handleSend}
-                      disabled={!composer.trim() || sendingMessage}
-                      sx={{
-                        width: 42,
-                        height: 42,
-                        borderRadius: 2.5,
-                        border: "1px solid",
-                        borderColor: isDark ? "rgba(255,255,255,0.12)" : "divider",
-                        bgcolor: isDark ? "rgba(255,255,255,0.05)" : "background.paper",
-                      }}
-                    >
-                      {sendingMessage ? <CircularProgress size={16} color="inherit" /> : <SendOutlinedIcon />}
-                    </IconButton>
-                  </Stack>
 
-                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                    <Chip label={`${authUser?.name || "You"}`} icon={<AutoAwesomeOutlinedIcon sx={{ fontSize: 15 }} />} size="small" variant="outlined" sx={{ fontWeight: 400 }} />
-                    <Chip label={activeChatTitle} size="small" variant="outlined" sx={{ fontWeight: 400 }} />
-                    <Chip label={scope} size="small" variant="outlined" sx={{ fontWeight: 400 }} />
-                  </Stack>
+                    <Stack
+                      direction="row"
+                      spacing={0.5}
+                      alignItems="center"
+                      justifyContent="space-between"
+                      sx={{ px: 0.25, pt: 0.5 }}
+                    >
+                      <Stack direction="row" spacing={0.5} alignItems="center" sx={{ minWidth: 0, flexWrap: "wrap" }}>
+                        <IconButton size="small" onClick={openMenu("context")} title="Mention context">
+                          <AlternateEmailOutlinedIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton size="small" onClick={openMenu("scope")} title="Scope">
+                          <WorkspacesOutlinedIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton size="small" onClick={openMenu("project")} title="Project">
+                          <FolderOutlinedIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton size="small" onClick={openMenu("mode")} title="Mode">
+                          <TuneOutlinedIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton size="small" onClick={() => setActiveView((current) => current === "payload" ? "chat" : "payload")} title="Payload">
+                          <DataObjectOutlinedIcon fontSize="small" />
+                        </IconButton>
+                        <Chip
+                          size="small"
+                          label={`${scope}${selectedProject ? ` · ${selectedProject.name}` : ""}`}
+                          variant="outlined"
+                          sx={{ maxWidth: 260, fontWeight: 400 }}
+                        />
+                        <Chip
+                          size="small"
+                          label={`@${visibleContextCount} context${visibleContextCount === 1 ? "" : "s"}`}
+                          variant="outlined"
+                          sx={{ fontWeight: 400 }}
+                        />
+                      </Stack>
+
+                      <IconButton
+                        color="primary"
+                        onClick={handleSend}
+                        disabled={!composer.trim() || sendingMessage}
+                        sx={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 2,
+                          bgcolor: "primary.main",
+                          color: "primary.contrastText",
+                          "&:hover": { bgcolor: "primary.dark" },
+                          "&.Mui-disabled": {
+                            bgcolor: "action.disabledBackground",
+                            color: "action.disabled",
+                          },
+                        }}
+                      >
+                        {sendingMessage ? <CircularProgress size={16} color="inherit" /> : <SendOutlinedIcon fontSize="small" />}
+                      </IconButton>
+                    </Stack>
+                  </Paper>
+
+                  <Typography variant="caption" color="text.secondary" sx={{ px: 0.5 }}>
+                    Gemini model: {modelName}
+                  </Typography>
                 </Stack>
+
+                <Popover
+                  open={menuOpen}
+                  anchorEl={menuAnchor}
+                  onClose={closeMenu}
+                  anchorOrigin={{ vertical: "top", horizontal: "left" }}
+                  transformOrigin={{ vertical: "bottom", horizontal: "left" }}
+                  slotProps={{
+                    paper: {
+                      sx: {
+                        width: menuType === "project" ? 320 : 280,
+                        maxWidth: "calc(100vw - 32px)",
+                        p: 1,
+                        borderRadius: 2,
+                        mb: 1,
+                      },
+                    },
+                  }}
+                >
+                  {menuType === "context" && (
+                    <Stack spacing={0.75}>
+                      <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ px: 0.5 }}>
+                        Add context with @
+                      </Typography>
+                      <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+                        {CONTEXT_OPTIONS.map((option) => (
+                          <Chip
+                            key={option.key}
+                            label={`@${option.label}`}
+                            clickable
+                            onClick={() => toggleContext(option.key)}
+                            variant={selectedContexts.includes(option.key) ? "filled" : "outlined"}
+                            color={selectedContexts.includes(option.key) ? "primary" : "default"}
+                            sx={{ fontWeight: 400 }}
+                          />
+                        ))}
+                      </Stack>
+                    </Stack>
+                  )}
+
+                  {menuType === "scope" && (
+                    <Stack spacing={0.5}>
+                      <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ px: 0.5 }}>
+                        Scope
+                      </Typography>
+                      {SCOPE_OPTIONS.map((option) => (
+                        <MenuItem
+                          key={option.key}
+                          selected={scope === option.key}
+                          onClick={() => {
+                            setScope(option.key);
+                            closeMenu();
+                          }}
+                        >
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </Stack>
+                  )}
+
+                  {menuType === "mode" && (
+                    <Stack spacing={0.5}>
+                      <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ px: 0.5 }}>
+                        Mode
+                      </Typography>
+                      {MODE_OPTIONS.map((option) => (
+                        <MenuItem
+                          key={option.key}
+                          selected={mode === option.key}
+                          onClick={() => {
+                            setMode(option.key);
+                            closeMenu();
+                          }}
+                        >
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </Stack>
+                  )}
+
+                  {menuType === "project" && (
+                    <Stack spacing={0.5}>
+                      <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ px: 0.5 }}>
+                        Project context
+                      </Typography>
+                      <MenuItem
+                        selected={!selectedProjectId}
+                        onClick={() => {
+                          setSelectedProjectId("");
+                          closeMenu();
+                        }}
+                      >
+                        Workspace only
+                      </MenuItem>
+                      {workspaceProjects.map((project) => (
+                        <MenuItem
+                          key={project._id}
+                          selected={String(selectedProjectId) === String(project._id)}
+                          onClick={() => {
+                            setSelectedProjectId(project._id);
+                            setScope("project");
+                            closeMenu();
+                          }}
+                        >
+                          <ListItemText
+                            primary={project.name}
+                            secondary={project.description || "No description"}
+                            primaryTypographyProps={{ noWrap: true, fontSize: 13 }}
+                            secondaryTypographyProps={{ noWrap: true, fontSize: 11 }}
+                          />
+                        </MenuItem>
+                      ))}
+                    </Stack>
+                  )}
+                </Popover>
               </Box>
             </Box>
           </Paper>

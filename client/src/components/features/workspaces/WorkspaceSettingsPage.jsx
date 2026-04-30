@@ -6,44 +6,65 @@ import {
   Button,
   Avatar,
   Stack,
-  Card,
   CardContent,
   CircularProgress,
   IconButton,
 } from "@mui/material";
 import { PhotoCamera, Save } from "@mui/icons-material";
 import { useSelector, useDispatch } from "react-redux";
+import { setWorkspace } from "../../../redux/slices/workspaceSlice";
 import { callApi } from "../../../api/api";
 import { useSnackbar } from "notistack";
 import { useParams } from "react-router-dom";
 
 export default function WorkspaceSettingsPage() {
+  const workspace = useSelector((s) => s.workspace);
+  const loading = useSelector((s) => s.workspace.isLoading);
+  const currentWorkspace = workspace.currentWorkspace || workspace;
+
+  if (loading || !currentWorkspace?._id) {
+    return (
+      <Box display="flex" justifyContent="center" mt={4}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return (
+    <WorkspaceSettingsForm
+      key={`${currentWorkspace._id}-${currentWorkspace.updatedAt || ""}`}
+      currentWorkspace={currentWorkspace}
+    />
+  );
+}
+
+function WorkspaceSettingsForm({ currentWorkspace }) {
   const { workspaceSlug } = useParams();
   const dispatch = useDispatch();
   const { enqueueSnackbar } = useSnackbar();
 
-  const workspace = useSelector((s) => s.workspace);
-  const loading = useSelector((s) => s.workspace.loading);
-
-  const [name, setName] = useState("");
-  const [about, setAbout] = useState("");
+  const [name, setName] = useState(currentWorkspace.name || "");
+  const [about, setAbout] = useState(currentWorkspace.about || "");
   const [avatarFile, setAvatarFile] = useState(null);
-  const [avatarPreview, setAvatarPreview] = useState("");
+  const [avatarPreview, setAvatarPreview] = useState(currentWorkspace.avatar || "");
   const [saving, setSaving] = useState(false);
 
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    if (workspace._id) {
-      setName(workspace.name || "");
-      setAbout(workspace.about || "");
-      setAvatarPreview(workspace.avatar || "");
-    }
-  }, [workspace]);
+    return () => {
+      if (avatarPreview?.startsWith("blob:")) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+    };
+  }, [avatarPreview]);
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (avatarPreview?.startsWith("blob:")) {
+        URL.revokeObjectURL(avatarPreview);
+      }
       setAvatarFile(file);
       setAvatarPreview(URL.createObjectURL(file));
     }
@@ -63,12 +84,11 @@ export default function WorkspaceSettingsPage() {
       formData.append("avatar", avatarFile);
     }
 
-    console.log(Object.fromEntries(formData));
     const res = await callApi({
       method: "put",
-      url: `/workspaces/${workspace._id}`,
+      url: `/workspaces/${currentWorkspace._id}`,
       data: formData,
-      headers: { "Content-Type": "multipart/form-data" },
+      isFormData: true,
     });
 
     setSaving(false);
@@ -79,27 +99,19 @@ export default function WorkspaceSettingsPage() {
       });
       // Refresh workspace state via API to avoid page refresh
       const freshRes = await callApi({
-        url: `/workspaces/global/${workspaceSlug || res.data?.workspace?.slug}`,
+        url: `/workspaces/global/${res.data?.workspace?.slug || workspaceSlug}`,
       });
 
-      console.log(freshRes.data)
       if (freshRes.success) {
-        dispatch({ type: "workspace/setWorkspace", payload: freshRes.data.workspace });
-      } 
+        dispatch(setWorkspace(freshRes.data.workspace));
+        setAvatarFile(null);
+      }
     } else {
-      enqueueSnackbar(res.message || "Failed to update workspace", {
+      enqueueSnackbar(res.error?.message || res.data?.message || "Failed to update workspace", {
         variant: "error",
       });
     }
   };
-
-  if (loading || !workspace._id) {
-    return (
-      <Box display="flex" justifyContent="center" mt={4}>
-        <CircularProgress />
-      </Box>
-    );
-  }
 
   return (
     <Box sx={{ p: { xs: 2, md: 4 }, width: "100%", mx: "auto" }}>

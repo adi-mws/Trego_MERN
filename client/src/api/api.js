@@ -15,19 +15,19 @@ const API = axios.create({
  * @param {boolean} isFormData - Form Data? (for Content-Type: multipart/form-data)
  * @returns {object} { success, data, error, status }
  */
-export const callApi = async ({ method = 'get', url, data = null, params = null, isFormData = false }) => {
+export const callApi = async ({ method = 'get', url, data = null, params = null, headers = {}, isFormData = false }) => {
   try {
-    const headers = {};
+    const requestHeaders = { ...headers };
 
     // If sending FormData, let Axios handle the multipart boundary
-    if (isFormData) headers['Content-Type'] = 'multipart/form-data';
+    if (isFormData) requestHeaders['Content-Type'] = 'multipart/form-data';
 
     const response = await API({
       method,
       url,
       data,
       params,
-      headers,
+      headers: requestHeaders,
     });
 
     return {

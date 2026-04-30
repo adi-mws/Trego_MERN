@@ -816,7 +816,7 @@ export default function TaskView() {
                     fontSize: 11,
                     border: `1px solid ${accentColor}44`,
                   }}
-                />
+                /> 
               )}
 
               <Typography
