@@ -265,21 +265,18 @@ function HeroShowcase() {
       sx={{
         position: "relative",
         perspective: "1400px",
-        minHeight: { xs: 500, md: 640 },
+        minHeight: { xs: 500, md: 840 },
       }}
     >
       <MotionBox
         className="gsap-hero-screen"
-        animate={{ y: [0, -14, 0], rotateZ: [0, 0.35, 0] }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        // transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
         sx={{
-          position: "absolute",
-          inset: { xs: "40px 0 auto 0", md: "40px 28px auto 28px" },
-          transformStyle: "preserve-3d",
         }}
       >
         <Box
           component="img"
+          mt={10}
           src="/images/timeline-dashboard.png"
           alt="Trego product dashboard"
           sx={{
@@ -288,10 +285,6 @@ function HeroShowcase() {
             objectFit: "contain",
             objectPosition: "center",
             borderRadius: 4,
-            border: `1px solid ${page.border}`,
-            boxShadow: "0 40px 120px rgba(15,23,42,0.18)",
-            transform: "rotateX(8deg) rotateY(-14deg)",
-            filter: "saturate(1.05) contrast(1.05)",
           }}
         />
       </MotionBox>
@@ -348,10 +341,6 @@ function ArtifactVisual({ type, color }) {
     position: "relative",
     minHeight: { xs: 360, md: 480 },
     overflow: "hidden",
-    borderRadius: 5,
-    border: `1px solid ${page.border}`,
-    bgcolor: "rgba(255,255,255,0.76)",
-    boxShadow: "0 34px 120px rgba(15,23,42,0.14)",
   };
 
   if (type === "workspace") {
@@ -361,8 +350,7 @@ function ArtifactVisual({ type, color }) {
           component="img"
           src="/images/workspace-overview.png"
           alt="Workspace creation screen"
-          style={{ transform: "translateY(10px)" }}
-          sx={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: 0.58 }}
+          sx={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }}
         />
       </Box>
     );
@@ -411,7 +399,7 @@ function ArtifactVisual({ type, color }) {
           sx={{
             position: "absolute",
             inset: 0,
-            objectFit: "fill",
+            objectFit: "fit",
 
           }}
         />
@@ -437,11 +425,16 @@ function ArtifactVisual({ type, color }) {
         >
           {/* Kanban Board Mockup */}
           <Box sx={{ position: "absolute", top: 20, left: 20, right: 20, height: 220, bgcolor: "rgba(255,255,255,0.85)", border: `1px solid ${page.border}`, borderRadius: 4, p: 1.5, display: "flex", gap: 1.5, boxShadow: "0 20px 40px rgba(15,23,42,0.08)", backdropFilter: "blur(10px)" }}>
-            {[1, 2, 3].map(col => (
+            {[1, 2].map(col => (
               <Box key={col} sx={{ flex: 1, bgcolor: "rgba(15,23,42,0.03)", borderRadius: 2, p: 1 }}>
-                <Box sx={{ width: "50%", height: 6, bgcolor: "rgba(15,23,42,0.15)", borderRadius: 4, mb: 1.5 }} />
-                <Box sx={{ height: 44, bgcolor: "white", borderRadius: 1.5, mb: 1, border: `1px solid ${page.border}` }} />
-                {col === 2 && <Box sx={{ height: 58, bgcolor: "white", borderRadius: 1.5, border: `1px solid ${page.border}` }} />}
+                {col == 1 ? <Box component={'img'} src="/images/task-board.png" sx={{ width: '100%' }} />
+                  :
+                  <>
+                    <Box sx={{ width: "50%", height: 6, bgcolor: "rgba(15,23,42,0.15)", borderRadius: 4, mb: 1.5 }} />
+                    <Box sx={{ height: 44, bgcolor: "white", borderRadius: 1.5, mb: 1, border: `1px solid ${page.border}` }} />
+                    {col === 2 && <Box sx={{ height: 58, bgcolor: "white", borderRadius: 1.5, border: `1px solid ${page.border}` }} />}
+                  </>
+                }
               </Box>
             ))}
           </Box>
@@ -771,7 +764,7 @@ export default function HomePage() {
         .to(".gsap-hero-title", { autoAlpha: 1, y: 0, duration: 0.75 }, "-=0.28")
         .to(".gsap-hero-text", { autoAlpha: 1, y: 0, duration: 0.65 }, "-=0.42")
         .to(".gsap-hero-actions", { autoAlpha: 1, y: 0, duration: 0.55 }, "-=0.34")
-        .from(".gsap-hero-screen", { autoAlpha: 0, y: 60, rotateX: 18, rotateY: -28, duration: 1.1 }, "-=0.72")
+        .from(".gsap-hero-screen", { autoAlpha: 0, y: 60, duration: 1.1 }, "-=0.72")
         .from(".gsap-float-card, .gsap-people-card", { autoAlpha: 0, y: 26, scale: 0.94, stagger: 0.12, duration: 0.7 }, "-=0.46");
 
       gsap.to(".gsap-glow", {
@@ -788,15 +781,13 @@ export default function HomePage() {
       });
 
       gsap.to(".gsap-hero-screen", {
-        y: -200,
-        rotateY: -10,
-        rotateX: 10,
-        scale: 0.92,
+        // y: -200,/
+        scale: 1,
         ease: "none",
         scrollTrigger: {
           trigger: ".gsap-hero",
           start: "top top",
-          end: "bottom top",
+          end: "top 10%",
           scrub: 1.2,
         },
       });
@@ -931,17 +922,19 @@ export default function HomePage() {
         }}
       />
 
-      <Box className="gsap-hero" component="section" sx={{ position: "relative", minHeight: { xs: "auto", lg: "calc(100vh - 78px)" }, py: { xs: 7, md: 10 } }}>
+      <Box className="gsap-hero" component="section" sx={{ position: "relative", minHeight: { xs: "auto", lg: "calc(100vh - 78px)" }, py: { xs: 5, md: 8 } }}>
         <Container maxWidth="xl">
           <MotionBox
             sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", lg: "0.92fr 1.08fr" },
-              gap: { xs: 5, lg: 7 },
+              display: "flex",
+              flexDirection: 'column',
               alignItems: "center",
+              maxWidth: 900,
+              alignSelf: 'center',
+              justifySelf: 'center'
             }}
           >
-            <Stack spacing={3.2}>
+            <Stack spacing={3.2} alignItems={'center'} justifyContent={'center'}>
               <Stack className="gsap-hero-kicker" direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                 <Chip
                   icon={<AutoAwesomeOutlinedIcon sx={{ color: `${page.cyan} !important` }} />}
@@ -950,7 +943,7 @@ export default function HomePage() {
                 />
                 <Chip
                   label="Final-project grade SaaS experience"
-                  sx={{ color: page.text, bgcolor: "rgba(255,255,255,0.86)", border: `1px solid ${page.border}` }}
+                  sx={{ color: page.text, bgcolor: "rgba(255,255,255,0.86)", display: { xs: 'none', sm: "flex" }, border: `1px solid ${page.border}` }}
                 />
               </Stack>
               <Typography
@@ -958,20 +951,25 @@ export default function HomePage() {
                 component="h1"
                 sx={{
                   color: page.text,
-                  fontSize: { xs: 48, sm: 68, md: 88 },
+                  textAlign: 'center',
+                  fontSize: { xs: 38, sm: 48, md: 68 },
                   lineHeight: 0.94,
                   fontWeight: 500,
                   letterSpacing: 0,
-                  maxWidth: 980,
                 }}
               >
                 Watch a workspace turn into an AI-run delivery system.
               </Typography>
-              <Typography className="gsap-hero-text" sx={{ color: page.muted, fontSize: { xs: 17, md: 21 }, lineHeight: 1.75, maxWidth: 760 }}>
+              <Typography className="gsap-hero-text"
+                sx={{
+                  color: page.muted,
+                  textAlign: "center",
+                  fontSize: { xs: 17 },
+                }}>
                 Trego is not just a list of features. It is a flow: create the workspace, build the workflow, assign
                 tasks, inspect with AI chat, and keep every move secure in realtime.
               </Typography>
-              <Stack className="gsap-hero-actions" direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+              <Stack className="gsap-hero-actions" justifyContent={{ xs: 'center' }} width={{ xs: '100%', sm: 'auto' }} direction={{ xs: "column", sm: "row" }} spacing={1.5}>
                 <Button
                   component={RouterLink}
                   to="/sign-up"
@@ -1018,24 +1016,6 @@ export default function HomePage() {
 
         <Container maxWidth="xl" sx={{ py: { xs: 7, md: 12 } }}>
           <Stack spacing={{ xs: 8, md: 13 }}>
-            <Reveal>
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(4, 1fr)" },
-                  gap: 1.5,
-                }}
-              >
-                {stats.map(([value, label]) => (
-                  <GlassSurface key={label} sx={{ p: { xs: 2, md: 3 } }}>
-                    <Typography sx={{ color: page.text, fontSize: { xs: 34, md: 46 }, lineHeight: 1, fontWeight: 500 }}>
-                      {value}
-                    </Typography>
-                    <Typography sx={{ color: page.muted, mt: 1 }}>{label}</Typography>
-                  </GlassSurface>
-                ))}
-              </Box>
-            </Reveal>
 
             <Reveal sx={{ scrollMarginTop: 100 }}>
               <Box component="section" id="product">
@@ -1112,32 +1092,56 @@ export default function HomePage() {
                   spacing={3}
                 >
                   <Box sx={{ maxWidth: 780 }}>
-                    <Typography sx={{ color: page.text, fontSize: { xs: 36, md: 62 }, lineHeight: 1.02, fontWeight: 500 }}>
-                      Make the final project feel like a funded SaaS demo.
+                    <Typography
+                      sx={{
+                        color: page.text,
+                        fontSize: { xs: 34, md: 58 },
+                        lineHeight: 1.04,
+                        fontWeight: 500,
+                      }}
+                    >
+                      Build workflows that actually feel production-ready.
                     </Typography>
-                    <Typography sx={{ color: page.muted, mt: 1.5, fontSize: 18, lineHeight: 1.75 }}>
-                      A dark cinematic homepage, real product screenshots, people visuals, AI chat, and a clear system
-                      story from workspace to workflow execution.
+
+                    <Typography
+                      sx={{
+                        color: page.muted,
+                        mt: 2,
+                        fontSize: 18,
+                        lineHeight: 1.8,
+                        maxWidth: 680,
+                      }}
+                    >
+                      From workspaces and project roles to AI-assisted workflows, task
+                      transitions, notifications, and analytics — Trego delivers the structure
+                      of a real enterprise collaboration platform.
                     </Typography>
+
+                    <Box
+                      sx={{
+                        mt: 4,
+                        display: "flex",
+                        gap: 2,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <Button
+                      endIcon={<ArrowForwardRoundedIcon />}
+                        component={RouterLink}
+                        to="/sign-up"
+                        variant="contained"
+                        size="large"
+                        sx={{
+                          px: 3.5,
+                          py: 1.3,
+                          borderRadius: "14px",
+                        }}
+                      >
+                        Explore The Platform
+                      </Button>
+                    </Box>
                   </Box>
-                  <Button
-                    component={RouterLink}
-                    to="/sign-up"
-                    variant="contained"
-                    color="primary"
-                    size="large"
-                    endIcon={<ArrowForwardRoundedIcon />}
-                    sx={{
-                      borderRadius: 999,
-                      px: 3.5,
-                      py: 1.4,
-                      textTransform: "none",
-                      fontWeight: 500,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    Open Trego
-                  </Button>
+              
                 </Stack>
               </Box>
             </Reveal>
@@ -1146,6 +1150,6 @@ export default function HomePage() {
 
         <Footer />
       </Box>
-    </Box>
+    </Box >
   );
 }
