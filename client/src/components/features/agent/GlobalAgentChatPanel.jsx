@@ -31,8 +31,9 @@ import WorkspacesOutlinedIcon from "@mui/icons-material/WorkspacesOutlined";
 import { useOutletContext } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { useTheme } from "@mui/material/styles";
+import ReactMarkdown from "react-markdown";
 import { useAgentChat } from "../../../contexts/AgentChatContext";
-
+import { getImageUrl } from '../../../utils/image.utils'
 const CONTEXT_OPTIONS = [
   { key: "workspace", label: "Workspace" },
   { key: "projects", label: "Projects" },
@@ -72,6 +73,8 @@ function normalizeProjects(projects) {
 }
 
 function ChatBubble({ message }) {
+  const { user: currentUser } = useSelector((state) => state.userGlobal);
+ 
   const isUser = message.role === "user";
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
@@ -79,7 +82,7 @@ function ChatBubble({ message }) {
   return (
     <Stack direction="row" spacing={1.25} justifyContent={isUser ? "flex-end" : "flex-start"} sx={{ width: "100%" }}>
       {!isUser && (
-        <Avatar sx={{ width: 30, height: 30, bgcolor: "primary.main", flexShrink: 0 }}>
+        <Avatar src={'/images/trego-agent-logo.png'} sx={{ width: 30, height: 30, flexShrink: 0 }}>
           T
         </Avatar>
       )}
@@ -91,24 +94,55 @@ function ChatBubble({ message }) {
             py: 1.2,
             borderRadius: 3,
             bgcolor: isUser ? "primary.main" : isDark ? "rgba(255,255,255,0.06)" : "background.paper",
-            color: isUser ? "primary.contrastText" : "text.primary",
             borderColor: isUser ? "primary.main" : isDark ? "rgba(255,255,255,0.12)" : "divider",
           }}
         >
-          <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.7, fontWeight: 400 }}>
-            {message.text}
-          </Typography>
+          <Box
+            sx={{
+              color: isUser ? "primary.contrastText" : isDark ? "rgba(255, 255, 255, 0.85)" : "text.primary",
+              fontSize: "0.875rem",
+              lineHeight: 1.7,
+              fontWeight: 400,
+              "& p": { m: 0, mb: 1, "&:last-child": { mb: 0 } },
+              "& strong": {
+                color: isUser ? "inherit" : "primary.main",
+                fontWeight: 700,
+              },
+              "& ul, & ol": { mt: 0.5, mb: 1, pl: 2.5 },
+              "& li": { mb: 0.5 },
+              "& code": {
+                bgcolor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
+                px: 0.5,
+                py: 0.25,
+                borderRadius: 1,
+                fontFamily: "monospace",
+                fontSize: "0.85em",
+              },
+              "& pre": {
+                bgcolor: isDark ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.04)",
+                p: 1.5,
+                borderRadius: 2,
+                overflowX: "auto",
+                mt: 1,
+                mb: 1,
+                "& code": { bgcolor: "transparent", p: 0 },
+              },
+            }}
+          >
+            <ReactMarkdown>{message.text}</ReactMarkdown>
+          </Box>
         </Paper>
         <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, fontWeight: 400 }}>
           {message.meta}
         </Typography>
       </Box>
       {isUser && (
-        <Avatar sx={{ width: 30, height: 30, bgcolor: "secondary.main", flexShrink: 0 }}>
+        <Avatar src={getImageUrl(currentUser?.avatar)} sx={{ width: 30, height: 30, bgcolor: "secondary.main", flexShrink: 0 }}>
           U
         </Avatar>
-      )}
-    </Stack>
+      )
+      }
+    </Stack >
   );
 }
 
@@ -251,14 +285,12 @@ export default function GlobalAgentChatPanel() {
       <Box sx={{ px: { xs: 1, sm: 1.5 }, pb: 1 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
           <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
-            <AutoAwesomeOutlinedIcon sx={{ color: "primary.main", fontSize: 20 }} />
+            <Avatar src="/images/trego-agent-logo.png" />
             <Box sx={{ minWidth: 0 }}>
-              <Typography variant="subtitle2" fontWeight={800} noWrap>
+              <Typography variant="subtitle2" fontWeight={500} noWrap>
                 Trego Agent
               </Typography>
-              <Typography variant="caption" color="text.secondary" noWrap>
-                Saved chats per owner/admin
-              </Typography>
+
             </Box>
           </Stack>
 
@@ -318,7 +350,7 @@ export default function GlobalAgentChatPanel() {
                     onClick={() => setActiveChatId(chat.id)}
                     sx={{ alignItems: "flex-start", gap: 1, py: 1.1, px: 1.25 }}
                   >
-                    <Avatar sx={{ width: 28, height: 28, bgcolor: active ? "primary.main" : "action.hover", color: active ? "primary.contrastText" : "text.secondary", flexShrink: 0 }}>
+                    <Avatar src="/images/trego-agent-logo.png" sx={{ width: 28, height: 28, color: active ? "primary.contrastText" : "text.secondary", flexShrink: 0 }}>
                       T
                     </Avatar>
                     <ListItemText

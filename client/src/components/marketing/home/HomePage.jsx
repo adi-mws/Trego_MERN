@@ -31,7 +31,6 @@ import { useLayoutEffect, useRef } from "react";
 import { Link as RouterLink } from "react-router-dom";
 
 const MotionBox = motion(Box);
-const MotionPaper = motion(Paper);
 
 gsap.registerPlugin(ScrollTrigger);
 

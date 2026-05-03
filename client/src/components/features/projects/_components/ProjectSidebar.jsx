@@ -154,7 +154,7 @@ const ProjectSidebar = ({ forceCollapsed = false, variant = "side" }) => {
             justifySelf: 'center',
             gap: 2,
             width: "800px",
-            px: 0.25,
+            px: 0.25, 
           }}
         >
           {menuItems.map((item) => {

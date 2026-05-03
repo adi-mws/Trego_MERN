@@ -22,10 +22,12 @@ import SendOutlinedIcon from "@mui/icons-material/SendOutlined";
 import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
+import ReactMarkdown from "react-markdown";
 import { callApi } from "../../../api/api";
 import { PROJECT_ROUTES } from "../../../lib/routes";
 import { isClient, isClientProjectRole } from "../../../utils/permissions.utils";
 import { resolveWorkspaceRole } from "../../../utils/workspaceRole.utils";
+import { getImageUrl } from "../../../utils/image.utils";
 
 function buildDraftReply(message, project) {
   const lower = String(message || "").toLowerCase();
@@ -56,6 +58,7 @@ function MessageBubble({ message, pending = false }) {
   const isUser = message.role === "user";
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
+  const { user } = useSelector((state) => state.userGlobal) || {};
   const bubbleBg = isUser
     ? theme.palette.primary.main
     : isDark
@@ -75,7 +78,10 @@ function MessageBubble({ message, pending = false }) {
       sx={{ width: "100%" }}
     >
       {!isUser && (
-        <Avatar sx={{ width: 32, height: 32, bgcolor: "primary.main", flexShrink: 0 }}>
+        <Avatar 
+          src="/images/trego-agent-logo.png"
+          sx={{ width: 32, height: 32, bgcolor: "transparent", flexShrink: 0 }}
+        >
           T
         </Avatar>
       )}
@@ -112,16 +118,40 @@ function MessageBubble({ message, pending = false }) {
               </Typography>
             </Stack>
           ) : (
-            <Typography
-              variant="body2"
+            <Box
               sx={{
-                whiteSpace: "pre-wrap",
+                color: isUser ? "primary.contrastText" : isDark ? "rgba(255, 255, 255, 0.85)" : "text.primary",
+                fontSize: "0.875rem",
                 lineHeight: 1.7,
                 fontWeight: 400,
+                "& p": { m: 0, mb: 1, "&:last-child": { mb: 0 } },
+                "& strong": {
+                  color: isUser ? "inherit" : "primary.main",
+                  fontWeight: 700,
+                },
+                "& ul, & ol": { mt: 0.5, mb: 1, pl: 2.5 },
+                "& li": { mb: 0.5 },
+                "& code": {
+                  bgcolor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
+                  px: 0.5,
+                  py: 0.25,
+                  borderRadius: 1,
+                  fontFamily: "monospace",
+                  fontSize: "0.85em",
+                },
+                "& pre": {
+                  bgcolor: isDark ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.04)",
+                  p: 1.5,
+                  borderRadius: 2,
+                  overflowX: "auto",
+                  mt: 1,
+                  mb: 1,
+                  "& code": { bgcolor: "transparent", p: 0 },
+                },
               }}
             >
-              {message.text}
-            </Typography>
+              <ReactMarkdown>{message.text}</ReactMarkdown>
+            </Box>
           )}
         </Paper>
         <Typography variant="caption" color="text.secondary" sx={{ mt: 0.6, fontWeight: 400 }}>
@@ -129,8 +159,11 @@ function MessageBubble({ message, pending = false }) {
         </Typography>
       </Box>
       {isUser && (
-        <Avatar sx={{ width: 32, height: 32, bgcolor: "secondary.main", flexShrink: 0 }}>
-          U
+        <Avatar 
+          src={user?.avatar ? getImageUrl(user.avatar) : undefined}
+          sx={{ width: 32, height: 32, bgcolor: "secondary.main", flexShrink: 0 }}
+        >
+          {user?.firstName?.charAt(0) || user?.name?.charAt(0) || "U"}
         </Avatar>
       )}
     </Stack>
@@ -334,7 +367,6 @@ export default function ProjectClientChatPage() {
         height: "100%",
         minHeight: 0,
         overflow: "hidden",
-        p: { xs: 1.25, md: 1.75 },
         bgcolor: shellBg,
       }}
     >
@@ -344,80 +376,48 @@ export default function ProjectClientChatPage() {
           minHeight: 0,
           display: "flex",
           flexDirection: "column",
-          gap: 1,
-          maxWidth: 980,
-          mx: "auto",
         }}
       >
         <Box
           sx={{
-            px: 0.25,
-            pt: 0.15,
-            pb: 0.25,
+            px: { xs: 2, md: 3 },
+            pt: 2,
+            pb: 1,
             bgcolor: "transparent",
           }}
         >
           <Stack spacing={0.35}>
             <Box sx={{ minWidth: 0 }}>
               <Typography
-                variant="h5"
+                variant="body1"
                 sx={{
-                  fontWeight: 500,
+                  fontWeight: 600,
                   lineHeight: 1.2,
-                  fontSize: { xs: 21, sm: 25 },
+                  // fontSize: { xs: 21, sm: 25 },
                 }}
               >
                 {projectContext.projectName}
               </Typography>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mt: 0.25, fontWeight: 400 }}
-              >
-                Project-only conversation. Answers stay inside this project.
-              </Typography>
+              
             </Box>
           </Stack>
         </Box>
 
-        <Paper
-          variant="outlined"
+        <Box
           sx={{
             flex: 1,
             minHeight: 0,
             overflow: "hidden",
             display: "flex",
             flexDirection: "column",
-            borderRadius: 4,
-            bgcolor: panelBg,
-            borderColor: panelBorder,
-            backdropFilter: isDark ? "blur(8px)" : "blur(10px)",
-            boxShadow: isDark ? "0 14px 34px rgba(0, 0, 0, 0.4)" : "0 12px 30px rgba(0, 0, 0, 0.05)",
           }}
         >
-          <Box
-            sx={{
-              px: { xs: 2, md: 2.25 },
-              py: 1,
-              bgcolor: infoBg,
-              borderBottom: "1px solid",
-              borderColor: panelBorder,
-            }}
-          >
-            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-              <InfoOutlinedIcon sx={{ fontSize: 17, color: "primary.main" }} />
-              <Typography variant="body2" sx={{ fontWeight: 400, lineHeight: 1.5 }}>
-                Project-only chat. Responses are generated from this project's database context.
-              </Typography>
-            </Stack>
-          </Box>
-
           <Box
             sx={{
               flex: 1,
               minHeight: 0,
               overflowY: "auto",
-              px: { xs: 2, md: 2.25 },
+              px: { xs: 2, md: 3 },
               py: 1.5,
               bgcolor: "transparent",
             }}
@@ -448,15 +448,11 @@ export default function ProjectClientChatPage() {
             </Stack>
           </Box>
 
-          <Divider />
-
           <Box
             sx={{
-              px: { xs: 2, md: 2.25 },
-              py: 1.25,
-              bgcolor: infoBg,
-              borderTop: "1px solid",
-              borderColor: panelBorder,
+              px: { xs: 2, md: 3 },
+              py: { xs: 1.5, md: 2 },
+              bgcolor: "transparent",
             }}
           >
             <Stack spacing={1}>
@@ -503,7 +499,7 @@ export default function ProjectClientChatPage() {
                 />
                 <IconButton
                   color="primary"
-                  onClick={handleSend}
+                  onClick={() => handleSend()}
                   disabled={!composer.trim()}
                   sx={{
                     width: 42,
@@ -547,7 +543,7 @@ export default function ProjectClientChatPage() {
               </Stack>
             </Stack>
           </Box>
-        </Paper>
+        </Box>
       </Box>
     </Box>
   );

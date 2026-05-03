@@ -6,9 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon server.js",
-    "migrate:task-stage-assignees": "node scripts/migrateTaskStageAssignees.js",
-    "migrate:project-client-role": "node scripts/backfillProjectClientRole.js"
+    "dev": "nodemon server.js"
   },
   "keywords": [],
   "author": "",
