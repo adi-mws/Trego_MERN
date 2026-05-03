@@ -738,7 +738,7 @@ function Footer() {
             <Box component="img" src="/images/logo-with-text.png" alt="Trego" sx={{ width: 104 }} />
             <Typography sx={{ color: page.muted }}>Agentic AI workflow management.</Typography>
           </Stack>
-          <Typography sx={{ color: page.muted, fontSize: 14 }}>2026 Trego. Built as a 6th semester final project.</Typography>
+          <Typography sx={{ color: page.muted, fontSize: 14 }}>2026 Trego</Typography>
         </Stack>
       </Container>
     </Box>

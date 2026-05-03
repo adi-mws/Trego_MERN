@@ -27,16 +27,9 @@ const sessionSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["PENDING_2FA", "ACTIVE", "REVOKED", "EXPIRED"],
-      default: "PENDING_2FA",
+      enum: ["ACTIVE", "REVOKED", "EXPIRED"],
+      default: "ACTIVE",
       index: true,
-    },
-
-    twoFactor: {
-      enabled: { type: Boolean, default: false },
-      tokenHash: String,
-      expiresAt: Date,
-      verifiedAt: Date,
     },
 
     loggedInAt: {
