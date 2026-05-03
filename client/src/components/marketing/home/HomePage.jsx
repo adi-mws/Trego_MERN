@@ -479,12 +479,7 @@ function ArtifactVisual({ type, color }) {
               </Stack>
             </MotionBox>
           ))}
-          <Box
-            component="img"
-            src={people[2].image}
-            alt="Project member working"
-            sx={{ width: "100%", height: 180, objectFit: "contain", borderRadius: 4, border: `1px solid ${page.border}` }}
-          />
+  
         </Stack>
       </Box>
     );
