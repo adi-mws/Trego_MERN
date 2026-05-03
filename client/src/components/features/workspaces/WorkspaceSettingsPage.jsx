@@ -16,6 +16,7 @@ import { setWorkspace } from "../../../redux/slices/workspaceSlice";
 import { callApi } from "../../../api/api";
 import { useSnackbar } from "notistack";
 import { useParams } from "react-router-dom";
+import { getImageUrl } from "../../../utils/image.utils";
 
 export default function WorkspaceSettingsPage() {
   const workspace = useSelector((s) => s.workspace);
@@ -130,7 +131,7 @@ function WorkspaceSettingsForm({ currentWorkspace }) {
               <Stack direction="row" spacing={3} alignItems="center">
                 <Box position="relative">
                   <Avatar
-                    src={avatarPreview}
+                    src={getImageUrl(avatarPreview)}
                     sx={{ width: 80, height: 80, fontSize: 32 }}
                   >
                     {name ? name[0] : "W"}

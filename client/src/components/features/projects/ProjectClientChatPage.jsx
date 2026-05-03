@@ -6,7 +6,6 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Divider,
   IconButton,
   Paper,
   Stack,
@@ -16,7 +15,6 @@ import {
 import { useTheme } from "@mui/material/styles";
 import AutoAwesomeOutlinedIcon from "@mui/icons-material/AutoAwesomeOutlined";
 import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import SendOutlinedIcon from "@mui/icons-material/SendOutlined";
 import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";

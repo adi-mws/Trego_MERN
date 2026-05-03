@@ -47,17 +47,13 @@ export default function MarketingHeader() {
         top: 0,
         zIndex: 1200,
         backdropFilter: "blur(20px)",
-        backgroundColor: "rgba(255,255,255,0.82)",
       }}
     >
       <AppBar
         position="static"
         elevation={0}
-        color="transparent"
         sx={{
           backgroundColor: "transparent",
-          borderBottom: "1px solid",
-          borderColor: "rgba(15,23,42,0.1)",
         }}
       >
         <Container maxWidth="xl">
@@ -91,7 +87,7 @@ export default function MarketingHeader() {
                     variant="body2"
                     sx={{
                       fontWeight: 500,
-                      color: "rgba(51,65,85,0.78)",
+                      color: "rgba(0, 0, 0, 0.78)",
                       textDecoration: "none",
                       transition: "color 160ms ease",
                       "&:hover": {
@@ -144,7 +140,7 @@ export default function MarketingHeader() {
           value={scrollProgress}
           sx={{
             height: 2,
-            bgcolor: "rgba(15,23,42,0.06)",
+            backgroundColor: "transparent",
           }}
         />
       </AppBar>
