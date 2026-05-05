@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import TaskCategory from "./taskCategory.model.js";
 import { Task } from "./task.model.js";
-import { WorkflowTemplate } from "../workflows/workflowTemplate.model.js";
 import { WorkflowStage } from "../workflows/workflowStage.model.js";
 import { TaskStageAssignee } from "./taskStageAssignee.model.js";
 
@@ -20,9 +19,6 @@ function getIstDateKey(value) {
     return `${map.year}-${map.month}-${map.day}`;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TASK CATEGORY SERVICES
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const getAllTaskCategories = async ({ projectId }) => {
     if (!projectId) throw new Error("Project ID is required");
@@ -59,8 +55,6 @@ export const getAllTaskCategories = async ({ projectId }) => {
                 },
             },
         },
-
-        // Task count per category
         {
             $lookup: {
                 from: "tasks",
@@ -117,14 +111,10 @@ export const updateTaskCategory = async (categoryId, { name, description, color,
     const category = await TaskCategory.findById(categoryId);
     if (!category) throw new Error("Category not found");
 
-    // Guard: defaultWorkflow cannot be changed if there are tasks inside
-    // that are NOT on their workflow's start stage.
     if (defaultWorkflowId !== undefined && String(defaultWorkflowId) !== String(category.defaultWorkflowId)) {
-        // Check if any tasks in this category are on a non-start stage
         const tasksInCategory = await Task.find({ categoryId, workflowId: { $ne: null } }).lean();
 
         if (tasksInCategory.length > 0) {
-            // Get the start stage of any active workflow assigned to these tasks
             for (const task of tasksInCategory) {
                 const startStage = await WorkflowStage.findOne({ workflowId: task.workflowId, isStart: true }).lean();
                 if (startStage && String(task.currentStageId) !== String(startStage._id)) {
@@ -149,7 +139,6 @@ export const deleteTaskCategory = async (categoryId) => {
     const category = await TaskCategory.findById(categoryId);
     if (!category) throw new Error("Category not found");
 
-    // Prevent deletion if there are tasks still in this category
     const taskCount = await Task.countDocuments({ categoryId });
     if (taskCount > 0) {
         throw new Error(`Cannot delete category — ${taskCount} task(s) are still in this category. Uncategorize them first.`);
@@ -158,10 +147,6 @@ export const deleteTaskCategory = async (categoryId) => {
     await TaskCategory.findByIdAndDelete(categoryId);
     return { success: true };
 };
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TASK SERVICES
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const getTasksByProject = async (projectId, search, visibility = { scope: "all" }) => {
     if (!projectId) throw new Error("Project ID is required");
@@ -186,7 +171,6 @@ export const getTasksByProject = async (projectId, search, visibility = { scope:
                 ...(searchMatch || {}),
             },
         },
-        // Inherit color from category
         {
             $lookup: {
                 from: "taskcategories",
@@ -201,7 +185,6 @@ export const getTasksByProject = async (projectId, search, visibility = { scope:
                 color: { $ifNull: [{ $arrayElemAt: ["$category.color", 0] }, null] },
             },
         },
-        // Join current stage (for name + its allowedRoles)
         {
             $lookup: {
                 from: "workflowstages",
@@ -215,7 +198,6 @@ export const getTasksByProject = async (projectId, search, visibility = { scope:
                 currentStage: { $arrayElemAt: ["$currentStage", 0] },
             },
         },
-        // Join outgoing transitions from currentStage to get their allowedRoles
         {
             $lookup: {
                 from: "workflowtransitions",
@@ -224,7 +206,6 @@ export const getTasksByProject = async (projectId, search, visibility = { scope:
                 as: "outgoingTransitions",
             },
         },
-        // Compute allowedRoles = union(stage.allowedRoles, all transition.allowedRoles)
         {
             $addFields: {
                 allowedRoles: {
@@ -286,6 +267,7 @@ export const getTasksByProject = async (projectId, search, visibility = { scope:
 };
 
 export const createTask = async ({ projectId, title, description, createdBy, categoryId, workflowId, priority, deadline, startDate, endDate }) => {
+  
     if (!projectId || !title || !createdBy) throw new Error("projectId, title, and createdBy are required");
 
     let resolvedWorkflowId = workflowId || null;
@@ -399,7 +381,6 @@ export const switchTaskWorkflow = async (taskId, newWorkflowId) => {
     const task = await Task.findById(taskId);
     if (!task) throw new Error("Task not found");
 
-    // If the task is already on a workflow and is NOT on the start stage, block switching
     if (task.workflowId && task.currentStageId) {
         const startStage = await WorkflowStage.findOne({ workflowId: task.workflowId, isStart: true }).lean();
         if (startStage && String(task.currentStageId) !== String(startStage._id)) {
@@ -407,7 +388,6 @@ export const switchTaskWorkflow = async (taskId, newWorkflowId) => {
         }
     }
 
-    // Set to new workflow start stage
     let newStageId = null;
     if (newWorkflowId) {
         const startStage = await WorkflowStage.findOne({ workflowId: newWorkflowId, isStart: true }).lean();

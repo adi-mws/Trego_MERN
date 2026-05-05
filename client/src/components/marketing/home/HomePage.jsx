@@ -26,11 +26,9 @@ import ViewKanbanOutlinedIcon from "@mui/icons-material/ViewKanbanOutlined";
 import WorkOutlineOutlinedIcon from "@mui/icons-material/WorkOutlineOutlined";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { motion, useReducedMotion } from "framer-motion";
 import { useLayoutEffect, useRef } from "react";
+import useMediaQuery from '@mui/material/useMediaQuery';
 import { Link as RouterLink } from "react-router-dom";
-
-const MotionBox = motion(Box);
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -153,25 +151,11 @@ const roleRows = [
   ["Client", "Focused chat inspection", 38, page.cyan],
 ];
 
-const reveal = {
-  hidden: { opacity: 0, y: 28 },
-  show: { opacity: 1, y: 0 },
-};
-
 function Reveal({ children, sx }) {
-  const reduceMotion = useReducedMotion();
-
   return (
-    <MotionBox
-      initial={reduceMotion ? false : "hidden"}
-      whileInView={reduceMotion ? undefined : "show"}
-      viewport={{ once: true, margin: "-100px" }}
-      variants={reveal}
-      transition={{ duration: 0.65, ease: "easeOut" }}
-      sx={sx}
-    >
+    <Box className="gsap-reveal" sx={sx}>
       {children}
-    </MotionBox>
+    </Box>
   );
 }
 
@@ -267,7 +251,7 @@ function HeroShowcase() {
         minHeight: { xs: 500, md: 840 },
       }}
     >
-      <MotionBox
+      <Box
         className="gsap-hero-screen"
         // transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
         sx={{
@@ -286,7 +270,7 @@ function HeroShowcase() {
             borderRadius: 4,
           }}
         />
-      </MotionBox>
+      </Box>
 
       <GlassSurface
         className="gsap-float-card"
@@ -360,12 +344,10 @@ function ArtifactVisual({ type, color }) {
       <Box sx={{ ...common, p: 3 }}>
         <Stack spacing={2.5} sx={{ mt: 2 }}>
           {["Frontend Development", "Backend Infrastructure", "Marketing Campaigns", "UI/UX Design"].map((cat, index) => (
-            <MotionBox
+            <Box
               key={cat}
-              initial={{ x: -24, opacity: 0 }}
-              whileInView={{ x: 0, opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.12 }}
+              className="gsap-cat-item"
+              data-index={index}
               sx={{
                 p: 2,
                 borderRadius: 3,
@@ -382,7 +364,7 @@ function ArtifactVisual({ type, color }) {
                 <Typography sx={{ fontWeight: 500, fontSize: 16 }}>{cat}</Typography>
               </Stack>
               <Chip size="small" label={`${(5 - index) * 3} tasks`} sx={{ height: 22, fontSize: 11, fontWeight: 600, bgcolor: "rgba(15,23,42,0.04)" }} />
-            </MotionBox>
+            </Box>
           ))}
         </Stack>
       </Box>
@@ -417,9 +399,8 @@ function ArtifactVisual({ type, color }) {
             backgroundSize: "24px 24px",
           }}
         />
-        <MotionBox
-          animate={{ rotateY: [-5, 5, -5] }}
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+        <Box
+          className="gsap-views-rotate"
           sx={{ position: "relative", height: "100%", transformStyle: "preserve-3d" }}
         >
           {/* Kanban Board Mockup */}
@@ -450,7 +431,7 @@ function ArtifactVisual({ type, color }) {
               <Box sx={{ position: "absolute", top: 66, left: "55%", width: "30%", height: 18, bgcolor: `${page.amber}cc`, borderRadius: 1 }} />
             </Box>
           </Box>
-        </MotionBox>
+        </Box>
       </Box>
     );
   }
@@ -460,12 +441,10 @@ function ArtifactVisual({ type, color }) {
       <Box sx={{ ...common, p: 3 }}>
         <Stack spacing={2.2}>
           {["Assign owner", "Create objectives", "Set deadline", "Notify admins"].map((item, index) => (
-            <MotionBox
+            <Box
               key={item}
-              initial={{ x: 34, opacity: 0 }}
-              whileInView={{ x: 0, opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.12 }}
+              className="gsap-task-item"
+              data-index={index}
               sx={{
                 p: 2,
                 borderRadius: 3,
@@ -477,7 +456,7 @@ function ArtifactVisual({ type, color }) {
                 <CheckCircleRoundedIcon sx={{ color }} />
                 <Typography>{item}</Typography>
               </Stack>
-            </MotionBox>
+            </Box>
           ))}
   
         </Stack>
@@ -493,7 +472,7 @@ function ArtifactVisual({ type, color }) {
             ["Client", "What is the actual project risk right now?"],
             ["Trego AI", "Review is slow, two tasks are near deadline, and Launch needs Owner approval."],
             ["Client", "Create a short recovery plan."],
-            ["Trego AI", "Plan: split QA, assign Admin fallback, notify Owner, then move through Review."],
+            ["Trego AI", "Plan: split QA, assign Admin fallback, notify Okwner, then move through Review."],
           ].map(([name, message], index) => (
             <Box
               key={`${name}-${message}`}
@@ -654,12 +633,12 @@ function FlowScene() {
                     ))}
                   </Stack>
                 </Stack>
-                <MotionBox
+                <Box
                   className="gsap-flow-artifact"
                   sx={{ order: { xs: 2, lg: reverse ? 1 : 2 }, pl: { xs: 6, lg: 0 } }}
                 >
                   <ArtifactVisual type={item.visual} color={item.color} />
-                </MotionBox>
+                </Box>
               </Box>
             </Reveal>
           );
@@ -690,7 +669,7 @@ function CapabilityRibbon() {
         bgcolor: "rgba(255,255,255,0.62)",
       }}
     >
-      <MotionBox
+      <Box
         className="gsap-ribbon-track"
         sx={{ display: "flex", width: "max-content", gap: 1.5 }}
       >
@@ -713,7 +692,7 @@ function CapabilityRibbon() {
             <Typography sx={{ whiteSpace: "nowrap", fontSize: 14 }}>{label}</Typography>
           </Stack>
         ))}
-      </MotionBox>
+      </Box>
     </Box>
   );
 }
@@ -740,7 +719,7 @@ function Footer() {
 }
 
 export default function HomePage() {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const rootRef = useRef(null);
 
   useLayoutEffect(() => {
@@ -885,6 +864,63 @@ export default function HomePage() {
         });
       });
 
+      gsap.utils.toArray(".gsap-reveal").forEach((reveal) => {
+        gsap.fromTo(reveal, 
+          { autoAlpha: 0, y: 28 }, 
+          { 
+            autoAlpha: 1, 
+            y: 0, 
+            duration: 0.65, 
+            ease: "easeOut",
+            scrollTrigger: {
+              trigger: reveal,
+              start: "top bottom-=100px",
+              toggleActions: "play none none none",
+              once: true
+            }
+          }
+        );
+      });
+
+      gsap.utils.toArray(".gsap-cat-item").forEach((item) => {
+        const index = item.dataset.index;
+        gsap.fromTo(item, 
+          { x: -24, autoAlpha: 0 },
+          {
+            x: 0,
+            autoAlpha: 1,
+            delay: index * 0.12,
+            scrollTrigger: {
+              trigger: item,
+              start: "top bottom",
+              once: true
+            }
+          }
+        );
+      });
+
+      gsap.utils.toArray(".gsap-task-item").forEach((item) => {
+        const index = item.dataset.index;
+        gsap.fromTo(item, 
+          { x: 34, autoAlpha: 0 },
+          {
+            x: 0,
+            autoAlpha: 1,
+            delay: index * 0.12,
+            scrollTrigger: {
+              trigger: item,
+              start: "top bottom",
+              once: true
+            }
+          }
+        );
+      });
+
+      gsap.fromTo(".gsap-views-rotate", 
+        { rotateY: -5 }, 
+        { rotateY: 5, duration: 6, ease: "easeInOut", yoyo: true, repeat: -1 }
+      );
+
       ScrollTrigger.refresh();
     }, rootRef);
 
@@ -902,7 +938,7 @@ export default function HomePage() {
             "radial-gradient(circle at 18% 8%, rgba(37,99,235,0.14), transparent 30%), radial-gradient(circle at 78% 16%, rgba(124,58,237,0.12), transparent 28%), linear-gradient(180deg, #F8FAFC 0%, #EEF6FF 48%, #F8FAFC 100%)",
         }}
       />
-      <MotionBox
+      <Box
         className="gsap-glow"
         sx={{
           position: "fixed",
@@ -918,7 +954,7 @@ export default function HomePage() {
 
       <Box className="gsap-hero" component="section" sx={{ position: "relative", minHeight: { xs: "auto", lg: "calc(100vh - 78px)" }, py: { xs: 5, md: 8 } }}>
         <Container maxWidth="xl">
-          <MotionBox
+          <Box
             sx={{
               display: "flex",
               flexDirection: 'column',
@@ -1001,7 +1037,7 @@ export default function HomePage() {
               </Stack>
             </Stack>
             <HeroShowcase />
-          </MotionBox>
+          </Box>
         </Container>
       </Box>
 

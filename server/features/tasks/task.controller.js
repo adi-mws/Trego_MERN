@@ -9,7 +9,6 @@ import { createTaskCreatedNotification } from "../notifications/notification.ser
 
 const ADMIN_ROLES = ["OWNER", "ADMIN"];
 
-// Helper: resolve workspaceId + membership from projectId
 async function resolveRbacContext(req, projectId) {
     const userId = req.user?.userId;
     const project = await Project.findById(projectId).select("workspace").lean();
@@ -40,10 +39,6 @@ async function resolveRbacContext(req, projectId) {
         projectMembership,
     };
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TASK CATEGORY CONTROLLERS
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const getCategories = async (req, res, next) => {
     try {
@@ -86,10 +81,6 @@ export const deleteCategory = async (req, res, next) => {
         next(err);
     }
 };
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TASK CONTROLLERS
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const getTasks = async (req, res, next) => {
     try {
@@ -211,10 +202,6 @@ export const deleteTask = async (req, res, next) => {
         next(err);
     }
 };
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TASK ASSIGNEE MANAGEMENT (Admin only)
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const updateTaskAssignees = async (req, res, next) => {
     try {

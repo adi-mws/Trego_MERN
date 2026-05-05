@@ -26,7 +26,6 @@ const taskSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Category (optional — task can be uncategorized)
     categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "TaskCategory",
@@ -34,7 +33,6 @@ const taskSchema = new mongoose.Schema(
       index: true,
     },
 
-    // Workflow tracking (optional — only when a workflow is assigned)
     workflowId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "WorkflowTemplate",
