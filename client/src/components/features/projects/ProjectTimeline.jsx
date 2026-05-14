@@ -41,7 +41,6 @@ function TimelineRow({ task, minDate, dayWidth, onBlock, onOpen, onEdit }) {
 
   const barLeft = leftDays !== null ? leftDays * dayWidth : null;
   const barWidth = spanDays * dayWidth;
-
   const barColor = task.color || "#1890ff";
 
   return (

@@ -83,7 +83,6 @@ export default function WorkspaceOverviewPage() {
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, height: "100%", overflowY: "auto" }}>
-      {/* ── Header ── */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
         <Box>
           <Typography variant="h5" fontWeight={700}>{workspace.name || "Workspace"}</Typography>
@@ -113,7 +112,6 @@ export default function WorkspaceOverviewPage() {
         )}
       </Stack>
 
-      {/* ── Stat Cards ── */}
       <Grid container spacing={2} mb={3}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard

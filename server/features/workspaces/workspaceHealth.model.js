@@ -45,7 +45,6 @@ const workspaceHealthSchema = new mongoose.Schema(
   }
 );
 
-/* Prevent duplicate snapshot per day */
 workspaceHealthSchema.index(
   { workspaceId: 1, snapshotDate: 1 },
   { unique: true }

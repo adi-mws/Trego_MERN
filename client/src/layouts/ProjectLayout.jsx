@@ -37,7 +37,7 @@ export default function ProjectLayout() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          p: 3,
+          // p: 3,
         }}
       >
         <Alert

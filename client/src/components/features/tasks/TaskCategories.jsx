@@ -38,7 +38,6 @@ const COLOR_PRESETS = [
   "#2f54eb", "#fadb14",
 ];
 
-// ─── Category Form Dialog ─────────────────────────────────────────────────────
 function CategoryDialog({ open, onClose, onSave, initial, workflows, loading }) {
   const [form, setForm] = useState({
     name: "",
@@ -162,7 +161,6 @@ function CategoryDialog({ open, onClose, onSave, initial, workflows, loading }) 
   );
 }
 
-// ─── Delete Confirm Dialog ────────────────────────────────────────────────────
 function DeleteCategoryDialog({ open, onClose, onConfirm, category, loading }) {
   const blocked = category?.taskCount > 0;
   return (
@@ -197,7 +195,6 @@ function DeleteCategoryDialog({ open, onClose, onConfirm, category, loading }) {
   );
 }
 
-// ─── Main TaskCategories Page ─────────────────────────────────────────────────
 const TaskCategories = () => {
   const { _id: projectId } = useSelector(state => state.project);
 
@@ -211,7 +208,6 @@ const TaskCategories = () => {
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  // ── Fetch ──────────────────────────────────────────────────────────────────
   const fetchCategories = useCallback(async () => {
     if (!projectId) return;
     setLoading(true);
@@ -238,7 +234,6 @@ const TaskCategories = () => {
     return () => window.clearTimeout(timer);
   }, [fetchCategories, fetchWorkflows]);
 
-  // ── Create ─────────────────────────────────────────────────────────────────
   const handleCreate = async (form) => {
     setSaving(true);
     setError("");
@@ -256,7 +251,6 @@ const TaskCategories = () => {
     }
   };
 
-  // ── Edit ───────────────────────────────────────────────────────────────────
   const handleEdit = async (form) => {
     if (!editTarget) return;
     setSaving(true);
@@ -265,7 +259,7 @@ const TaskCategories = () => {
       method: "put",
       url: `/tasks/categories/${editTarget._id}`,
       data: form,
-    });
+    });c
     setSaving(false);
     if (res.success) {
       setEditTarget(null);
@@ -275,7 +269,6 @@ const TaskCategories = () => {
     }
   };
 
-  // ── Delete ─────────────────────────────────────────────────────────────────
   const handleDelete = async () => {
     if (!deleteTarget) return;
     setSaving(true);
@@ -289,7 +282,6 @@ const TaskCategories = () => {
     }
   };
 
-  // ─────────────────────────────────────────────────────────────────────────
   return (
     <ProjectPermissionGate
       permission="canManageProject"
@@ -424,7 +416,6 @@ const TaskCategories = () => {
         </Stack>
       )}
 
-      {/* Create Dialog */}
       <CategoryDialog
         open={createOpen}
         onClose={() => setCreateOpen(false)}
@@ -433,7 +424,6 @@ const TaskCategories = () => {
         loading={saving}
       />
 
-      {/* Edit Dialog */}
       <CategoryDialog
         open={!!editTarget}
         onClose={() => setEditTarget(null)}
@@ -443,7 +433,6 @@ const TaskCategories = () => {
         loading={saving}
       />
 
-      {/* Delete Confirm */}
       <DeleteCategoryDialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}

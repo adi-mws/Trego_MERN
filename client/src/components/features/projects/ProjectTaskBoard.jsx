@@ -254,7 +254,7 @@ export default function ProjectTaskBoard() {
       >
         <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} mb={1.5} gap={1.5}>
           <Box>
-            <Typography variant="h5" fontWeight={800}>Board</Typography>
+            <Typography variant="h5" fontWeight={500}>Board</Typography>
             <Typography variant="body2" color="text.secondary">{total} tasks total</Typography>
           </Box>
           {(userIsAdmin || canCreateTask) && (
