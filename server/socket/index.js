@@ -45,7 +45,7 @@ export function initSocket(server) {
       ` User connected: ${userId} (session: ${sessionId}) (socket: ${socket.id})`
     );
 
-    //  WORKSPACE JOIN (LAZY + SECURE)
+    //  WORKSPACE JOIN 
     socket.on("workspace:join", async (workspaceId) => {
       try {
         if (!workspaceId) return;
@@ -80,11 +80,6 @@ export function initSocket(server) {
       console.log(`${userId} left workspace ${workspaceId}`);
     });
 
-    // HEARTBEAT (optional)
-    socket.on("heartbeat:ack", () => {
-      // optional: track last active timestamp
-    });
-
     // DISCONNECT
     socket.on("disconnect", () => {
       console.log("Disconnected:", socket.id);
@@ -103,29 +98,18 @@ export function getIO() {
   return io;
 }
 
-//  EMIT HELPERS
-
-/**
- *  Notifications / personal events
- */
 export function emitToUser(userId, event, payload) {
   if (!io) return;
 
   io.to(`user:${String(userId || "")}`).emit(event, payload);
 }
 
-/**
- * Workspace real-time events
- */
 export function emitToWorkspace(workspaceId, event, payload) {
   if (!io) return;
 
   io.to(`workspace:${String(workspaceId || "")}`).emit(event, payload);
 }
 
-/**
- * Exclude current session (security / special events)
- */
 export function emitToUserExceptSession(userId, sessionId, event, payload) {
   if (!io) return;
 

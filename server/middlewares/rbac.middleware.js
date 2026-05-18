@@ -5,7 +5,6 @@ import { Task } from "../features/tasks/task.model.js";
 
 const ADMIN_ROLES = ["OWNER", "ADMIN"];
 
-// ─── Attach workspace role to req ─────────────────────────────────────────────
 // Usage: router.use(attachWorkspaceRole)  — must have workspaceId or workspaceSlug available via middleware
 export const attachWorkspaceMembership = (getWorkspaceId) => async (req, res, next) => {
   try {
@@ -24,7 +23,6 @@ export const attachWorkspaceMembership = (getWorkspaceId) => async (req, res, ne
   }
 };
 
-// ─── Require workspace membership ─────────────────────────────────────────────
 export const requireWorkspaceMember = async (req, res, next) => {
   if (!req.workspaceMembership) {
     return res.status(403).json({ success: false, message: "Not a member of this workspace" });
@@ -32,7 +30,6 @@ export const requireWorkspaceMember = async (req, res, next) => {
   next();
 };
 
-// ─── Require workspace admin / owner ──────────────────────────────────────────
 export const requireWorkspaceAdmin = async (req, res, next) => {
   const role = req.workspaceMembership?.role;
   if (!ADMIN_ROLES.includes(role)) {
@@ -41,12 +38,10 @@ export const requireWorkspaceAdmin = async (req, res, next) => {
   next();
 };
 
-// ─── isWorkspaceAdmin helper (non-middleware) ─────────────────────────────────
 export const isWorkspaceAdmin = (membership) => {
   return ADMIN_ROLES.includes(membership?.role);
 };
 
-// ─── Attach project membership (used in project/task routes) ──────────────────
 export const attachProjectMembership = async (req, res, next) => {
   try {
     const userId = req.user?.userId;
@@ -77,7 +72,6 @@ export const attachProjectMembership = async (req, res, next) => {
   }
 };
 
-// ─── Require project membership (or workspace admin) ──────────────────────────
 export const requireProjectAccess = async (req, res, next) => {
   const wsRole = req.workspaceMembership?.role;
 
@@ -91,9 +85,6 @@ export const requireProjectAccess = async (req, res, next) => {
   next();
 };
 
-// ─── Task visibility filter injected into req ─────────────────────────────────
-// For members: only tasks assigned to them
-// For admins: all tasks
 export const injectTaskFilter = async (req, res, next) => {
   try {
     const wsRole = req.workspaceMembership?.role;
@@ -113,7 +104,6 @@ export const injectTaskFilter = async (req, res, next) => {
   }
 };
 
-// ─── Guard: admin bypass, otherwise require project membership ────────────────
 export const guardTaskAdvance = async (req, res, next) => {
   try {
     const { taskId } = req.params;
@@ -144,8 +134,6 @@ export const guardTaskAdvance = async (req, res, next) => {
   }
 };
 
-// ─── General workspace context middleware factory ─────────────────────────────
-// Looks up workspace by workspaceId param or x-workspace-id header
 export const resolveWorkspaceFromParam = async (req, res, next) => {
   try {
     const userId = req.user?.userId;
