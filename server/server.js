@@ -31,7 +31,7 @@ app.use(
       "http://localhost:5173",
       "http://localhost:3000",
       "http://127.0.0.1:5173",
-      "http://127.0.0.1:3000",
+      "https://trego-production.vercel.app",
     ],
     credentials: true, // allows cookies
   })
@@ -72,55 +72,3 @@ server.listen(PORT, () =>
   console.log(`Server running at http://localhost:${PORT}`)
 );
 
-
-
-// DEBUGGER
-// setInterval(() => {
-//   console.log("---- SOCKET STORE STATUS ----");
-
-//   /* -------------------------
-//       GUESTS
-//   -------------------------- */
-//   console.log("Guests:", socketStore.guests.size);
-
-//   /* -------------------------
-//       ADMINS (adminId -> [sessionIds])
-//   -------------------------- */
-//   console.log(
-//     "Admins:",
-//     Object.fromEntries(
-//       [...socketStore.admins.entries()].map(([adminId, sessions]) => [
-//         adminId,
-  
-//         // Convert each admin's sessions map → plain object
-//         Object.fromEntries(
-//           [...sessions.entries()].map(([sessionId, socketSet]) => [
-//             sessionId,
-//             [...socketSet]   // convert Set(socketIds) → array
-//           ])
-//         )
-//       ])
-//     )
-//   );
-  
-//   /* -------------------------
-//       USERS (userId -> socketCount)
-//   -------------------------- */
-//   console.log(
-//     "Users:",
-//     Object.fromEntries(
-//       [...socketStore.users.entries()].map(([userId, sockets]) => [
-//         userId,
-//         sockets.size
-//       ])
-//     )
-//   );
-
-//   /* -------------------------
-//       ONLINE TOTAL
-//   -------------------------- */
-//   const online = socketStore.getOnlineCounts();
-//   console.log("Online Total:", online.total);
-
-//   console.log("--------------------------------\n");
-// }, 3000);
